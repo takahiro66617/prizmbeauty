@@ -1,1 +1,4 @@
 project_id = "mhbmykgnpdaqsntbliar"
+
+[functions.line-auth]
+verify_jwt = false
