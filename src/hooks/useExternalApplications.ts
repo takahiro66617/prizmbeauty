@@ -11,7 +11,7 @@ export interface ExternalApplication {
   applied_at: string;
   updated_at: string;
   campaigns?: { id: string; title: string; image_url: string | null; budget_min: number | null; budget_max: number | null; deadline: string | null; category: string | null; companies?: { id: string; name: string } | null } | null;
-  influencer_profiles?: { id: string; name: string; username: string; image_url: string | null; instagram_followers: number | null; tiktok_followers: number | null; youtube_followers: number | null; category: string | null; bio: string | null; status: string } | null;
+  influencer_profiles?: { id: string; name: string; username: string; image_url: string | null; instagram_followers: number | null; tiktok_followers: number | null; youtube_followers: number | null; category: string | null; bio: string | null; status: string; user_id: string | null } | null;
 }
 
 export function useExternalApplications(filters?: { companyId?: string; influencerId?: string; campaignId?: string }) {
@@ -20,7 +20,7 @@ export function useExternalApplications(filters?: { companyId?: string; influenc
     queryFn: async () => {
       let query = supabase
         .from("applications")
-        .select("*, campaigns(id, title, image_url, budget_min, budget_max, deadline, category, companies(id, name)), influencer_profiles(id, name, username, image_url, instagram_followers, tiktok_followers, youtube_followers, category, bio, status)")
+        .select("*, campaigns(id, title, image_url, budget_min, budget_max, deadline, category, companies(id, name)), influencer_profiles(id, name, username, image_url, instagram_followers, tiktok_followers, youtube_followers, category, bio, status, user_id)")
         .order("applied_at", { ascending: false });
       if (filters?.companyId) query = query.eq("company_id", filters.companyId);
       if (filters?.influencerId) query = query.eq("influencer_id", filters.influencerId);

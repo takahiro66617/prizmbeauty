@@ -2,17 +2,38 @@ import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle, XCircle, Eye, X, Search } from "lucide-react";
+import { CheckCircle, XCircle, Eye, X, Search, MessageCircle, ArrowRight, Send } from "lucide-react";
 import { useExternalApplications, useUpdateApplicationStatus } from "@/hooks/useExternalApplications";
 import { useExternalCampaigns } from "@/hooks/useExternalCampaigns";
+import { useSendMessage, useSendNotification } from "@/hooks/useExternalMessages";
 import { APPLICATION_STATUSES, CATEGORIES } from "@/lib/constants";
 import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
+
+const STATUS_FLOW: Record<string, string> = {
+  approved: "in_progress",
+  in_progress: "post_submitted",
+  post_submitted: "post_confirmed",
+  post_confirmed: "payment_pending",
+  payment_pending: "completed",
+};
+
+const STATUS_ACTION_LABELS: Record<string, string> = {
+  approved: "案件開始",
+  in_progress: "投稿報告を確認",
+  post_submitted: "投稿を承認",
+  post_confirmed: "振込処理へ",
+  payment_pending: "振込完了",
+};
 
 export default function ClientApplicants() {
   const companyId = sessionStorage.getItem("client_company_id") || "";
   const { data: applications = [], isLoading } = useExternalApplications({ companyId });
   const { data: campaigns = [] } = useExternalCampaigns(companyId);
   const updateStatus = useUpdateApplicationStatus();
+  const sendMessage = useSendMessage();
+  const sendNotification = useSendNotification();
+  const navigate = useNavigate();
   const [statusFilter, setStatusFilter] = useState("all");
   const [campaignFilter, setCampaignFilter] = useState("all");
   const [categoryFilter, setCategoryFilter] = useState("all");
@@ -20,6 +41,8 @@ export default function ClientApplicants() {
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [selectedApp, setSelectedApp] = useState<any>(null);
+  const [msgModal, setMsgModal] = useState<any>(null);
+  const [msgText, setMsgText] = useState("");
 
   const filtered = applications.filter(a => {
     const matchesStatus = statusFilter === "all" || a.status === statusFilter;
@@ -31,10 +54,84 @@ export default function ClientApplicants() {
     return matchesStatus && matchesCampaign && matchesCategory && matchesSearch && matchesDateFrom && matchesDateTo;
   });
 
-  const handleStatusChange = (id: string, status: string) => {
-    updateStatus.mutate({ id, status }, {
-      onSuccess: () => toast.success(status === "approved" ? "採用しました" : "不採用にしました"),
+  const handleApprove = async (app: any) => {
+    const userIdTarget = app.influencer_profiles?.user_id;
+    updateStatus.mutate({ id: app.id, status: "approved" }, {
+      onSuccess: async () => {
+        toast.success("採用しました");
+        if (userIdTarget) {
+          try {
+            await sendMessage.mutateAsync({
+              receiver_id: userIdTarget,
+              content: `🎉 おめでとうございます！「${app.campaigns?.title || "案件"}」に採用されました。詳細は追ってご連絡いたします。`,
+            });
+            await sendNotification.mutateAsync({
+              user_id: userIdTarget,
+              title: "案件採用通知",
+              message: `「${app.campaigns?.title || "案件"}」に採用されました！`,
+              type: "success",
+              link: "/mypage/applications",
+            });
+          } catch { /* silent */ }
+        }
+      },
       onError: () => toast.error("更新に失敗しました"),
+    });
+  };
+
+  const handleReject = async (app: any) => {
+    const userIdTarget = app.influencer_profiles?.user_id;
+    updateStatus.mutate({ id: app.id, status: "rejected" }, {
+      onSuccess: async () => {
+        toast.success("不採用にしました");
+        if (userIdTarget) {
+          try {
+            await sendMessage.mutateAsync({
+              receiver_id: userIdTarget,
+              content: `「${app.campaigns?.title || "案件"}」について、慎重に検討させていただきましたが、今回はご期待に沿えない結果となりました。またの機会にぜひご応募ください。`,
+            });
+            await sendNotification.mutateAsync({
+              user_id: userIdTarget,
+              title: "選考結果のお知らせ",
+              message: `「${app.campaigns?.title || "案件"}」の選考結果をお知らせします。`,
+              type: "info",
+              link: "/mypage/applications",
+            });
+          } catch { /* silent */ }
+        }
+      },
+      onError: () => toast.error("更新に失敗しました"),
+    });
+  };
+
+  const handleAdvanceStatus = (app: any) => {
+    const nextStatus = STATUS_FLOW[app.status];
+    if (!nextStatus) return;
+    const userIdTarget = app.influencer_profiles?.user_id;
+    const statusLabel = APPLICATION_STATUSES.find(s => s.id === nextStatus)?.label || nextStatus;
+    updateStatus.mutate({ id: app.id, status: nextStatus }, {
+      onSuccess: async () => {
+        toast.success(`ステータスを「${statusLabel}」に更新しました`);
+        if (userIdTarget) {
+          try {
+            await sendMessage.mutateAsync({
+              receiver_id: userIdTarget,
+              content: `「${app.campaigns?.title || "案件"}」のステータスが「${statusLabel}」に更新されました。`,
+            });
+          } catch { /* silent */ }
+        }
+      },
+      onError: () => toast.error("更新に失敗しました"),
+    });
+  };
+
+  const handleSendDirectMessage = () => {
+    if (!msgText.trim() || !msgModal) return;
+    const receiverId = msgModal.influencer_profiles?.user_id;
+    if (!receiverId) { toast.error("このインフルエンサーにはメッセージを送信できません"); return; }
+    sendMessage.mutate({ receiver_id: receiverId, content: msgText }, {
+      onSuccess: () => { toast.success("送信しました"); setMsgText(""); setMsgModal(null); },
+      onError: () => toast.error("送信に失敗しました"),
     });
   };
 
@@ -49,7 +146,7 @@ export default function ClientApplicants() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-gray-800">応募者管理</h1>
-        <p className="text-gray-500 mt-1">案件への応募を確認・選考します。</p>
+        <p className="text-gray-500 mt-1">案件への応募を確認・選考・進行管理します。</p>
       </div>
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 space-y-3">
@@ -90,6 +187,8 @@ export default function ClientApplicants() {
           {filtered.map(app => {
             const inf = app.influencer_profiles;
             const campaign = app.campaigns;
+            const nextStatus = STATUS_FLOW[app.status];
+            const nextLabel = nextStatus ? STATUS_ACTION_LABELS[app.status] : null;
             return (
               <Card key={app.id} className="p-6 border-0 shadow-sm hover:shadow-md transition-shadow">
                 <div className="flex items-start gap-4">
@@ -112,13 +211,23 @@ export default function ClientApplicants() {
                   <div className="flex flex-col gap-2 shrink-0">
                     {(app.status === "applied" || app.status === "reviewing") && (
                       <>
-                        <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white" onClick={() => handleStatusChange(app.id, "approved")} disabled={updateStatus.isPending}>
+                        <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white" onClick={() => handleApprove(app)} disabled={updateStatus.isPending}>
                           <CheckCircle className="w-3 h-3 mr-1" />採用
                         </Button>
-                        <Button size="sm" variant="outline" className="text-red-600 border-red-200" onClick={() => handleStatusChange(app.id, "rejected")} disabled={updateStatus.isPending}>
+                        <Button size="sm" variant="outline" className="text-red-600 border-red-200" onClick={() => handleReject(app)} disabled={updateStatus.isPending}>
                           <XCircle className="w-3 h-3 mr-1" />不採用
                         </Button>
                       </>
+                    )}
+                    {nextLabel && app.status !== "applied" && app.status !== "reviewing" && app.status !== "rejected" && (
+                      <Button size="sm" className="bg-purple-600 hover:bg-purple-700 text-white" onClick={() => handleAdvanceStatus(app)} disabled={updateStatus.isPending}>
+                        <ArrowRight className="w-3 h-3 mr-1" />{nextLabel}
+                      </Button>
+                    )}
+                    {inf?.user_id && app.status !== "rejected" && (
+                      <Button size="sm" variant="outline" className="text-blue-600 border-blue-200" onClick={() => setMsgModal(app)}>
+                        <MessageCircle className="w-3 h-3 mr-1" />メッセージ
+                      </Button>
                     )}
                     <Button size="sm" variant="ghost" className="text-gray-500" onClick={() => setSelectedApp(app)}><Eye className="w-3 h-3 mr-1" />詳細</Button>
                   </div>
@@ -130,6 +239,7 @@ export default function ClientApplicants() {
         </div>
       )}
 
+      {/* Detail Modal */}
       {selectedApp && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" onClick={() => setSelectedApp(null)}>
           <div className="bg-white rounded-2xl w-full max-w-lg shadow-xl" onClick={e => e.stopPropagation()}>
@@ -158,11 +268,45 @@ export default function ClientApplicants() {
                   <div key={s.label} className={`text-center p-3 ${s.color} rounded-lg`}><p className={`text-xs ${s.textColor}`}>{s.label}</p><p className="font-bold">{(s.val || 0).toLocaleString()}</p></div>
                 ))}
               </div>
+              <div className="bg-gray-50 p-3 rounded-lg">
+                <p className="text-sm font-medium text-gray-700 mb-1">現在のステータス</p>
+                <div className="flex items-center gap-2">
+                  {APPLICATION_STATUSES.map((s, i) => (
+                    <div key={s.id} className="flex items-center gap-1">
+                      <span className={`text-xs px-2 py-1 rounded ${selectedApp.status === s.id ? s.color + " font-bold" : "text-gray-400"}`}>{s.label}</span>
+                      {i < APPLICATION_STATUSES.length - 1 && <span className="text-gray-300">→</span>}
+                    </div>
+                  ))}
+                </div>
+              </div>
               {selectedApp.motivation && (
                 <div><p className="text-sm font-medium text-gray-700 mb-1">応募動機</p><p className="text-sm bg-gray-50 p-3 rounded-lg italic">"{selectedApp.motivation}"</p></div>
               )}
             </div>
             <div className="p-6 border-t flex justify-end"><Button variant="outline" onClick={() => setSelectedApp(null)}>閉じる</Button></div>
+          </div>
+        </div>
+      )}
+
+      {/* Message Modal */}
+      {msgModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" onClick={() => setMsgModal(null)}>
+          <div className="bg-white rounded-2xl w-full max-w-md shadow-xl" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between p-6 border-b">
+              <h3 className="font-bold text-lg">{msgModal.influencer_profiles?.name}にメッセージ</h3>
+              <button onClick={() => setMsgModal(null)}><X className="w-5 h-5 text-gray-400" /></button>
+            </div>
+            <div className="p-6 space-y-4">
+              <p className="text-sm text-gray-500">案件: {msgModal.campaigns?.title}</p>
+              <textarea value={msgText} onChange={e => setMsgText(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm min-h-[120px] focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="メッセージを入力..." />
+            </div>
+            <div className="p-6 border-t flex justify-end gap-3">
+              <Button variant="outline" onClick={() => setMsgModal(null)}>キャンセル</Button>
+              <Button className="bg-blue-600 hover:bg-blue-700" onClick={handleSendDirectMessage} disabled={sendMessage.isPending}>
+                <Send className="w-4 h-4 mr-2" />送信
+              </Button>
+            </div>
           </div>
         </div>
       )}
