@@ -1,44 +1,56 @@
 
 
-## Problem Root Cause
+## 問題の根本原因
 
-The edge function `line-auth` is querying a table called **`influencer_profiles`** on the external Supabase database, but the actual table name on that external database is **`influencers`**.
-
-Edge function log error:
+エッジファンクションのログ:
 ```
-Could not find the table 'public.influencer_profiles' in the schema cache
-Hint: Perhaps you meant the table 'public.influencers'
+column influencers.line_user_id does not exist
 ```
 
-## Fix
+外部DBの`influencers`テーブルには`line_user_id`カラムが存在しません。LINE UserIDは`user_id`カラムに保存する必要があります。また、プロフィール登録時に存在しないカラム（`nickname`, `gender`, `birth_date`, `prefecture`, `line_user_id`）への挿入も失敗します。
 
-### 1. Update the edge function `supabase/functions/line-auth/index.ts`
+## 修正内容
 
-Change the table name from `influencer_profiles` to `influencers`:
+### 1. エッジファンクション `supabase/functions/line-auth/index.ts`
+
+LINE UserIDでの検索を`line_user_id`から`user_id`に変更:
 
 ```
-// Before
-.from("influencer_profiles")
+// 変更前
+.eq("line_user_id", profileData.userId)
 
-// After
-.from("influencers")
+// 変更後
+.eq("user_id", profileData.userId)
 ```
 
-The `line_user_id` column and other fields (`name`, `image_url`, etc.) should also be verified against the actual `influencers` table schema on the external database. If column names differ, those will need updating too.
+### 2. プロフィール登録 `src/pages/auth/RegisterProfile.tsx`
 
-### 2. Verify other external hooks
+挿入データから存在しないカラムを削除:
 
-The following hooks also query `influencer_profiles` on the external Supabase via `supabaseExternal`:
-- `src/hooks/useExternalInfluencers.ts`
-- `src/hooks/useExternalApplications.ts`
+| 変更前のカラム | 対応 |
+|---|---|
+| `line_user_id` | 削除（`user_id`に統合） |
+| `nickname` | 削除（存在しないカラム） |
+| `gender` | 削除（存在しないカラム） |
+| `birth_date` | 削除（存在しないカラム） |
+| `prefecture` | 削除（存在しないカラム） |
 
-These also need to be updated to use the correct table name `influencers` to prevent similar errors elsewhere in the app.
+挿入データは以下のみに:
+- `user_id` (LINE userId)
+- `username` (ニックネーム)
+- `name` (姓名)
+- `image_url`
+- `category`
+- `status`
 
-## Summary of Changes
+### 技術的な補足
 
-| File | Change |
-|------|--------|
-| `supabase/functions/line-auth/index.ts` | Change `influencer_profiles` to `influencers` |
-| `src/hooks/useExternalInfluencers.ts` | Change `influencer_profiles` to `influencers` |
-| `src/hooks/useExternalApplications.ts` | Change `influencer_profiles` join reference to `influencers` |
+UIのフォーム（性別・生年月日・居住地）は残しますが、外部DBに対応カラムがないため、これらの値はDB保存されません。将来的に外部DBにカラムを追加した際に再度挿入処理に追加できます。
+
+## 変更ファイル一覧
+
+| ファイル | 変更内容 |
+|---|---|
+| `supabase/functions/line-auth/index.ts` | `line_user_id` を `user_id` に変更 |
+| `src/pages/auth/RegisterProfile.tsx` | 存在しないカラムを挿入データから削除 |
 
