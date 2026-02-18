@@ -44,32 +44,24 @@ export default function LineCallback() {
           return;
         }
 
-        // Check if user already exists in Lovable Cloud DB
-        const lineUserId = data.lineProfile?.userId || data.user?.line_user_id;
-        if (lineUserId) {
-          const { data: existing } = await supabase
-            .from("influencer_profiles")
-            .select("*")
-            .eq("line_user_id", lineUserId)
-            .maybeSingle();
-
-          if (existing) {
-            // Existing user - store session and go to dashboard
-            const mockUser = {
-              id: existing.id,
-              lastName: existing.name.split(" ")[0] || existing.name,
-              firstName: existing.name.split(" ")[1] || "",
-              name: existing.name,
-              email: "",
-              profileImagePreview:
-                existing.image_url ||
-                `https://ui-avatars.com/api/?name=${encodeURIComponent(existing.name)}&background=FFD6E8&color=333`,
-              type: "influencer",
-            };
-            sessionStorage.setItem("currentUser", JSON.stringify(mockUser));
-            navigate("/mypage");
-            return;
-          }
+        // Use line-auth response directly (it queries with service role key, bypassing RLS)
+        if (!data.isNewUser && data.user) {
+          // Existing user - store session and go to dashboard
+          const existing = data.user;
+          const mockUser = {
+            id: existing.id,
+            lastName: existing.name?.split(" ")[0] || existing.name || "",
+            firstName: existing.name?.split(" ")[1] || "",
+            name: existing.name || "",
+            email: "",
+            profileImagePreview:
+              existing.image_url ||
+              `https://ui-avatars.com/api/?name=${encodeURIComponent(existing.name || "")}&background=FFD6E8&color=333`,
+            type: "influencer",
+          };
+          sessionStorage.setItem("currentUser", JSON.stringify(mockUser));
+          navigate("/mypage");
+          return;
         }
 
         // New user - go to registration
