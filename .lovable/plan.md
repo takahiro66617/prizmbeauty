@@ -1,117 +1,117 @@
 
+# 3つの管理画面の連携実装計画
 
-# GitHub版デザインとの差分修正計画
-
-GitHubリポジトリ（Next.js版）のデザインと現在のLovableプロジェクト（React/Vite版）を比較し、以下の差分を修正します。
-
----
-
-## 主な差分一覧
-
-### 1. トップページ（Index.tsx）- HeroSection の構造が大きく異なる
-
-**GitHub版の特徴:**
-- 左右2カラムレイアウト（左:テキスト、右:画像）
-- 白背景ベースで明るいトーン
-- 画像は有機的な形状（`rounded-[30%_70%_70%_30%/30%_30%_70%_70%]`）のマスク内に表示
-- ホワイトフラッシュ付きスライドショー
-- 見出し: 「美容案件で輝く、あなたの影響力」
-- LINEログインボタンをHero内に配置（大きいサイズ h-16）
-- 利用規約リンク付き注釈テキスト
-- 「掲載希望の企業さまはこちら」リンク
-- バッジ「インフルエンサー登録数 10,000人突破！」
-- テキストのスライドインアニメーション
-
-**現在のLovable版:**
-- フルスクリーン画像カルーセル（画面全体に画像を表示）
-- テキストが中央配置で画像の上にオーバーレイ
-- 見出し: 「あなたの美しさを価値に変える」
-- ドットナビゲーション付き
-
-### 2. トップページ - Features/3ステップセクション
-
-**GitHub版:** 「PRizm Beautyの特徴」3カード（完全無料/キャリアアップ/安心のサポート）で、Point 01/02/03の縦書き表記、角丸32pxカード、グラデーションアイコン背景
-**Lovable版:** 「3ステップではじめる」（無料登録/案件を探す/応募&報酬GET）で、小さい丸アイコン、シンプルなカードデザイン
-
-### 3. トップページ - 利用の流れセクション
-
-**GitHub版:** 4ステップ横並び（案件を探す/マッチング/商品体験・投稿/報酬獲得）、グラデーション背景、接続ライン付き
-**Lovable版:** このセクションは存在しない
-
-### 4. トップページ - 人気の案件セクション
-
-**GitHub版:** 4カラム、「人気の新着案件」、最新順ソート
-**Lovable版:** 3カラム、「注目の案件」
-
-### 5. Header
-
-**GitHub版:** LINEボタンはSVGアイコン内蔵でアイコンとテキストが区切り線で分離、「LINEでログイン/新規登録」テキスト、「PRizmについて」リンクが外部サイト(pr-izm.com)へ
-**Lovable版:** line.png使用、「LINEでログイン」テキスト、「利用ガイド」リンク
-
-### 6. Footer
-
-**GitHub版:** 4カラム（ブランド/サービス/サポート/運営）、「よくある質問」「お問い合わせ」リンク、動的年号
-**Lovable版:** 4カラム（ブランド/サービス/法的情報/お問い合わせ）、メールアドレス表示、固定年号2026
-
-### 7. Button コンポーネント
-
-**GitHub版:** defaultバリアントが `from-pastel-pink via-pastel-purple to-pastel-blue text-gray-700`（3色グラデーション、ダークテキスト）
-**Lovable版:** gradientバリアントが `from-pastel-pink to-pastel-blue text-white`（2色、白テキスト）
-
-### 8. CTA セクション
-
-**GitHub版:** 存在しない（代わりに「ご利用の流れ」セクション）
-**Lovable版:** 「今すぐPRizm Beautyをはじめよう」セクションあり
+3種類のダッシュボード（インフルエンサー、企業、管理者）を構築し、共有データで連携させます。
 
 ---
 
-## 実装計画
+## 現状
 
-### Step 1: HeroSection を GitHub版デザインに完全置き換え
-- 左右2カラムレイアウトに変更
-- 有機的な形状マスクの画像スライドショー
-- ホワイトフラッシュトランジション
-- テキストのスライドインアニメーション
-- バッジ、見出し、LINEログインボタン、注釈テキスト配置
-
-### Step 2: Features セクションを GitHub版に合わせる
-- 「PRizm Beautyの特徴」セクション（完全無料/キャリアアップ/安心のサポート）
-- Point 01/02/03 の縦書き表記付きカード
-- 角丸32pxカード、グラデーションアイコン
-
-### Step 3: 「ご利用の流れ」セクション追加
-- 4ステップ横並びレイアウト
-- 接続ライン付き
-- グラデーション背景ラッパー
-
-### Step 4: 人気の案件セクション調整
-- 4カラムグリッドに変更
-- タイトルを「人気の新着案件」に変更
-- CampaignCard のデザインをGitHub版に近づける（Heart/詳細ボタン追加、応募状況表示）
-
-### Step 5: CTAセクション削除
-- 「今すぐPRizm Beautyをはじめよう」セクションを削除（GitHub版にはない）
-
-### Step 6: Header 修正
-- LINEボタンをSVGインラインアイコン＋区切り線デザインに変更
-- テキストを「LINEでログイン/新規登録」に変更
-- 「利用ガイド」を「PRizmについて」（外部リンク: pr-izm.com）に変更
-
-### Step 7: Footer 修正
-- 構成を「サービス/サポート/運営」に変更
-- 年号を動的（`new Date().getFullYear()`）に変更
-- メールアドレス表記を削除し、よくある質問/お問い合わせリンク追加
-
-### Step 8: Button コンポーネントのグラデーション調整
-- defaultバリアントのグラデーションを3色（pink via purple to cyan）に変更
-- テキスト色を `text-gray-700` に変更
+| ダッシュボード | 状態 | パス |
+|-------------|------|------|
+| インフルエンサー用 | 実装済み | `/mypage/*` |
+| 管理者用（事務局） | 実装済み | `/admin/*` |
+| 企業用 | 未実装 | なし |
 
 ---
 
-## 技術的な注意点
+## 実装内容
 
-- Next.js の `Link`/`Image` は React Router の `Link`/`img` に変換
-- `cn()` ユーティリティは既にプロジェクトに存在するためそのまま使用
-- Tailwind v4 の `@theme inline` 構文は Tailwind v3 の `tailwind.config.ts` に変換済みのため、カラートークンの追加はCSS変数で対応
-- `getCampaigns()` などのサーバーサイドデータ取得はモックデータに置き換え
+### 1. 共有モックデータの拡充（mockData.ts）
 
+3つの画面が同じデータを参照して連携できるよう、以下を追加:
+
+- **MOCK_COMPANIES**: 企業の詳細情報（担当者、連絡先、ステータス）
+- **MOCK_INFLUENCERS**: インフルエンサー一覧（SNS情報、ステータス）
+- **MOCK_APPLICATIONS**: 応募データ（インフルエンサーID、案件ID、ステータス、応募日）
+- **MOCK_MESSAGES**: メッセージデータ（送信者、受信者、内容）
+
+これにより:
+- インフルエンサーが応募 → 企業の応募一覧に表示 → 管理者が全体を監視
+- 企業がスカウト → インフルエンサーに通知 → 管理者が確認可能
+
+### 2. 企業用ダッシュボード（新規作成）
+
+**ルート構成**: `/client/*`
+
+| ページ | パス | 機能 |
+|-------|------|------|
+| ログイン | `/client/login` | メールアドレス＋パスワードでログイン |
+| ダッシュボード | `/client/dashboard` | KPI（応募数/稼働案件/選考中）、TODO、お知らせ |
+| 案件管理 | `/client/campaigns` | 自社案件一覧、ステータス管理 |
+| 案件作成 | `/client/campaigns/new` | 案件の新規作成フォーム |
+| 応募者管理 | `/client/applicants` | 応募インフルエンサー一覧、承認/却下操作 |
+| メッセージ | `/client/messages` | インフルエンサーとのやり取り |
+| 設定 | `/client/settings` | 企業情報の編集 |
+
+**レイアウト**: 管理者画面と同様のサイドバー構成（青系カラーで差別化）
+
+### 3. 管理者ダッシュボードの強化
+
+既存の管理者画面を拡張して、全体を監視できるようにする:
+
+- **ダッシュボード**: インフルエンサー総数、企業総数、応募総数、月間マッチング数のKPI
+- **案件管理**: 全企業の案件を横断表示、ステータス変更機能
+- **企業管理**: 企業アカウントの有効/無効切り替え、詳細表示
+- **インフルエンサー管理**: 審査ステータス（審査中/承認/停止）の変更機能
+- **応募管理（新規）**: 全応募の横断一覧、マッチング状況の確認
+
+### 4. インフルエンサー画面の連携強化
+
+既存の `/mypage` 画面に企業データとの連携を追加:
+
+- **応募履歴**: MOCK_APPLICATIONS から自分の応募を表示、ステータスがリアルタイム反映
+- **メッセージ**: 企業からのメッセージを受信表示
+- **お知らせ**: スカウト通知、応募結果通知を表示
+
+### 5. ルーティング更新（App.tsx）
+
+```text
+/client/login         → 企業ログイン
+/client               → ClientLayout（サイドバー付き）
+  /client/dashboard   → 企業ダッシュボード
+  /client/campaigns   → 自社案件一覧
+  /client/campaigns/new → 案件作成
+  /client/applicants  → 応募者管理
+  /client/messages    → メッセージ
+  /client/settings    → 企業設定
+```
+
+---
+
+## データ連携の流れ
+
+```text
+[インフルエンサー]          [企業]                [管理者]
+案件に応募 ───────────→ 応募一覧に表示 ─────→ 全応募を監視
+     ↑                承認/却下 ──────────→ マッチング統計
+応募結果通知 ←──────── スカウト送信         全ユーザー管理
+メッセージ受信 ←───→ メッセージ送信        企業/IF承認管理
+```
+
+---
+
+## 新規作成ファイル
+
+- `src/components/client/ClientLayout.tsx` - 企業用レイアウト
+- `src/components/client/ClientSidebar.tsx` - 企業用サイドバー
+- `src/pages/client/ClientLogin.tsx` - 企業ログイン
+- `src/pages/client/ClientDashboard.tsx` - 企業ダッシュボード
+- `src/pages/client/ClientCampaigns.tsx` - 案件管理
+- `src/pages/client/ClientCampaignNew.tsx` - 案件作成
+- `src/pages/client/ClientApplicants.tsx` - 応募者管理
+- `src/pages/client/ClientMessages.tsx` - メッセージ
+- `src/pages/client/ClientSettings.tsx` - 企業設定
+
+## 更新ファイル
+
+- `src/lib/mockData.ts` - 共有データ追加
+- `src/App.tsx` - 企業用ルーティング追加
+- `src/pages/admin/AdminDashboard.tsx` - KPI強化
+- `src/pages/admin/AdminClients.tsx` - 企業詳細・ステータス管理
+- `src/pages/admin/AdminInfluencers.tsx` - 審査管理機能
+- `src/pages/mypage/MyPageDashboard.tsx` - 連携データ表示
+- `src/pages/mypage/MyPageApplications.tsx` - MOCK_APPLICATIONSとの連携
+- `src/pages/mypage/MyPageMessages.tsx` - メッセージ表示
+- `src/pages/mypage/MyPageNotifications.tsx` - 通知表示
+- `src/components/admin/AdminSidebar.tsx` - 応募管理リンク追加
