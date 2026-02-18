@@ -107,7 +107,7 @@ export default function MyPageApplications() {
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-50 mb-4"><FileText className="w-8 h-8 text-gray-300" /></div>
           <h3 className="text-lg font-bold text-gray-900 mb-2">応募履歴がありません</h3>
           <p className="text-gray-500 mb-6">まだ案件に応募していません。</p>
-          <Link to="/campaigns"><Button className="bg-pink-500 text-white hover:bg-pink-400">案件を探す <ArrowRight className="w-4 h-4 ml-2" /></Button></Link>
+          <Link to="/mypage/campaigns"><Button className="bg-pink-500 text-white hover:bg-pink-400">案件を探す <ArrowRight className="w-4 h-4 ml-2" /></Button></Link>
         </div>
       )}
 

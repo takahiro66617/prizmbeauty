@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabaseExternal } from "@/lib/supabaseExternal";
+import { supabase } from "@/integrations/supabase/client";
 
 export interface ExternalCampaign {
   id: string;
@@ -16,7 +16,6 @@ export interface ExternalCampaign {
   status: string;
   created_at: string;
   updated_at: string;
-  // joined
   companies?: { id: string; name: string; logo_url: string | null } | null;
 }
 
@@ -24,7 +23,7 @@ export function useExternalCampaigns(companyId?: string) {
   return useQuery({
     queryKey: ["ext-campaigns", companyId],
     queryFn: async () => {
-      let query = supabaseExternal.from("campaigns").select("*, companies(id, name, logo_url)");
+      let query = supabase.from("campaigns").select("*, companies(id, name, logo_url)");
       if (companyId) query = query.eq("company_id", companyId);
       const { data, error } = await query.order("created_at", { ascending: false });
       if (error) throw error;
@@ -38,7 +37,7 @@ export function useExternalCampaign(id: string | null) {
     queryKey: ["ext-campaign", id],
     queryFn: async () => {
       if (!id) return null;
-      const { data, error } = await supabaseExternal.from("campaigns").select("*, companies(id, name, logo_url)").eq("id", id).single();
+      const { data, error } = await supabase.from("campaigns").select("*, companies(id, name, logo_url)").eq("id", id).single();
       if (error) throw error;
       return data as ExternalCampaign;
     },
@@ -59,11 +58,40 @@ export function useCreateCampaign() {
       deadline: string;
       requirements: string;
       platform: string;
+      image_url?: string;
       status?: string;
     }) => {
-      const { data, error } = await supabaseExternal.from("campaigns").insert({ ...campaign, status: campaign.status || "recruiting" }).select().single();
+      const { data, error } = await supabase.from("campaigns").insert({ ...campaign, status: campaign.status || "recruiting" }).select().single();
       if (error) throw error;
       return data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["ext-campaigns"] });
+    },
+  });
+}
+
+export function useUpdateCampaign() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, updates }: { id: string; updates: Partial<ExternalCampaign> }) => {
+      const { data, error } = await supabase.from("campaigns").update(updates).eq("id", id).select().single();
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["ext-campaigns"] });
+      qc.invalidateQueries({ queryKey: ["ext-campaign"] });
+    },
+  });
+}
+
+export function useDeleteCampaign() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("campaigns").delete().eq("id", id);
+      if (error) throw error;
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["ext-campaigns"] });

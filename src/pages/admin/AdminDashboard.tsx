@@ -21,6 +21,7 @@ export default function AdminDashboard() {
   const influencerCount = influencers.length;
   const approvedApps = applications.filter(a => a.status === "approved").length;
   const pendingApps = applications.filter(a => ["applied", "reviewing"].includes(a.status)).length;
+  const pendingInfluencers = influencers.filter(i => i.status === "pending").length;
 
   return (
     <div className="space-y-8">
@@ -71,6 +72,7 @@ export default function AdminDashboard() {
               <div>
                 <p className="text-sm font-medium text-gray-500">登録IF数</p>
                 <h3 className="text-3xl font-bold text-gray-800 mt-2">{influencerCount}<span className="text-sm font-normal text-gray-400 ml-1">名</span></h3>
+                {pendingInfluencers > 0 && <p className="text-xs text-yellow-600 mt-1">審査待ち: {pendingInfluencers}名</p>}
               </div>
               <div className="p-3 bg-green-100 rounded-full text-green-500"><Users className="w-6 h-6" /></div>
             </div>
@@ -82,28 +84,19 @@ export default function AdminDashboard() {
         <Card className="p-4 border-0 shadow-sm bg-white">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-green-100 rounded-lg text-green-600"><UserCheck className="w-5 h-5" /></div>
-            <div>
-              <p className="text-sm text-gray-500">月間マッチング数</p>
-              <p className="text-xl font-bold text-gray-800">{approvedApps}</p>
-            </div>
+            <div><p className="text-sm text-gray-500">月間マッチング数</p><p className="text-xl font-bold text-gray-800">{approvedApps}</p></div>
           </div>
         </Card>
         <Card className="p-4 border-0 shadow-sm bg-white">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-yellow-100 rounded-lg text-yellow-600"><TrendingUp className="w-5 h-5" /></div>
-            <div>
-              <p className="text-sm text-gray-500">選考中案件</p>
-              <p className="text-xl font-bold text-gray-800">{pendingApps}</p>
-            </div>
+            <div><p className="text-sm text-gray-500">選考中案件</p><p className="text-xl font-bold text-gray-800">{pendingApps}</p></div>
           </div>
         </Card>
         <Card className="p-4 border-0 shadow-sm bg-white">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-purple-100 rounded-lg text-purple-600"><FileText className="w-5 h-5" /></div>
-            <div>
-              <p className="text-sm text-gray-500">完了案件</p>
-              <p className="text-xl font-bold text-gray-800">{applications.filter(a => a.status === "completed").length}</p>
-            </div>
+            <div><p className="text-sm text-gray-500">完了案件</p><p className="text-xl font-bold text-gray-800">{applications.filter(a => a.status === "completed").length}</p></div>
           </div>
         </Card>
       </div>
@@ -114,26 +107,33 @@ export default function AdminDashboard() {
             <h2 className="text-lg font-bold text-gray-800 flex items-center"><Bell className="w-5 h-5 mr-2 text-yellow-500" />ToDo / お知らせ</h2>
           </div>
           <div className="space-y-4">
+            {influencers.filter(i => i.status === "pending").slice(0, 3).map(inf => (
+              <Link key={inf.id} to="/admin/influencers" className="block">
+                <div className="flex items-start p-3 hover:bg-gray-50 rounded-lg transition-colors border border-gray-100">
+                  <div className="w-2 h-2 mt-2 rounded-full bg-yellow-500 mr-3 flex-shrink-0" />
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-gray-800">インフルエンサー「{inf.name}」の審査待ち</p>
+                    <p className="text-xs text-gray-500 mt-1">{new Date(inf.created_at).toLocaleDateString("ja-JP")}</p>
+                  </div>
+                </div>
+              </Link>
+            ))}
             {applications.filter(a => a.status === "applied").slice(0, 3).map(app => (
-              <div key={app.id} className="flex items-start p-3 hover:bg-gray-50 rounded-lg transition-colors border border-gray-100">
-                <div className="w-2 h-2 mt-2 rounded-full bg-red-500 mr-3 flex-shrink-0" />
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-gray-800">
-                    {app.campaigns?.title || "案件"}に新しい応募（{app.influencers?.name || "IF"})
-                  </p>
-                  <p className="text-xs text-gray-500 mt-1">{new Date(app.applied_at).toLocaleDateString("ja-JP")}</p>
+              <Link key={app.id} to="/admin/applications" className="block">
+                <div className="flex items-start p-3 hover:bg-gray-50 rounded-lg transition-colors border border-gray-100">
+                  <div className="w-2 h-2 mt-2 rounded-full bg-red-500 mr-3 flex-shrink-0" />
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-gray-800">
+                      {app.campaigns?.title || "案件"}に新しい応募（{app.influencer_profiles?.name || "IF"})
+                    </p>
+                    <p className="text-xs text-gray-500 mt-1">{new Date(app.applied_at).toLocaleDateString("ja-JP")}</p>
+                  </div>
                 </div>
-              </div>
+              </Link>
             ))}
-            {companies.filter(c => c.status === "pending").map(c => (
-              <div key={c.id} className="flex items-start p-3 hover:bg-gray-50 rounded-lg transition-colors border border-gray-100">
-                <div className="w-2 h-2 mt-2 rounded-full bg-blue-500 mr-3 flex-shrink-0" />
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-gray-800">新規企業「{c.name}」の承認待ち</p>
-                  <p className="text-xs text-gray-500 mt-1">{new Date(c.created_at).toLocaleDateString("ja-JP")}</p>
-                </div>
-              </div>
-            ))}
+            {influencers.filter(i => i.status === "pending").length === 0 && applications.filter(a => a.status === "applied").length === 0 && (
+              <p className="text-center text-gray-400 py-4">現在対応が必要なタスクはありません</p>
+            )}
           </div>
         </Card>
 

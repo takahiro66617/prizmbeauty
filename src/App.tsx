@@ -40,6 +40,7 @@ import MyPageMessages from "./pages/mypage/MyPageMessages";
 import MyPageNotifications from "./pages/mypage/MyPageNotifications";
 import MyPagePosts from "./pages/mypage/MyPagePosts";
 import MyPageSettings from "./pages/mypage/MyPageSettings";
+import MyPageCampaigns from "./pages/mypage/MyPageCampaigns";
 
 const queryClient = new QueryClient();
 
@@ -66,6 +67,7 @@ const App = () => (
           {/* Influencer MyPage */}
           <Route path="/mypage" element={<MyPageLayout />}>
             <Route index element={<MyPageDashboard />} />
+            <Route path="campaigns" element={<MyPageCampaigns />} />
             <Route path="applications" element={<MyPageApplications />} />
             <Route path="favorites" element={<MyPageFavorites />} />
             <Route path="messages" element={<MyPageMessages />} />
