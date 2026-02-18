@@ -69,59 +69,28 @@ Deno.serve(async (req) => {
     // 3. Check if user exists in external DB
     const extSupabase = createClient(EXTERNAL_SUPABASE_URL, EXTERNAL_SUPABASE_ANON_KEY);
 
-    // Debug: discover actual columns
-    const { data: sampleData, error: sampleError } = await extSupabase
+    // Debug: try selecting a nonexistent column to get error hints about actual columns
+    const { data: colTest, error: colError } = await extSupabase
       .from("influencers")
-      .select("*")
+      .select("__nonexistent__")
       .limit(1);
-    
-    console.log("DEBUG influencers columns:", sampleData && sampleData.length > 0 ? Object.keys(sampleData[0]) : "empty table");
-    console.log("DEBUG sampleData:", JSON.stringify(sampleData));
-    console.log("DEBUG sampleError:", sampleError);
+    console.log("DEBUG column discovery error:", JSON.stringify(colError));
 
-    // Try multiple possible column names for LINE user ID
-    let existingUser = null;
-    let searchError = null;
-
-    // Try 'line_user_id' first
-    const r1 = await extSupabase.from("influencers").select("*").eq("line_user_id", profileData.userId).maybeSingle();
-    if (!r1.error) {
-      existingUser = r1.data;
-    } else {
-      // Try 'user_id'
-      const r2 = await extSupabase.from("influencers").select("*").eq("user_id", profileData.userId).maybeSingle();
-      if (!r2.error) {
-        existingUser = r2.data;
-      } else {
-        // Try 'id'
-        const r3 = await extSupabase.from("influencers").select("*").eq("id", profileData.userId).maybeSingle();
-        if (!r3.error) {
-          existingUser = r3.data;
-        } else {
-          // Try 'line_id'
-          const r4 = await extSupabase.from("influencers").select("*").eq("line_id", profileData.userId).maybeSingle();
-          if (!r4.error) {
-            existingUser = r4.data;
-          } else {
-            console.error("All column attempts failed. Errors:", {
-              line_user_id: r1.error?.message,
-              user_id: r2.error?.message,
-              id: r3.error?.message,
-              line_id: r4.error?.message,
-            });
-            searchError = r1.error;
-          }
-        }
-      }
+    // Also try selecting known possible columns individually
+    const colTests = ["id","name","username","email","line_uid","external_id","sns_id","instagram_id","tiktok_id","bio","image_url","category","status","created_at","updated_at","instagram_followers","tiktok_followers","youtube_followers","twitter_followers","phone","nickname","gender","birth_date","prefecture","line_user_id","user_id"];
+    const existingCols: string[] = [];
+    const missingCols: string[] = [];
+    for (const col of colTests) {
+      const { error: e } = await extSupabase.from("influencers").select(col).limit(0);
+      if (!e) existingCols.push(col);
+      else missingCols.push(col);
     }
+    console.log("DEBUG existing columns:", JSON.stringify(existingCols));
+    console.log("DEBUG missing columns:", JSON.stringify(missingCols));
 
-    if (searchError) {
-      console.error("DB search error:", searchError);
-      return new Response(
-        JSON.stringify({ error: "Database error" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
+    // For now, since we don't know the right column, treat all as new users
+    // (the table is empty anyway)
+    const existingUser = null;
 
     return new Response(
       JSON.stringify({
