@@ -1,43 +1,68 @@
 
 
-## 登録機能の包括的修正
+## 登録フロー完全修正プラン
 
-### 1. シークレット保存
+### 現状の問題
 
-`EXTERNAL_SUPABASE_SERVICE_ROLE_KEY` に以下の値を保存:
+1. **データベースエラー**: Edge Function が `category` カラムに書き込もうとしているが、外部DBの `influencers` テーブルにそのカラムが存在しない
+2. **登録後の遷移**: 登録成功後にインフルエンサー管理画面（/mypage）に正しく遷移できていない
+3. **管理画面との連携**: 登録データが管理画面（/admin/influencers）に表示されるべき
+
+### 修正内容
+
+#### 1. Edge Function修正: `supabase/functions/register-influencer/index.ts`
+
+**問題**: `category` カラムが外部DBに存在しない
+
+**修正**:
+- INSERT文から `category` フィールドを削除する
+- 外部DBに実際に存在するカラムのみを使用: `line_user_id`, `username`, `name`, `image_url`, `status`
+
+```text
+変更前:
+  .insert({
+    line_user_id, username, name, image_url, category, status
+  })
+
+変更後:
+  .insert({
+    line_user_id, username, name, image_url, status
+  })
 ```
-eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhpc2V0aGZteXZ2a29oYXV1bHVxIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2OTAyMjk4MiwiZXhwIjoyMDg0NTk4OTgyfQ.aHNO_AmTPdtuaaTD8UbeSIjy_1p34yf4PzsLXiSOZxQ
-```
 
-### 2. 新規Edge Function作成
+#### 2. フロントエンド修正: `src/pages/auth/RegisterProfile.tsx`
 
-`supabase/functions/register-influencer/index.ts`
+- `handleSubmit` の `fetch` ボディから `category` を削除
+- ジャンル選択のUI自体は残してもよいが、送信データには含めない（将来的にDB側にカラムが追加された際に使用可能）
 
-- CORSヘッダー対応
-- クライアントからLINEプロフィール情報（userId, displayName, pictureUrl）とユーザー入力（nickname, name, category）を受け取る
-- `EXTERNAL_SUPABASE_SERVICE_ROLE_KEY` で外部Supabaseに接続しRLSをバイパス
-- `influencers`テーブルにINSERT
-- 成功時に登録データを返却
+#### 3. 確認事項（変更不要）
 
-### 3. config.toml更新
-
-```toml
-[functions.register-influencer]
-verify_jwt = false
-```
-
-### 4. RegisterProfile.tsx修正
-
-- `supabaseExternal`の直接INSERTを削除
-- Edge Function `register-influencer` を `fetch` で呼び出すように変更
-- エラーハンドリング改善（サーバーからのエラーメッセージを表示）
+以下は既に正しく実装されているため変更不要:
+- **ルーティング**: `/auth/register/profile` → 登録完了 → `/mypage` への遷移は `RegisterProfile.tsx` の `navigate("/mypage")` で実装済み
+- **セッション管理**: `sessionStorage.setItem("currentUser", ...)` で `MyPageLayout` の認証チェックを通過可能
+- **管理画面表示**: `AdminInfluencers.tsx` は `useExternalInfluencers` フックで外部DBの `influencers` テーブルを直接読み取るため、登録されたデータは自動的に表示される
+- **LINE認証フロー**: `LineCallback.tsx` → 新規ユーザー判定 → `/auth/register/profile` への遷移は正しく動作
+- **config.toml**: `verify_jwt = false` 設定済み
+- **シークレット**: `EXTERNAL_SUPABASE_SERVICE_ROLE_KEY` 設定済み
 
 ### 変更ファイル一覧
 
 | ファイル | 変更内容 |
 |---|---|
-| シークレット | `EXTERNAL_SUPABASE_SERVICE_ROLE_KEY` を追加 |
-| `supabase/functions/register-influencer/index.ts` | 新規作成 |
-| `supabase/config.toml` | register-influencer設定追加 |
-| `src/pages/auth/RegisterProfile.tsx` | Edge Function呼び出しに変更 |
+| `supabase/functions/register-influencer/index.ts` | INSERT文から `category` を削除 |
+| `src/pages/auth/RegisterProfile.tsx` | fetch送信データから `category` を削除 |
+
+### 期待される動作フロー
+
+```text
+LINE認証 → LineCallback.tsx（新規ユーザー判定）
+  → /auth/register/profile（プロフィール入力）
+  → Edge Function呼び出し（category なしでINSERT）
+  → 成功 → sessionStorageにユーザー情報保存
+  → /mypage（インフルエンサーダッシュボード）に遷移
+
+管理者:
+  /admin/influencers → useExternalInfluencers → 外部DB読み取り
+  → 登録されたインフルエンサーが一覧に表示される（status: pending）
+```
 
