@@ -14,7 +14,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { lineProfile, nickname, name, category } = await req.json();
+    const { lineProfile, nickname, name } = await req.json();
 
     if (!lineProfile?.userId || !nickname || !name) {
       return new Response(
@@ -41,7 +41,6 @@ Deno.serve(async (req) => {
         username: nickname,
         name,
         image_url: lineProfile.pictureUrl || null,
-        category,
         status: "pending",
       })
       .select()
