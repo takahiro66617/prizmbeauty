@@ -59,7 +59,7 @@ export default function ClientApplicants() {
       ) : (
         <div className="space-y-4">
           {filtered.map(app => {
-            const inf = app.influencer_profiles;
+            const inf = app.influencers;
             const campaign = app.campaigns;
             return (
               <Card key={app.id} className="p-6 border-0 shadow-sm hover:shadow-md transition-shadow">

@@ -119,7 +119,7 @@ export default function AdminDashboard() {
                 <div className="w-2 h-2 mt-2 rounded-full bg-red-500 mr-3 flex-shrink-0" />
                 <div className="flex-1">
                   <p className="text-sm font-medium text-gray-800">
-                    {app.campaigns?.title || "案件"}に新しい応募（{app.influencer_profiles?.name || "IF"})
+                    {app.campaigns?.title || "案件"}に新しい応募（{app.influencers?.name || "IF"})
                   </p>
                   <p className="text-xs text-gray-500 mt-1">{new Date(app.applied_at).toLocaleDateString("ja-JP")}</p>
                 </div>

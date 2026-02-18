@@ -69,7 +69,7 @@ export default function RegisterProfile() {
 
     try {
       const { data, error } = await supabaseExternal
-        .from("influencer_profiles")
+        .from("influencers")
         .insert({
           user_id: lineProfile.userId,
           line_user_id: lineProfile.userId,

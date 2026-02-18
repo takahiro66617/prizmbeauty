@@ -14,7 +14,7 @@ export default function AdminApplications() {
     if (!matchesStatus) return false;
     if (!search) return true;
     const q = search.toLowerCase();
-    return (a.influencer_profiles?.name || "").toLowerCase().includes(q) || (a.campaigns?.title || "").toLowerCase().includes(q);
+    return (a.influencers?.name || "").toLowerCase().includes(q) || (a.campaigns?.title || "").toLowerCase().includes(q);
   });
 
   const getStatusBadge = (status: string) => {
@@ -71,8 +71,8 @@ export default function AdminApplications() {
               <tr key={app.id} className="hover:bg-gray-50">
                 <td className="px-6 py-4">
                   <div className="flex items-center gap-2">
-                    {app.influencer_profiles && <img src={app.influencer_profiles.image_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(app.influencer_profiles.name)}`} alt="" className="w-7 h-7 rounded-full" />}
-                    <span className="font-medium text-gray-900">{app.influencer_profiles?.name || "-"}</span>
+                    {app.influencers && <img src={app.influencers.image_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(app.influencers.name)}`} alt="" className="w-7 h-7 rounded-full" />}
+                    <span className="font-medium text-gray-900">{app.influencers?.name || "-"}</span>
                   </div>
                 </td>
                 <td className="px-6 py-4 text-gray-700">{app.campaigns?.title || "-"}</td>
