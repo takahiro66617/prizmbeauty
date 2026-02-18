@@ -43,13 +43,13 @@ export function useExternalInfluencer(id: string | null) {
   });
 }
 
+// useUpdateInfluencerStatus is disabled because the external DB does not have a 'status' column
 export function useUpdateInfluencerStatus() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, status }: { id: string; status: string }) => {
-      const { data, error } = await supabaseExternal.from("influencers").update({ status }).eq("id", id).select().single();
-      if (error) throw error;
-      return data;
+      console.warn("Status update is not supported: external DB has no 'status' column");
+      return { id, status };
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["ext-influencers"] });

@@ -36,11 +36,10 @@ Deno.serve(async (req) => {
 
     const { data, error } = await extSupabase
       .from("influencers")
-      .insert({
+    .insert({
         line_user_id: lineProfile.userId,
         username: nickname,
         name,
-        status: "pending",
       })
       .select()
       .single();
