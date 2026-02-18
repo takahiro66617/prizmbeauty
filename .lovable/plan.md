@@ -1,68 +1,81 @@
 
 
-## 登録フロー完全修正プラン
+## 登録フロー完全修正プラン（徹底版）
 
-### 現状の問題
+### 根本原因
 
-1. **データベースエラー**: Edge Function が `category` カラムに書き込もうとしているが、外部DBの `influencers` テーブルにそのカラムが存在しない
-2. **登録後の遷移**: 登録成功後にインフルエンサー管理画面（/mypage）に正しく遷移できていない
-3. **管理画面との連携**: 登録データが管理画面（/admin/influencers）に表示されるべき
+Edge Function `register-influencer/index.ts` の43行目に `image_url` カラムがまだ残っている。外部DBの `influencers` テーブルには `image_url` カラムが存在しないため、INSERT が `PGRST204` エラーで失敗する。
+
+これは前回の修正で `category` は削除されたが、`image_url` の削除が漏れていたことが原因。
+
+### 外部DBに存在しないカラム（確認済み）
+
+- `category` -- 前回のエラーで確認済み
+- `image_url` -- 今回のエラーで確認済み（`Could not find the 'image_url' column of 'influencers' in the schema cache`）
 
 ### 修正内容
 
-#### 1. Edge Function修正: `supabase/functions/register-influencer/index.ts`
+#### 1. Edge Function修正: `supabase/functions/register-influencer/index.ts`（43行目）
 
-**問題**: `category` カラムが外部DBに存在しない
-
-**修正**:
-- INSERT文から `category` フィールドを削除する
-- 外部DBに実際に存在するカラムのみを使用: `line_user_id`, `username`, `name`, `image_url`, `status`
+`image_url` をINSERT文から削除し、確実に存在する4カラムのみ使用。
 
 ```text
-変更前:
+変更前（39-45行目）:
   .insert({
-    line_user_id, username, name, image_url, category, status
+    line_user_id: lineProfile.userId,
+    username: nickname,
+    name,
+    image_url: lineProfile.pictureUrl || null,
+    status: "pending",
   })
 
 変更後:
   .insert({
-    line_user_id, username, name, image_url, status
+    line_user_id: lineProfile.userId,
+    username: nickname,
+    name,
+    status: "pending",
   })
 ```
 
-#### 2. フロントエンド修正: `src/pages/auth/RegisterProfile.tsx`
+#### 2. Edge Functionの再デプロイ
 
-- `handleSubmit` の `fetch` ボディから `category` を削除
-- ジャンル選択のUI自体は残してもよいが、送信データには含めない（将来的にDB側にカラムが追加された際に使用可能）
+変更後、Edge Functionを再デプロイして反映させる。
 
-#### 3. 確認事項（変更不要）
+### 変更不要の確認（網羅チェック）
 
-以下は既に正しく実装されているため変更不要:
-- **ルーティング**: `/auth/register/profile` → 登録完了 → `/mypage` への遷移は `RegisterProfile.tsx` の `navigate("/mypage")` で実装済み
-- **セッション管理**: `sessionStorage.setItem("currentUser", ...)` で `MyPageLayout` の認証チェックを通過可能
-- **管理画面表示**: `AdminInfluencers.tsx` は `useExternalInfluencers` フックで外部DBの `influencers` テーブルを直接読み取るため、登録されたデータは自動的に表示される
-- **LINE認証フロー**: `LineCallback.tsx` → 新規ユーザー判定 → `/auth/register/profile` への遷移は正しく動作
-- **config.toml**: `verify_jwt = false` 設定済み
-- **シークレット**: `EXTERNAL_SUPABASE_SERVICE_ROLE_KEY` 設定済み
+| 項目 | 状態 | 理由 |
+|---|---|---|
+| `supabase/config.toml` | 変更不要 | `verify_jwt = false` 設定済み |
+| シークレット `EXTERNAL_SUPABASE_SERVICE_ROLE_KEY` | 変更不要 | 設定済み |
+| `src/pages/auth/RegisterProfile.tsx` | 変更不要 | `pictureUrl` はEdge Functionに送られるが、Edge Function側で使わなければエラーにならない |
+| `src/pages/auth/LineCallback.tsx` | 変更不要 | 新規ユーザー判定と `/auth/register/profile` への遷移は正しい |
+| `src/components/layout/MyPageLayout.tsx` | 変更不要 | `sessionStorage` の `currentUser` で認証チェック、正常 |
+| `src/pages/mypage/MyPageDashboard.tsx` | 変更不要 | `sessionStorage` から取得、正常 |
+| `src/hooks/useExternalInfluencers.ts` | 変更不要 | `SELECT *` は存在するカラムのみ返す。TypeScriptインターフェースに `image_url` があっても `null` になるだけ |
+| `src/pages/admin/AdminInfluencers.tsx` | 変更不要 | `image_url` が `null` の場合 `ui-avatars.com` のフォールバックが既にある（78行目） |
+| `src/lib/supabaseExternal.ts` | 変更不要 | anon keyでの読み取りは正常 |
+| `src/App.tsx` ルーティング | 変更不要 | `/auth/register/profile` と `/mypage` のルートは正しく設定済み |
 
-### 変更ファイル一覧
+### 変更ファイル
 
 | ファイル | 変更内容 |
 |---|---|
-| `supabase/functions/register-influencer/index.ts` | INSERT文から `category` を削除 |
-| `src/pages/auth/RegisterProfile.tsx` | fetch送信データから `category` を削除 |
+| `supabase/functions/register-influencer/index.ts` | 43行目の `image_url` 行を削除 |
 
 ### 期待される動作フロー
 
 ```text
-LINE認証 → LineCallback.tsx（新規ユーザー判定）
+LINE認証 → LineCallback（新規ユーザー判定）
   → /auth/register/profile（プロフィール入力）
-  → Edge Function呼び出し（category なしでINSERT）
-  → 成功 → sessionStorageにユーザー情報保存
-  → /mypage（インフルエンサーダッシュボード）に遷移
+  → Edge Function呼び出し（line_user_id, username, name, status の4カラムのみ）
+  → INSERT成功 → レスポンスにデータ返却
+  → sessionStorageにユーザー情報保存
+  → /mypage に遷移 → ダッシュボード表示
 
 管理者:
-  /admin/influencers → useExternalInfluencers → 外部DB読み取り
-  → 登録されたインフルエンサーが一覧に表示される（status: pending）
+  /admin/influencers → useExternalInfluencers（SELECT *）
+  → 新規インフルエンサーが status: pending で表示
+  → image_url は null のため ui-avatars.com のアバターが表示される
 ```
 
