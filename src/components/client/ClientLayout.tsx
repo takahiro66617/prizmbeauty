@@ -1,7 +1,6 @@
 import { useEffect } from "react";
 import { Outlet, useNavigate } from "react-router-dom";
 import { ClientSidebar } from "./ClientSidebar";
-import { useExternalCompany } from "@/hooks/useExternalCompanies";
 
 export function ClientLayout() {
   const navigate = useNavigate();
@@ -13,30 +12,14 @@ export function ClientLayout() {
     }
   }, [navigate]);
 
-  const companyId = sessionStorage.getItem("client_company_id") || "";
-  const { data: company } = useExternalCompany(companyId);
-
   return (
-    <div className="flex min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 flex">
       <ClientSidebar />
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        <header className="bg-white border-b border-gray-200 h-16 flex items-center px-8 justify-between">
-          <h2 className="text-sm font-semibold text-gray-600">
-            {company?.name || "企業管理画面"}
-          </h2>
-          <div className="flex items-center space-x-4">
-            <div className="text-sm text-gray-500">
-              担当: <span className="font-medium text-gray-900">{company?.contact_name || ""}</span>
-            </div>
-            <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-xs">
-              CL
-            </div>
-          </div>
-        </header>
-        <main className="flex-1 overflow-auto p-8">
+      <main className="flex-1 p-4 md:p-8 overflow-y-auto h-screen">
+        <div className="max-w-6xl mx-auto">
           <Outlet />
-        </main>
-      </div>
+        </div>
+      </main>
     </div>
   );
 }
