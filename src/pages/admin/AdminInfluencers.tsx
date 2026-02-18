@@ -5,15 +5,18 @@ import { Input } from "@/components/ui/input";
 import { Download, Search, X, Save } from "lucide-react";
 import { useExternalInfluencers, useUpdateInfluencerStatus } from "@/hooks/useExternalInfluencers";
 import { useExternalApplications } from "@/hooks/useExternalApplications";
+import { CATEGORIES, INFLUENCER_STATUSES, APPLICATION_STATUSES } from "@/lib/constants";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-
-const CATEGORIES = ["スキンケア", "メイク", "ヘアケア", "ボディケア", "ネイル", "フレグランス", "ダイエット", "ファッション", "ライフスタイル", "ダンス"];
 
 export default function AdminInfluencersPage() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [categoryFilter, setCategoryFilter] = useState("all");
+  const [lineFilter, setLineFilter] = useState("all");
+  const [followerMin, setFollowerMin] = useState("");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
   const [selectedInf, setSelectedInf] = useState<any>(null);
   const [editForm, setEditForm] = useState<any>({});
   const { data: influencers = [], isLoading, refetch } = useExternalInfluencers();
@@ -24,7 +27,12 @@ export default function AdminInfluencersPage() {
     const matchesSearch = !search || inf.name.toLowerCase().includes(search.toLowerCase()) || inf.username.toLowerCase().includes(search.toLowerCase());
     const matchesStatus = statusFilter === "all" || inf.status === statusFilter;
     const matchesCategory = categoryFilter === "all" || inf.category === categoryFilter;
-    return matchesSearch && matchesStatus && matchesCategory;
+    const matchesLine = lineFilter === "all" || (lineFilter === "linked" ? !!inf.line_user_id : !inf.line_user_id);
+    const totalFollowers = (inf.instagram_followers || 0) + (inf.tiktok_followers || 0) + (inf.youtube_followers || 0) + (inf.twitter_followers || 0);
+    const matchesFollower = !followerMin || totalFollowers >= Number(followerMin);
+    const matchesDateFrom = !dateFrom || new Date(inf.created_at) >= new Date(dateFrom);
+    const matchesDateTo = !dateTo || new Date(inf.created_at) <= new Date(dateTo + "T23:59:59");
+    return matchesSearch && matchesStatus && matchesCategory && matchesLine && matchesFollower && matchesDateFrom && matchesDateTo;
   });
 
   const handleStatusChange = (id: string, newStatus: string) => {
@@ -37,40 +45,30 @@ export default function AdminInfluencersPage() {
   const openDetail = (inf: any) => {
     setSelectedInf(inf);
     setEditForm({
-      name: inf.name,
-      username: inf.username,
-      bio: inf.bio || "",
-      category: inf.category || "",
-      instagram_followers: inf.instagram_followers || 0,
-      tiktok_followers: inf.tiktok_followers || 0,
-      youtube_followers: inf.youtube_followers || 0,
-      twitter_followers: inf.twitter_followers || 0,
+      name: inf.name, username: inf.username, bio: inf.bio || "", category: inf.category || "",
+      instagram_followers: inf.instagram_followers || 0, tiktok_followers: inf.tiktok_followers || 0,
+      youtube_followers: inf.youtube_followers || 0, twitter_followers: inf.twitter_followers || 0,
     });
   };
 
   const handleSaveEdit = async () => {
     if (!selectedInf) return;
     const { error } = await supabase.from("influencer_profiles").update(editForm).eq("id", selectedInf.id);
-    if (error) {
-      toast.error("保存に失敗しました");
-    } else {
-      toast.success("保存しました");
-      refetch();
-      setSelectedInf(null);
-    }
+    if (error) { toast.error("保存に失敗しました"); } else { toast.success("保存しました"); refetch(); setSelectedInf(null); }
   };
 
   const handleReject = async (id: string) => {
-    if (!window.confirm("このインフルエンサーを却下し退会させますか？この操作は取り消せません。")) return;
+    if (!window.confirm("このインフルエンサーを却下し退会させますか？")) return;
     const { error } = await supabase.from("influencer_profiles").update({ status: "rejected" }).eq("id", id);
-    if (error) {
-      toast.error("処理に失敗しました");
-    } else {
-      toast.success("却下・退会処理を行いました");
-      refetch();
-      setSelectedInf(null);
-    }
+    if (error) { toast.error("処理に失敗しました"); } else { toast.success("却下・退会処理を行いました"); refetch(); setSelectedInf(null); }
   };
+
+  const clearFilters = () => {
+    setSearch(""); setStatusFilter("all"); setCategoryFilter("all"); setLineFilter("all");
+    setFollowerMin(""); setDateFrom(""); setDateTo("");
+  };
+
+  const infApps = (id: string) => applications.filter(a => a.influencer_id === id);
 
   return (
     <div className="space-y-6">
@@ -83,34 +81,49 @@ export default function AdminInfluencersPage() {
       </div>
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-        <div className="p-4 border-b border-gray-200 bg-gray-50 flex gap-4 flex-wrap">
-          <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-            <input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder="名前・ユーザー名で検索..."
-              className="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500" />
+        <div className="p-4 border-b border-gray-200 bg-gray-50 space-y-3">
+          <div className="flex gap-3 flex-wrap">
+            <div className="relative flex-1 min-w-[200px] max-w-md">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder="名前・ユーザー名で検索..."
+                className="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500" />
+            </div>
+            <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="px-3 py-2 rounded-lg border border-gray-200 text-sm">
+              <option value="all">ステータス: すべて</option>
+              {INFLUENCER_STATUSES.map(s => <option key={s.id} value={s.id}>{s.label}</option>)}
+            </select>
+            <select value={categoryFilter} onChange={e => setCategoryFilter(e.target.value)} className="px-3 py-2 rounded-lg border border-gray-200 text-sm">
+              <option value="all">カテゴリ: すべて</option>
+              {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+            </select>
+            <select value={lineFilter} onChange={e => setLineFilter(e.target.value)} className="px-3 py-2 rounded-lg border border-gray-200 text-sm">
+              <option value="all">LINE: すべて</option>
+              <option value="linked">連携済み</option>
+              <option value="unlinked">未連携</option>
+            </select>
           </div>
-          <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)}
-            className="px-4 py-2 rounded-lg border border-gray-200 text-sm">
-            <option value="all">ステータス: すべて</option>
-            <option value="approved">承認済み</option>
-            <option value="pending">審査中</option>
-            <option value="suspended">停止中</option>
-            <option value="active">有効</option>
-            <option value="rejected">却下</option>
-          </select>
-          <select value={categoryFilter} onChange={e => setCategoryFilter(e.target.value)}
-            className="px-4 py-2 rounded-lg border border-gray-200 text-sm">
-            <option value="all">カテゴリ: すべて</option>
-            {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
-          </select>
+          <div className="flex gap-3 flex-wrap items-center">
+            <div className="flex items-center gap-2 text-sm text-gray-600">
+              <span>総フォロワー数:</span>
+              <input type="number" value={followerMin} onChange={e => setFollowerMin(e.target.value)} placeholder="最小" className="w-24 px-2 py-1.5 rounded border border-gray-300 text-sm" />
+              <span>以上</span>
+            </div>
+            <div className="flex items-center gap-2 text-sm text-gray-600">
+              <span>登録日:</span>
+              <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} className="px-2 py-1.5 rounded border border-gray-300 text-sm" />
+              <span>〜</span>
+              <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} className="px-2 py-1.5 rounded border border-gray-300 text-sm" />
+            </div>
+            <Button variant="ghost" size="sm" onClick={clearFilters} className="text-gray-500">フィルターをクリア</Button>
+          </div>
         </div>
 
         <table className="w-full text-left text-sm">
-          <thead className="bg-gray-100 text-gray-600 uppercase font-medium">
+          <thead className="bg-gray-100 text-gray-600 font-medium">
             <tr>
               <th className="px-6 py-4">ユーザー</th>
-              <th className="px-6 py-4">LINE連携</th>
-              <th className="px-6 py-4">SNSフォロワー数</th>
+              <th className="px-6 py-4">LINE</th>
+              <th className="px-6 py-4">SNSフォロワー</th>
               <th className="px-6 py-4">カテゴリ</th>
               <th className="px-6 py-4">応募数</th>
               <th className="px-6 py-4">登録日</th>
@@ -122,7 +135,8 @@ export default function AdminInfluencersPage() {
             {isLoading ? (
               <tr><td colSpan={8} className="px-6 py-12 text-center text-gray-500">読み込み中...</td></tr>
             ) : filtered.length > 0 ? filtered.map(inf => {
-              const apps = applications.filter(a => a.influencer_id === inf.id);
+              const apps = infApps(inf.id);
+              const st = INFLUENCER_STATUSES.find(s => s.id === inf.status);
               return (
                 <tr key={inf.id} className="hover:bg-gray-50 transition-colors">
                   <td className="px-6 py-4">
@@ -135,23 +149,20 @@ export default function AdminInfluencersPage() {
                     </div>
                   </td>
                   <td className="px-6 py-4">
-                    {inf.line_user_id ? <Badge className="bg-green-100 text-green-700 text-[10px]">LINE連携済</Badge> : <span className="text-gray-400 text-xs">-</span>}
+                    {inf.line_user_id ? <Badge className="bg-green-100 text-green-700 text-[10px]">連携済</Badge> : <span className="text-gray-400 text-xs">-</span>}
                   </td>
                   <td className="px-6 py-4">
-                    <div className="flex flex-col gap-1">
+                    <div className="flex flex-col gap-0.5">
                       {inf.instagram_followers ? <span className="text-xs text-pink-600">IG: {inf.instagram_followers.toLocaleString()}</span> : null}
-                      {inf.tiktok_followers ? <span className="text-xs text-black">TT: {inf.tiktok_followers.toLocaleString()}</span> : null}
+                      {inf.tiktok_followers ? <span className="text-xs">TT: {inf.tiktok_followers.toLocaleString()}</span> : null}
                       {inf.youtube_followers ? <span className="text-xs text-red-600">YT: {inf.youtube_followers.toLocaleString()}</span> : null}
+                      {inf.twitter_followers ? <span className="text-xs text-blue-500">X: {inf.twitter_followers.toLocaleString()}</span> : null}
                     </div>
                   </td>
                   <td className="px-6 py-4">{inf.category ? <Badge variant="outline" className="text-[10px]">{inf.category}</Badge> : "-"}</td>
                   <td className="px-6 py-4 text-gray-600 font-medium">{apps.length}</td>
                   <td className="px-6 py-4 text-gray-500">{new Date(inf.created_at).toLocaleDateString("ja-JP")}</td>
-                  <td className="px-6 py-4">
-                    <Badge className={inf.status === "approved" ? "bg-green-100 text-green-700" : inf.status === "pending" ? "bg-yellow-100 text-yellow-700" : inf.status === "active" ? "bg-blue-100 text-blue-700" : inf.status === "rejected" ? "bg-red-100 text-red-700" : "bg-gray-100 text-gray-600"}>
-                      {inf.status === "approved" ? "承認済み" : inf.status === "pending" ? "審査中" : inf.status === "active" ? "有効" : inf.status === "suspended" ? "停止中" : inf.status === "rejected" ? "却下" : "未設定"}
-                    </Badge>
-                  </td>
+                  <td className="px-6 py-4"><Badge className={st?.color || ""}>{st?.label || inf.status}</Badge></td>
                   <td className="px-6 py-4">
                     <div className="flex gap-1">
                       <Button variant="ghost" size="sm" className="text-blue-600 hover:text-blue-800" onClick={() => openDetail(inf)}>詳細</Button>
@@ -173,7 +184,6 @@ export default function AdminInfluencersPage() {
         <div className="p-4 border-t border-gray-200 text-center text-gray-500 text-sm">全 {filtered.length} 件</div>
       </div>
 
-      {/* Detail/Edit Modal */}
       {selectedInf && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" onClick={() => setSelectedInf(null)}>
           <div className="bg-white rounded-2xl w-full max-w-2xl shadow-xl" onClick={e => e.stopPropagation()}>
@@ -185,7 +195,7 @@ export default function AdminInfluencersPage() {
               <div className="flex items-center gap-4 mb-4">
                 <img src={selectedInf.image_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(selectedInf.name)}`} alt="" className="w-20 h-20 rounded-full" />
                 <div>
-                  <p className="text-sm text-gray-500">ID: {selectedInf.id}</p>
+                  <p className="text-sm text-gray-500">ID: {selectedInf.id.slice(0, 8)}...</p>
                   <p className="text-xs text-gray-400">LINE: {selectedInf.line_user_id || "未連携"}</p>
                   <p className="text-xs text-gray-400">登録日: {new Date(selectedInf.created_at).toLocaleDateString("ja-JP")}</p>
                 </div>
@@ -197,34 +207,51 @@ export default function AdminInfluencersPage() {
                   <Input value={editForm.username} onChange={e => setEditForm({ ...editForm, username: e.target.value })} /></div>
               </div>
               <div><label className="block text-sm font-medium text-gray-700 mb-1">カテゴリ</label>
-                <select value={editForm.category} onChange={e => setEditForm({ ...editForm, category: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm">
+                <select value={editForm.category} onChange={e => setEditForm({ ...editForm, category: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm">
                   <option value="">未選択</option>
                   {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
-                </select>
-              </div>
+                </select></div>
               <div><label className="block text-sm font-medium text-gray-700 mb-1">自己紹介</label>
-                <textarea value={editForm.bio} onChange={e => setEditForm({ ...editForm, bio: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm min-h-[80px]" />
-              </div>
+                <textarea value={editForm.bio} onChange={e => setEditForm({ ...editForm, bio: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm min-h-[80px]" /></div>
               <div className="grid grid-cols-2 gap-4">
-                <div><label className="block text-sm font-medium text-gray-700 mb-1">Instagram</label>
-                  <Input type="number" value={editForm.instagram_followers} onChange={e => setEditForm({ ...editForm, instagram_followers: Number(e.target.value) })} /></div>
-                <div><label className="block text-sm font-medium text-gray-700 mb-1">TikTok</label>
-                  <Input type="number" value={editForm.tiktok_followers} onChange={e => setEditForm({ ...editForm, tiktok_followers: Number(e.target.value) })} /></div>
-                <div><label className="block text-sm font-medium text-gray-700 mb-1">YouTube</label>
-                  <Input type="number" value={editForm.youtube_followers} onChange={e => setEditForm({ ...editForm, youtube_followers: Number(e.target.value) })} /></div>
-                <div><label className="block text-sm font-medium text-gray-700 mb-1">Twitter/X</label>
-                  <Input type="number" value={editForm.twitter_followers} onChange={e => setEditForm({ ...editForm, twitter_followers: Number(e.target.value) })} /></div>
+                {[
+                  { key: "instagram_followers", label: "Instagram" },
+                  { key: "tiktok_followers", label: "TikTok" },
+                  { key: "youtube_followers", label: "YouTube" },
+                  { key: "twitter_followers", label: "Twitter/X" },
+                ].map(f => (
+                  <div key={f.key}><label className="block text-sm font-medium text-gray-700 mb-1">{f.label}</label>
+                    <Input type="number" value={editForm[f.key]} onChange={e => setEditForm({ ...editForm, [f.key]: Number(e.target.value) })} /></div>
+                ))}
               </div>
+
+              {/* Applications for this influencer */}
+              <div>
+                <h4 className="font-bold text-gray-800 mb-2">受けている案件 ({infApps(selectedInf.id).length}件)</h4>
+                <div className="space-y-2">
+                  {infApps(selectedInf.id).map(a => (
+                    <div key={a.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                      <div>
+                        <p className="font-medium text-sm">{a.campaigns?.title || "-"}</p>
+                        <p className="text-xs text-gray-500">{a.campaigns?.companies?.name || ""}</p>
+                      </div>
+                      <Badge className={a.status === "approved" ? "bg-green-100 text-green-700" : a.status === "applied" ? "bg-blue-100 text-blue-700" : "bg-gray-100 text-gray-700"}>
+                        {APPLICATION_STATUSES.find(s => s.id === a.status)?.label || a.status}
+                      </Badge>
+                    </div>
+                  ))}
+                  {infApps(selectedInf.id).length === 0 && <p className="text-sm text-gray-400">応募なし</p>}
+                </div>
+              </div>
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">ステータス変更</label>
                 <div className="flex gap-2 flex-wrap">
-                  {["pending", "approved", "active", "suspended", "rejected"].map(s => (
-                    <Button key={s} size="sm" variant={selectedInf.status === s ? "default" : "outline"}
-                      onClick={() => { if (s === "rejected") { handleReject(selectedInf.id); } else { handleStatusChange(selectedInf.id, s); } }}
-                      className={selectedInf.status === s ? "bg-purple-600" : ""}>
-                      {s === "pending" ? "審査中" : s === "approved" ? "承認" : s === "active" ? "有効" : s === "suspended" ? "停止" : "却下・退会"}
+                  {INFLUENCER_STATUSES.map(s => (
+                    <Button key={s.id} size="sm" variant={selectedInf.status === s.id ? "default" : "outline"}
+                      onClick={() => { if (s.id === "rejected") { handleReject(selectedInf.id); } else { handleStatusChange(selectedInf.id, s.id); } }}
+                      className={selectedInf.status === s.id ? "bg-purple-600" : ""}>
+                      {s.label}
                     </Button>
                   ))}
                 </div>

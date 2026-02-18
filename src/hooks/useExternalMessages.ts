@@ -27,6 +27,20 @@ export function useExternalMessages(userId: string | null) {
   });
 }
 
+export function useExternalAllMessages() {
+  return useQuery({
+    queryKey: ["ext-messages-all"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("messages")
+        .select("*")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data as ExternalMessage[];
+    },
+  });
+}
+
 export function useSendMessage() {
   const qc = useQueryClient();
   return useMutation({
@@ -37,6 +51,7 @@ export function useSendMessage() {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["ext-messages"] });
+      qc.invalidateQueries({ queryKey: ["ext-messages-all"] });
     },
   });
 }
