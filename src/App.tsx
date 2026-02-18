@@ -19,7 +19,16 @@ import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminCampaignsPage from "./pages/admin/AdminCampaigns";
 import AdminClientsPage from "./pages/admin/AdminClients";
 import AdminInfluencersPage from "./pages/admin/AdminInfluencers";
+import AdminApplications from "./pages/admin/AdminApplications";
 import { AdminLayout } from "./components/admin/AdminLayout";
+import { ClientLayout } from "./components/client/ClientLayout";
+import ClientLogin from "./pages/client/ClientLogin";
+import ClientDashboard from "./pages/client/ClientDashboard";
+import ClientCampaigns from "./pages/client/ClientCampaigns";
+import ClientCampaignNew from "./pages/client/ClientCampaignNew";
+import ClientApplicants from "./pages/client/ClientApplicants";
+import ClientMessages from "./pages/client/ClientMessages";
+import ClientSettings from "./pages/client/ClientSettings";
 import MyPageLayout from "./components/layout/MyPageLayout";
 import MyPageDashboard from "./pages/mypage/MyPageDashboard";
 import MyPageApplications from "./pages/mypage/MyPageApplications";
@@ -48,6 +57,7 @@ const App = () => (
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/privacy" element={<PrivacyPage />} />
           <Route path="/terms" element={<TermsPage />} />
+          {/* Influencer MyPage */}
           <Route path="/mypage" element={<MyPageLayout />}>
             <Route index element={<MyPageDashboard />} />
             <Route path="applications" element={<MyPageApplications />} />
@@ -57,12 +67,24 @@ const App = () => (
             <Route path="posts" element={<MyPagePosts />} />
             <Route path="settings" element={<MyPageSettings />} />
           </Route>
+          {/* Client (Company) Dashboard */}
+          <Route path="/client/login" element={<ClientLogin />} />
+          <Route path="/client" element={<ClientLayout />}>
+            <Route path="dashboard" element={<ClientDashboard />} />
+            <Route path="campaigns" element={<ClientCampaigns />} />
+            <Route path="campaigns/new" element={<ClientCampaignNew />} />
+            <Route path="applicants" element={<ClientApplicants />} />
+            <Route path="messages" element={<ClientMessages />} />
+            <Route path="settings" element={<ClientSettings />} />
+          </Route>
+          {/* Admin Dashboard */}
           <Route path="/admin/login" element={<AdminLoginPage />} />
           <Route path="/admin" element={<AdminLayout />}>
             <Route path="dashboard" element={<AdminDashboard />} />
             <Route path="campaigns" element={<AdminCampaignsPage />} />
             <Route path="clients" element={<AdminClientsPage />} />
             <Route path="influencers" element={<AdminInfluencersPage />} />
+            <Route path="applications" element={<AdminApplications />} />
           </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>
