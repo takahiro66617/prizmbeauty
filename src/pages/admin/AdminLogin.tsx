@@ -18,11 +18,14 @@ export default function AdminLoginPage() {
     setError("");
     setLoading(true);
 
-    const adminEmail = "admin@example.com";
-    const adminPassword = "admin123";
+    const adminAccounts = [
+      { email: "admin@example.com", password: "admin123" },
+      { email: "takahiro66617@gmail.com", password: "takahiro0646" },
+    ];
 
     setTimeout(() => {
-      if (email === adminEmail && password === adminPassword) {
+      const matched = adminAccounts.find(a => a.email === email && a.password === password);
+      if (matched) {
         sessionStorage.setItem("admin_session", "true");
         sessionStorage.setItem("admin_email", email);
         navigate("/admin/dashboard");
