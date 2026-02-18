@@ -12,6 +12,7 @@ import LoginPage from "./pages/Login";
 import RegisterPage from "./pages/Register";
 import LineCallback from "./pages/auth/LineCallback";
 import RegisterProfile from "./pages/auth/RegisterProfile";
+import LineAddFriend from "./pages/auth/LineAddFriend";
 import PrivacyPage from "./pages/Privacy";
 import TermsPage from "./pages/Terms";
 import FaqPage from "./pages/Faq";
@@ -57,6 +58,7 @@ const App = () => (
           <Route path="/faq" element={<FaqPage />} />
           <Route path="/auth/login" element={<LoginPage />} />
           <Route path="/auth/line/callback" element={<LineCallback />} />
+          <Route path="/auth/register/add-friend" element={<LineAddFriend />} />
           <Route path="/auth/register/profile" element={<RegisterProfile />} />
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/privacy" element={<PrivacyPage />} />
