@@ -4,8 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { UserPlus, ExternalLink } from "lucide-react";
 
-// TODO: Replace with actual LINE official account friend add URL
-const LINE_FRIEND_ADD_URL = "https://line.me/R/ti/p/@xxxxx";
+const LINE_FRIEND_ADD_URL = "https://line.me/R/ti/p/@616jfxwh";
 
 interface LineProfile {
   userId: string;
