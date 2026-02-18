@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { supabaseExternal } from "@/lib/supabaseExternal";
+import { supabase } from "@/integrations/supabase/client";
 
 export default function ClientLogin() {
   const [email, setEmail] = useState("");
@@ -16,17 +16,25 @@ export default function ClientLogin() {
     setError("");
     setIsLoading(true);
     try {
-      const { data, error: dbError } = await supabaseExternal
-        .from("companies")
-        .select("*")
-        .eq("contact_email", email)
-        .single();
-      if (dbError || !data) {
-        setError("メールアドレスが見つかりません。");
+      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({ email, password });
+      if (authError) {
+        setError("メールアドレスまたはパスワードが正しくありません。");
         return;
       }
-      sessionStorage.setItem("client_session", "true");
-      sessionStorage.setItem("client_company_id", data.id);
+      // Check if user has client role
+      const { data: roles } = await supabase.from("user_roles").select("role").eq("user_id", authData.user.id);
+      const isClient = roles?.some(r => r.role === "client");
+      if (!isClient) {
+        setError("企業アカウントではありません。");
+        await supabase.auth.signOut();
+        return;
+      }
+      // Get company
+      const { data: company } = await supabase.from("companies").select("id").eq("user_id", authData.user.id).single();
+      if (company) {
+        sessionStorage.setItem("client_session", "true");
+        sessionStorage.setItem("client_company_id", company.id);
+      }
       navigate("/client/dashboard");
     } catch {
       setError("ログインに失敗しました。");
@@ -48,7 +56,7 @@ export default function ClientLogin() {
           {error && <div className="text-red-500 text-sm text-center bg-red-50 p-3 rounded-lg">{error}</div>}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">メールアドレス</label>
-            <Input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="yamada@lumiere.co.jp" required />
+            <Input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="email@company.com" required />
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">パスワード</label>

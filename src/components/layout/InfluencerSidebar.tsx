@@ -19,7 +19,7 @@ export default function InfluencerSidebar() {
 
   const menuItems = [
     { icon: LayoutDashboard, label: "ダッシュボード", href: "/mypage" },
-    { icon: Search, label: "案件を探す", href: "/campaigns" },
+    { icon: Search, label: "案件を探す", href: "/mypage/campaigns" },
     { icon: ClipboardList, label: "応募履歴", href: "/mypage/applications" },
     { icon: PenTool, label: "投稿管理", href: "/mypage/posts" },
     { icon: MessageCircle, label: "メッセージ", href: "/mypage/messages" },

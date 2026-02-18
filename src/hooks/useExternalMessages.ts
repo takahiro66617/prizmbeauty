@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabaseExternal } from "@/lib/supabaseExternal";
+import { supabase } from "@/integrations/supabase/client";
 
 export interface ExternalMessage {
   id: string;
@@ -15,7 +15,7 @@ export function useExternalMessages(userId: string | null) {
     queryKey: ["ext-messages", userId],
     queryFn: async () => {
       if (!userId) return [];
-      const { data, error } = await supabaseExternal
+      const { data, error } = await supabase
         .from("messages")
         .select("*")
         .or(`sender_id.eq.${userId},receiver_id.eq.${userId}`)
@@ -31,7 +31,7 @@ export function useSendMessage() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (msg: { sender_id: string; receiver_id: string; content: string }) => {
-      const { data, error } = await supabaseExternal.from("messages").insert(msg).select().single();
+      const { data, error } = await supabase.from("messages").insert(msg).select().single();
       if (error) throw error;
       return data;
     },

@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabaseExternal } from "@/lib/supabaseExternal";
+import { supabase } from "@/integrations/supabase/client";
 
 export interface ExternalNotification {
   id: string;
@@ -17,7 +17,7 @@ export function useExternalNotifications(userId: string | null) {
     queryKey: ["ext-notifications", userId],
     queryFn: async () => {
       if (!userId) return [];
-      const { data, error } = await supabaseExternal
+      const { data, error } = await supabase
         .from("notifications")
         .select("*")
         .eq("user_id", userId)
@@ -33,7 +33,7 @@ export function useMarkNotificationRead() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabaseExternal.from("notifications").update({ read: true }).eq("id", id);
+      const { error } = await supabase.from("notifications").update({ read: true }).eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {
