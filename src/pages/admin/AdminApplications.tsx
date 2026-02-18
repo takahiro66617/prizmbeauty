@@ -1,40 +1,23 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Search } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
+import { MOCK_APPLICATIONS, getInfluencerById, getCampaignById, getCompanyById } from "@/lib/mockData";
 
 export default function AdminApplications() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [search, setSearch] = useState("");
-  const [applications, setApplications] = useState<any[]>([]);
-  const { toast } = useToast();
 
-  const load = async () => {
-    const { data } = await supabase
-      .from("applications")
-      .select("*, campaigns(title), influencer_profiles(name, username, image_url), companies(name)")
-      .order("applied_at", { ascending: false });
-    setApplications(data || []);
-  };
-
-  useEffect(() => { load(); }, []);
-
-  const filtered = applications.filter(a => {
+  const filtered = MOCK_APPLICATIONS.filter(a => {
     const matchesStatus = statusFilter === "all" || a.status === statusFilter;
     if (!matchesStatus) return false;
     if (!search) return true;
+    const inf = getInfluencerById(a.influencerId);
+    const campaign = getCampaignById(a.campaignId);
     const q = search.toLowerCase();
-    return a.influencer_profiles?.name?.toLowerCase().includes(q) || a.campaigns?.title?.toLowerCase().includes(q);
+    return inf?.name.toLowerCase().includes(q) || campaign?.title.toLowerCase().includes(q);
   });
-
-  const updateStatus = async (id: string, status: string) => {
-    await supabase.from("applications").update({ status }).eq("id", id);
-    toast({ title: "ステータスを更新しました" });
-    load();
-  };
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -84,27 +67,28 @@ export default function AdminApplications() {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200">
-            {filtered.map(app => (
-              <tr key={app.id} className="hover:bg-gray-50">
-                <td className="px-6 py-4">
-                  <span className="font-medium text-gray-900">{app.influencer_profiles?.name || "不明"}</span>
-                </td>
-                <td className="px-6 py-4 text-gray-700">{app.campaigns?.title || "不明"}</td>
-                <td className="px-6 py-4 text-gray-600">{app.companies?.name || "不明"}</td>
-                <td className="px-6 py-4 text-gray-500">{new Date(app.applied_at).toLocaleDateString("ja-JP")}</td>
-                <td className="px-6 py-4">{getStatusBadge(app.status)}</td>
-                <td className="px-6 py-4">
-                  <div className="flex gap-2">
-                    {(app.status === "applied" || app.status === "reviewing") && (
-                      <>
-                        <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white text-xs" onClick={() => updateStatus(app.id, "approved")}>採用</Button>
-                        <Button size="sm" variant="outline" className="text-red-600 border-red-200 text-xs" onClick={() => updateStatus(app.id, "rejected")}>不採用</Button>
-                      </>
-                    )}
-                  </div>
-                </td>
-              </tr>
-            ))}
+            {filtered.map(app => {
+              const inf = getInfluencerById(app.influencerId);
+              const campaign = getCampaignById(app.campaignId);
+              const company = getCompanyById(app.companyId);
+              return (
+                <tr key={app.id} className="hover:bg-gray-50">
+                  <td className="px-6 py-4">
+                    <div className="flex items-center gap-2">
+                      {inf && <img src={inf.image} alt="" className="w-7 h-7 rounded-full" />}
+                      <span className="font-medium text-gray-900">{inf?.name || app.influencerId}</span>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 text-gray-700">{campaign?.title || app.campaignId}</td>
+                  <td className="px-6 py-4 text-gray-600">{company?.name || app.companyId}</td>
+                  <td className="px-6 py-4 text-gray-500">{new Date(app.appliedAt).toLocaleDateString("ja-JP")}</td>
+                  <td className="px-6 py-4">{getStatusBadge(app.status)}</td>
+                  <td className="px-6 py-4">
+                    <Button variant="ghost" size="sm" className="text-purple-600 hover:text-purple-800">詳細</Button>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
         <div className="p-4 border-t border-gray-200 text-center text-gray-500 text-sm">全 {filtered.length} 件</div>

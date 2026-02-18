@@ -1,34 +1,37 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { Outlet, useNavigate } from "react-router-dom";
 import { ClientSidebar } from "./ClientSidebar";
-import { supabase } from "@/integrations/supabase/client";
+import { MOCK_COMPANIES } from "@/lib/mockData";
 
 export function ClientLayout() {
   const navigate = useNavigate();
-  const [authorized, setAuthorized] = useState(false);
-  const [companyName, setCompanyName] = useState("");
 
   useEffect(() => {
-    const check = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) { navigate("/client/login"); return; }
-      const { data: roleData } = await supabase.from("user_roles").select("role").eq("user_id", session.user.id).eq("role", "client").maybeSingle();
-      if (!roleData) { navigate("/client/login"); return; }
-      const { data: company } = await supabase.from("companies").select("name, contact_name").eq("user_id", session.user.id).maybeSingle();
-      if (company) setCompanyName(company.name);
-      setAuthorized(true);
-    };
-    check();
+    const session = sessionStorage.getItem("client_session");
+    if (session !== "true") {
+      navigate("/client/login");
+    }
   }, [navigate]);
 
-  if (!authorized) return null;
+  const companyId = sessionStorage.getItem("client_company_id") || "c1";
+  const company = MOCK_COMPANIES.find(c => c.id === companyId);
 
   return (
     <div className="flex min-h-screen bg-gray-50">
       <ClientSidebar />
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         <header className="bg-white border-b border-gray-200 h-16 flex items-center px-8 justify-between">
-          <h2 className="text-sm font-semibold text-gray-600">{companyName || "企業管理画面"}</h2>
+          <h2 className="text-sm font-semibold text-gray-600">
+            {company?.name || "企業管理画面"}
+          </h2>
+          <div className="flex items-center space-x-4">
+            <div className="text-sm text-gray-500">
+              担当: <span className="font-medium text-gray-900">{company?.contactName || ""}</span>
+            </div>
+            <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-xs">
+              CL
+            </div>
+          </div>
         </header>
         <main className="flex-1 overflow-auto p-8">
           <Outlet />

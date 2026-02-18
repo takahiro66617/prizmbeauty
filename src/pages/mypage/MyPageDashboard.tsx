@@ -1,50 +1,50 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { FileText, Clock, CheckCircle, Circle, ArrowRight, Megaphone, Calendar, MessageCircle } from "lucide-react";
+import { FileText, Clock, CheckCircle, Circle, ArrowRight, Megaphone, Calendar, DollarSign, MessageCircle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { supabase } from "@/integrations/supabase/client";
+import { getApplicationsForInfluencer, getMessagesForUser, getCampaignById, MOCK_USER } from "@/lib/mockData";
 
 const formatDate = (date: Date) =>
   new Intl.DateTimeFormat("ja-JP", { year: "numeric", month: "long", day: "numeric", weekday: "short" }).format(date);
 
 export default function MyPageDashboard() {
-  const [profile, setProfile] = useState<any>(null);
-  const [stats, setStats] = useState({ applications: 0, approved: 0, completed: 0, messages: 0 });
-  const [notifications, setNotifications] = useState<any[]>([]);
+  const [user, setUser] = useState<any>(null);
 
   useEffect(() => {
-    const load = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
-      const uid = session.user.id;
-
-      const { data: inf } = await supabase.from("influencer_profiles").select("*").eq("user_id", uid).maybeSingle();
-      setProfile(inf);
-      if (!inf) return;
-
-      const [appRes, msgRes, notifRes] = await Promise.all([
-        supabase.from("applications").select("id, status, campaign_id, campaigns(title)").eq("influencer_id", inf.id),
-        supabase.from("messages").select("id").eq("receiver_id", uid).eq("read", false),
-        supabase.from("notifications").select("*").eq("user_id", uid).order("created_at", { ascending: false }).limit(5),
-      ]);
-
-      const apps = appRes.data || [];
-      setStats({
-        applications: apps.filter(a => ["applied", "reviewing"].includes(a.status)).length,
-        approved: apps.filter(a => a.status === "approved").length,
-        completed: apps.filter(a => a.status === "completed").length,
-        messages: (msgRes.data || []).length,
-      });
-      setNotifications(notifRes.data || []);
-    };
-    load();
+    const storedUser = sessionStorage.getItem("currentUser");
+    if (storedUser) setUser(JSON.parse(storedUser));
+    else setUser(MOCK_USER);
   }, []);
+
+  if (!user) return null;
+
+  const userId = user.id || "inf_001";
+  const applications = getApplicationsForInfluencer(userId);
+  const messages = getMessagesForUser(userId);
+  const unreadMessages = messages.filter(m => !m.read && m.receiverId === userId).length;
+
+  const stats = {
+    applications: applications.filter(a => ["applied", "reviewing"].includes(a.status)).length,
+    approved: applications.filter(a => a.status === "approved").length,
+    completed: applications.filter(a => a.status === "completed").length,
+    messages: unreadMessages,
+  };
+
+  const todos: any[] = [];
+  applications.filter(a => a.status === "approved").forEach(a => {
+    const campaign = getCampaignById(a.campaignId);
+    if (campaign) todos.push({ id: `todo-${a.id}`, text: `「${campaign.title}」の投稿準備をしましょう`, link: "/mypage/posts", type: "urgent" });
+  });
+  if (applications.length === 0) {
+    todos.push({ id: "todo-1", text: "プロフィールを充実させて、スカウトを受け取りやすくしましょう！", link: "/mypage/settings", type: "info" });
+    todos.push({ id: "todo-2", text: "気になる案件を探して応募してみましょう", link: "/campaigns", type: "action" });
+  }
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
       <div>
-        <h1 className="text-2xl font-bold text-gray-800">おかえりなさい、{profile?.name || ""}さん！</h1>
+        <h1 className="text-2xl font-bold text-gray-800">おかえりなさい、{user.lastName || ""} {user.firstName || user.name || ""}さん！</h1>
         <p className="text-gray-500 mt-1 flex items-center gap-2"><Calendar className="w-4 h-4" />{formatDate(new Date())}</p>
       </div>
 
@@ -72,15 +72,21 @@ export default function MyPageDashboard() {
           <Card className="border-0 shadow-sm">
             <CardHeader><CardTitle className="text-lg">次のアクション (TODO)</CardTitle></CardHeader>
             <CardContent>
-              {stats.applications === 0 && stats.approved === 0 ? (
+              {todos.length > 0 ? (
                 <div className="space-y-3">
-                  <div className="flex items-start gap-3 p-3 rounded-lg bg-white border border-gray-100">
-                    <Circle className="w-5 h-5 text-purple-500 mt-0.5" />
-                    <div className="flex-1">
-                      <p className="text-sm font-medium text-gray-800">気になる案件を探して応募してみましょう</p>
-                      <Link to="/campaigns" className="text-xs text-gray-500 hover:text-purple-500 flex items-center mt-1">確認する <ArrowRight className="w-3 h-3 ml-1" /></Link>
+                  {todos.map(todo => (
+                    <div key={todo.id} className={`flex items-start gap-3 p-3 rounded-lg ${todo.type === "urgent" ? "bg-red-50 border border-red-100" : "bg-white border border-gray-100"}`}>
+                      <div className={`mt-0.5 ${todo.type === "urgent" ? "text-red-500" : "text-purple-500"}`}>
+                        {todo.type === "urgent" ? <Clock className="w-5 h-5" /> : <Circle className="w-5 h-5" />}
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-gray-800">{todo.text}</p>
+                        {todo.link && (
+                          <Link to={todo.link} className="text-xs text-gray-500 hover:text-purple-500 flex items-center mt-1">確認する <ArrowRight className="w-3 h-3 ml-1" /></Link>
+                        )}
+                      </div>
                     </div>
-                  </div>
+                  ))}
                 </div>
               ) : (
                 <div className="text-center py-8 text-gray-500">現在のアクションはありません</div>
@@ -95,17 +101,15 @@ export default function MyPageDashboard() {
               <CardTitle className="text-lg font-bold text-gray-800 flex items-center gap-2"><Megaphone className="w-5 h-5 text-pink-500" />お知らせ</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {notifications.length > 0 ? notifications.map(n => (
-                <div key={n.id} className="pb-3 border-b border-gray-100 last:border-0 last:pb-0">
+              {messages.filter(m => m.receiverId === userId).slice(0, 3).map(msg => (
+                <div key={msg.id} className="pb-3 border-b border-gray-100 last:border-0 last:pb-0">
                   <div className="flex justify-between items-start mb-1">
-                    <span className="text-xs text-gray-400">{new Date(n.created_at).toLocaleDateString("ja-JP")}</span>
-                    {!n.read && <span className="text-[10px] bg-red-100 text-red-600 px-2 py-0.5 rounded-full">新着</span>}
+                    <span className="text-xs text-gray-400">{new Date(msg.createdAt).toLocaleDateString("ja-JP")}</span>
+                    {!msg.read && <span className="text-[10px] bg-red-100 text-red-600 px-2 py-0.5 rounded-full">新着</span>}
                   </div>
-                  <p className="text-sm font-medium text-gray-700 line-clamp-2">{n.title}</p>
+                  <p className="text-sm font-medium text-gray-700 hover:text-purple-500 cursor-pointer transition-colors line-clamp-2">{msg.subject}</p>
                 </div>
-              )) : (
-                <p className="text-center text-gray-400 py-4 text-sm">お知らせはありません</p>
-              )}
+              ))}
               <Link to="/mypage/notifications" className="w-full block">
                 <Button variant="ghost" size="sm" className="w-full text-xs text-gray-500 hover:text-purple-500">すべて見る</Button>
               </Link>

@@ -4,7 +4,6 @@ import { Eye, EyeOff, ShieldCheck, ArrowLeft, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
-import { supabase } from "@/integrations/supabase/client";
 
 export default function AdminLoginPage() {
   const navigate = useNavigate();
@@ -14,35 +13,28 @@ export default function AdminLoginPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setLoading(true);
 
-    const { data, error: authError } = await supabase.auth.signInWithPassword({ email, password });
-    if (authError) {
-      setError("メールアドレスまたはパスワードが正しくありません");
-      setPassword("");
-      setLoading(false);
-      return;
-    }
+    const adminAccounts = [
+      { email: "admin@example.com", password: "admin123" },
+      { email: "takahiro66617@gmail.com", password: "takahiro0646" },
+    ];
 
-    // Check admin role
-    const { data: roleData } = await supabase
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", data.user.id)
-      .eq("role", "admin")
-      .maybeSingle();
-
-    if (!roleData) {
-      await supabase.auth.signOut();
-      setError("管理者権限がありません");
-      setLoading(false);
-      return;
-    }
-
-    navigate("/admin/dashboard");
+    setTimeout(() => {
+      const matched = adminAccounts.find(a => a.email === email && a.password === password);
+      if (matched) {
+        sessionStorage.setItem("admin_session", "true");
+        sessionStorage.setItem("admin_email", email);
+        navigate("/admin/dashboard");
+      } else {
+        setError("メールアドレスまたはパスワードが正しくありません");
+        setPassword("");
+        setLoading(false);
+      }
+    }, 800);
   };
 
   return (
@@ -65,17 +57,43 @@ export default function AdminLoginPage() {
           )}
 
           <div className="space-y-4">
-            <Input type="email" placeholder="admin@example.com" value={email} onChange={(e) => setEmail(e.target.value)} className="bg-gray-50 focus:bg-white" required />
+            <Input
+              type="email"
+              placeholder="admin@example.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="bg-gray-50 focus:bg-white"
+              required
+            />
             <div className="relative">
-              <Input type={showPassword ? "text" : "password"} placeholder="パスワード" value={password} onChange={(e) => setPassword(e.target.value)} className="bg-gray-50 focus:bg-white" required />
-              <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors">
+              <Input
+                type={showPassword ? "text" : "password"}
+                placeholder="パスワード"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="bg-gray-50 focus:bg-white"
+                required
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+              >
                 {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
             </div>
           </div>
 
-          <Button type="submit" disabled={loading} className="w-full h-12 bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white font-bold shadow-lg shadow-pink-200 transition-all active:scale-[0.98]">
-            {loading ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin mx-auto" /> : "ログイン"}
+          <Button
+            type="submit"
+            disabled={loading}
+            className="w-full h-12 bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white font-bold shadow-lg shadow-pink-200 transition-all active:scale-[0.98]"
+          >
+            {loading ? (
+              <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin mx-auto" />
+            ) : (
+              "ログイン"
+            )}
           </Button>
 
           <div className="text-center pt-2">
@@ -86,7 +104,10 @@ export default function AdminLoginPage() {
           </div>
         </form>
       </Card>
-      <p className="mt-8 text-white/60 text-xs">© {new Date().getFullYear()} PRizm Beauty Admin System</p>
+
+      <p className="mt-8 text-white/60 text-xs">
+        © {new Date().getFullYear()} PRizm Beauty Admin System
+      </p>
     </div>
   );
 }
