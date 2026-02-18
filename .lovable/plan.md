@@ -1,46 +1,38 @@
 
+## LINE連携・管理画面 不整合修正プラン
 
-## LINEログイン修正プラン
+### 現状の問題
 
-外部DBに`line_user_id`カラムが追加されたので、コードを修正してLINEログインを完成させます。
+| 問題 | 影響 |
+|---|---|
+| 登録時のステータスが`active`だが、管理画面は`approved`/`pending`/`suspended`で管理 | LINE登録者がフィルタに引っかからない |
+| インターフェースに`line_user_id`がない | 管理画面でLINE連携情報を表示できない |
+| `user_id`が必須型のまま | 実態と型定義が不一致 |
+| 管理画面にLINE ID表示がない | LINE経由の登録者を識別できない |
 
-### 変更内容
+### 修正内容
 
-#### 1. エッジファンクション（LINE認証処理）
+#### 1. `src/pages/auth/RegisterProfile.tsx`
 
-診断用コードを全て削除し、シンプルな処理に書き直す:
+- 登録時のステータスを`"active"`から`"pending"`に変更
+- これにより新規LINE登録者は管理画面で「審査中」として表示され、管理者が承認フローを回せるようになる
 
-- LINE認証コードをトークンに交換
-- LINEプロフィールを取得
-- `line_user_id`カラムで既存ユーザーを検索
-- 見つかれば既存ユーザーとしてログイン、見つからなければ新規登録画面へ
+#### 2. `src/hooks/useExternalInfluencers.ts`
 
-#### 2. プロフィール登録画面
+`ExternalInfluencer`インターフェースを実態に合わせて更新:
 
-登録時のデータ保存を修正:
+- `user_id`を`string | null`（オプショナル）に変更
+- `line_user_id: string | null`を追加
 
-- `user_id`（存在しないカラム）の代わりに`line_user_id`を使用
-- 存在するカラムのみに挿入を限定: `line_user_id`, `username`, `name`, `image_url`, `category`, `status`
+#### 3. `src/pages/admin/AdminInfluencers.tsx`
 
-### 技術的な詳細
-
-**エッジファンクション `supabase/functions/line-auth/index.ts`**
-
-変更点:
-- 26個のカラム診断クエリを全て削除
-- `line_user_id`カラムで`.eq("line_user_id", profileData.userId)`による検索を実装
-- DB検索エラー時はフォールバックとして新規ユーザー扱い（500エラーを返さない）
-
-**プロフィール登録 `src/pages/auth/RegisterProfile.tsx`**
-
-変更点:
-- `.insert()`の`user_id`を`line_user_id`に変更
-- 存在しないカラム（`nickname`, `gender`, `birth_date`, `prefecture`）は挿入しない
+- テーブルに「LINE連携」列を追加し、`line_user_id`の有無でLINE経由登録者を識別できるようにする
+- ステータスフィルタに`active`も追加（過去データとの互換性のため）
 
 ### 変更ファイル一覧
 
 | ファイル | 変更内容 |
 |---|---|
-| `supabase/functions/line-auth/index.ts` | 診断コード全削除、`line_user_id`での検索に修正 |
-| `src/pages/auth/RegisterProfile.tsx` | `user_id`を`line_user_id`に変更 |
-
+| `src/pages/auth/RegisterProfile.tsx` | `status: "active"` を `status: "pending"` に変更 |
+| `src/hooks/useExternalInfluencers.ts` | `user_id`をオプショナル化、`line_user_id`を追加 |
+| `src/pages/admin/AdminInfluencers.tsx` | LINE連携列の追加、`active`ステータス対応 |
