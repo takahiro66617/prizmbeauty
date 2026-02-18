@@ -40,7 +40,6 @@ Deno.serve(async (req) => {
         line_user_id: lineProfile.userId,
         username: nickname,
         name,
-        image_url: lineProfile.pictureUrl || null,
         status: "pending",
       })
       .select()
