@@ -6,10 +6,6 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
-const EXTERNAL_SUPABASE_URL = "https://hisethfmyvvkohauuluq.supabase.co";
-const EXTERNAL_SUPABASE_ANON_KEY =
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhpc2V0aGZteXZ2a29oYXV1bHVxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkwMjI5ODIsImV4cCI6MjA4NDU5ODk4Mn0.Fxg2ol8VeUbqvUUKVIb3RmflHab8oUVn4pp88Wc21dk";
-
 const LINE_CHANNEL_ID = "2009141875";
 
 Deno.serve(async (req) => {
@@ -66,13 +62,15 @@ Deno.serve(async (req) => {
       );
     }
 
-    // 3. Check if user exists in external DB
-    const extSupabase = createClient(EXTERNAL_SUPABASE_URL, EXTERNAL_SUPABASE_ANON_KEY);
+    // 3. Check if user exists in Lovable Cloud DB
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    const supabase = createClient(supabaseUrl!, serviceRoleKey!);
 
     let existingUser = null;
     try {
-      const { data, error } = await extSupabase
-        .from("influencers")
+      const { data, error } = await supabase
+        .from("influencer_profiles")
         .select("*")
         .eq("line_user_id", profileData.userId)
         .maybeSingle();
