@@ -14,16 +14,342 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      applications: {
+        Row: {
+          applied_at: string
+          campaign_id: string
+          company_id: string
+          id: string
+          influencer_id: string
+          motivation: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          applied_at?: string
+          campaign_id: string
+          company_id: string
+          id?: string
+          influencer_id: string
+          motivation?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          applied_at?: string
+          campaign_id?: string
+          company_id?: string
+          id?: string
+          influencer_id?: string
+          motivation?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "applications_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "applications_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "applications_influencer_id_fkey"
+            columns: ["influencer_id"]
+            isOneToOne: false
+            referencedRelation: "influencer_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      campaigns: {
+        Row: {
+          budget_max: number | null
+          budget_min: number | null
+          category: string | null
+          company_id: string
+          created_at: string
+          deadline: string | null
+          description: string | null
+          id: string
+          image_url: string | null
+          platform: string | null
+          requirements: string | null
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          budget_max?: number | null
+          budget_min?: number | null
+          category?: string | null
+          company_id: string
+          created_at?: string
+          deadline?: string | null
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          platform?: string | null
+          requirements?: string | null
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          budget_max?: number | null
+          budget_min?: number | null
+          category?: string | null
+          company_id?: string
+          created_at?: string
+          deadline?: string | null
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          platform?: string | null
+          requirements?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaigns_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      companies: {
+        Row: {
+          contact_email: string | null
+          contact_name: string | null
+          created_at: string
+          description: string | null
+          id: string
+          industry: string | null
+          logo_url: string | null
+          name: string
+          phone: string | null
+          status: string
+          updated_at: string
+          user_id: string
+          website: string | null
+        }
+        Insert: {
+          contact_email?: string | null
+          contact_name?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          industry?: string | null
+          logo_url?: string | null
+          name: string
+          phone?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+          website?: string | null
+        }
+        Update: {
+          contact_email?: string | null
+          contact_name?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          industry?: string | null
+          logo_url?: string | null
+          name?: string
+          phone?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+          website?: string | null
+        }
+        Relationships: []
+      }
+      influencer_profiles: {
+        Row: {
+          bio: string | null
+          category: string | null
+          created_at: string
+          id: string
+          image_url: string | null
+          instagram_followers: number | null
+          name: string
+          status: string
+          tiktok_followers: number | null
+          twitter_followers: number | null
+          updated_at: string
+          user_id: string
+          username: string
+          youtube_followers: number | null
+        }
+        Insert: {
+          bio?: string | null
+          category?: string | null
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          instagram_followers?: number | null
+          name: string
+          status?: string
+          tiktok_followers?: number | null
+          twitter_followers?: number | null
+          updated_at?: string
+          user_id: string
+          username: string
+          youtube_followers?: number | null
+        }
+        Update: {
+          bio?: string | null
+          category?: string | null
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          instagram_followers?: number | null
+          name?: string
+          status?: string
+          tiktok_followers?: number | null
+          twitter_followers?: number | null
+          updated_at?: string
+          user_id?: string
+          username?: string
+          youtube_followers?: number | null
+        }
+        Relationships: []
+      }
+      messages: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          read: boolean
+          receiver_id: string
+          sender_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          read?: boolean
+          receiver_id: string
+          sender_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          read?: boolean
+          receiver_id?: string
+          sender_id?: string
+        }
+        Relationships: []
+      }
+      notifications: {
+        Row: {
+          created_at: string
+          id: string
+          link: string | null
+          message: string
+          read: boolean
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          link?: string | null
+          message: string
+          read?: boolean
+          title: string
+          type?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          link?: string | null
+          message?: string
+          read?: boolean
+          title?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          display_name: string
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          display_name?: string
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          display_name?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "influencer" | "client"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +476,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "influencer", "client"],
+    },
   },
 } as const

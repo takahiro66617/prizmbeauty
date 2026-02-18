@@ -1,15 +1,31 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Search, Building2, User, Mail, Phone, Calendar } from "lucide-react";
-import { MOCK_COMPANIES, getCampaignsForCompany, getApplicationsForCompany } from "@/lib/mockData";
+import { Search, Building2, User, Calendar } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 export default function AdminClientsPage() {
   const [search, setSearch] = useState("");
+  const [companies, setCompanies] = useState<any[]>([]);
+  const { toast } = useToast();
 
-  const filtered = MOCK_COMPANIES.filter(c =>
-    !search || c.name.toLowerCase().includes(search.toLowerCase()) || c.contactName.toLowerCase().includes(search.toLowerCase())
+  const load = async () => {
+    const { data } = await supabase.from("companies").select("*").order("created_at", { ascending: false });
+    setCompanies(data || []);
+  };
+
+  useEffect(() => { load(); }, []);
+
+  const filtered = companies.filter(c =>
+    !search || c.name?.toLowerCase().includes(search.toLowerCase()) || c.contact_name?.toLowerCase().includes(search.toLowerCase())
   );
+
+  const updateStatus = async (id: string, status: string) => {
+    await supabase.from("companies").update({ status }).eq("id", id);
+    toast({ title: "ステータスを更新しました" });
+    load();
+  };
 
   return (
     <div className="font-sans space-y-6">
@@ -18,7 +34,6 @@ export default function AdminClientsPage() {
           <h1 className="text-2xl font-bold text-gray-900">企業管理</h1>
           <p className="text-gray-500 mt-1">登録済みの企業一覧です。ステータスの管理を行えます。</p>
         </div>
-        <Button className="bg-blue-600 hover:bg-blue-700"><Plus className="w-4 h-4 mr-2" />企業登録</Button>
       </div>
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
@@ -36,55 +51,46 @@ export default function AdminClientsPage() {
               <tr>
                 <th className="px-6 py-3">企業</th>
                 <th className="px-6 py-3">担当者</th>
-                <th className="px-6 py-3">案件数</th>
-                <th className="px-6 py-3">応募数</th>
                 <th className="px-6 py-3">登録日</th>
                 <th className="px-6 py-3">ステータス</th>
                 <th className="px-6 py-3 text-right">操作</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {filtered.map(company => {
-                const campaigns = getCampaignsForCompany(company.id);
-                const applications = getApplicationsForCompany(company.id);
-                return (
-                  <tr key={company.id} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center text-gray-400"><Building2 className="w-5 h-5" /></div>
-                        <div>
-                          <div className="font-bold text-gray-900">{company.name}</div>
-                          <div className="text-xs text-gray-500">{company.address}</div>
-                        </div>
+              {filtered.map(company => (
+                <tr key={company.id} className="hover:bg-gray-50 transition-colors">
+                  <td className="px-6 py-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center text-gray-400"><Building2 className="w-5 h-5" /></div>
+                      <div>
+                        <div className="font-bold text-gray-900">{company.name}</div>
+                        <div className="text-xs text-gray-500">{company.contact_email}</div>
                       </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-2">
-                        <User className="w-4 h-4 text-gray-400" />
-                        <div>
-                          <div className="font-medium text-gray-900">{company.contactName}</div>
-                          <div className="text-xs text-gray-500">{company.contactRole}</div>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 text-gray-600 font-medium">{campaigns.length}</td>
-                    <td className="px-6 py-4 text-gray-600 font-medium">{applications.length}</td>
-                    <td className="px-6 py-4 text-gray-600">
-                      <div className="flex items-center gap-2"><Calendar className="w-3 h-3" />{new Date(company.createdAt).toLocaleDateString("ja-JP")}</div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <Badge className={company.status === "active" ? "bg-green-50 text-green-700" : company.status === "pending" ? "bg-yellow-50 text-yellow-700" : "bg-red-50 text-red-700"}>
-                        {company.status === "active" ? "契約中" : company.status === "pending" ? "承認待ち" : "停止中"}
-                      </Badge>
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <Button variant="ghost" size="sm" className="text-blue-600 hover:text-blue-800 hover:bg-blue-50">詳細</Button>
-                    </td>
-                  </tr>
-                );
-              })}
+                    </div>
+                  </td>
+                  <td className="px-6 py-4">
+                    <div className="flex items-center gap-2"><User className="w-4 h-4 text-gray-400" /><span className="font-medium text-gray-900">{company.contact_name}</span></div>
+                  </td>
+                  <td className="px-6 py-4 text-gray-600">
+                    <div className="flex items-center gap-2"><Calendar className="w-3 h-3" />{new Date(company.created_at).toLocaleDateString("ja-JP")}</div>
+                  </td>
+                  <td className="px-6 py-4">
+                    <Badge className={company.status === "active" ? "bg-green-50 text-green-700" : company.status === "pending" ? "bg-yellow-50 text-yellow-700" : "bg-red-50 text-red-700"}>
+                      {company.status === "active" ? "契約中" : company.status === "pending" ? "承認待ち" : "停止中"}
+                    </Badge>
+                  </td>
+                  <td className="px-6 py-4 text-right">
+                    <div className="flex gap-2 justify-end">
+                      {company.status === "pending" && <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white text-xs" onClick={() => updateStatus(company.id, "active")}>承認</Button>}
+                      {company.status === "active" && <Button size="sm" variant="outline" className="text-red-600 border-red-200 text-xs" onClick={() => updateStatus(company.id, "suspended")}>停止</Button>}
+                      {company.status === "suspended" && <Button size="sm" variant="outline" className="text-green-600 border-green-200 text-xs" onClick={() => updateStatus(company.id, "active")}>復活</Button>}
+                    </div>
+                  </td>
+                </tr>
+              ))}
             </tbody>
           </table>
+          {filtered.length === 0 && <div className="text-center py-12 text-gray-500">企業が登録されていません</div>}
         </div>
       </div>
     </div>
