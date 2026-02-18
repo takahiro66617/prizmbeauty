@@ -3,7 +3,8 @@ import { supabaseExternal } from "@/lib/supabaseExternal";
 
 export interface ExternalInfluencer {
   id: string;
-  user_id: string;
+  user_id: string | null;
+  line_user_id: string | null;
   username: string;
   name: string;
   bio: string | null;

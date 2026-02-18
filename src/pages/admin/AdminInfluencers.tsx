@@ -49,6 +49,7 @@ export default function AdminInfluencersPage() {
             <option value="approved">承認済み</option>
             <option value="pending">審査中</option>
             <option value="suspended">停止中</option>
+            <option value="active">有効</option>
           </select>
         </div>
 
@@ -56,6 +57,7 @@ export default function AdminInfluencersPage() {
           <thead className="bg-gray-100 text-gray-600 uppercase font-medium">
             <tr>
               <th className="px-6 py-4">ユーザー</th>
+              <th className="px-6 py-4">LINE連携</th>
               <th className="px-6 py-4">SNSフォロワー数</th>
               <th className="px-6 py-4">カテゴリ</th>
               <th className="px-6 py-4">応募数</th>
@@ -66,7 +68,7 @@ export default function AdminInfluencersPage() {
           </thead>
           <tbody className="divide-y divide-gray-200">
             {isLoading ? (
-              <tr><td colSpan={7} className="px-6 py-12 text-center text-gray-500">読み込み中...</td></tr>
+              <tr><td colSpan={8} className="px-6 py-12 text-center text-gray-500">読み込み中...</td></tr>
             ) : filtered.map(inf => {
               const apps = applications.filter(a => a.influencer_id === inf.id);
               return (
@@ -81,6 +83,13 @@ export default function AdminInfluencersPage() {
                     </div>
                   </td>
                   <td className="px-6 py-4">
+                    {inf.line_user_id ? (
+                      <Badge className="bg-green-100 text-green-700 text-[10px]">LINE連携済</Badge>
+                    ) : (
+                      <span className="text-gray-400 text-xs">-</span>
+                    )}
+                  </td>
+                  <td className="px-6 py-4">
                     <div className="flex flex-col gap-1">
                       {inf.instagram_followers ? <span className="text-xs text-pink-600">IG: {inf.instagram_followers.toLocaleString()}</span> : null}
                       {inf.tiktok_followers ? <span className="text-xs text-black">TT: {inf.tiktok_followers.toLocaleString()}</span> : null}
@@ -93,8 +102,8 @@ export default function AdminInfluencersPage() {
                   <td className="px-6 py-4 text-gray-600 font-medium">{apps.length}</td>
                   <td className="px-6 py-4 text-gray-500">{new Date(inf.created_at).toLocaleDateString("ja-JP")}</td>
                   <td className="px-6 py-4">
-                    <Badge className={inf.status === "approved" ? "bg-green-100 text-green-700" : inf.status === "pending" ? "bg-yellow-100 text-yellow-700" : "bg-red-100 text-red-700"}>
-                      {inf.status === "approved" ? "承認済み" : inf.status === "pending" ? "審査中" : "停止中"}
+                    <Badge className={inf.status === "approved" ? "bg-green-100 text-green-700" : inf.status === "pending" ? "bg-yellow-100 text-yellow-700" : inf.status === "active" ? "bg-blue-100 text-blue-700" : "bg-red-100 text-red-700"}>
+                      {inf.status === "approved" ? "承認済み" : inf.status === "pending" ? "審査中" : inf.status === "active" ? "有効" : "停止中"}
                     </Badge>
                   </td>
                   <td className="px-6 py-4">
