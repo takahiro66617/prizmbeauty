@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 
 const SUPABASE_PROJECT_ID = import.meta.env.VITE_SUPABASE_PROJECT_ID;
 
@@ -43,27 +44,42 @@ export default function LineCallback() {
           return;
         }
 
-        if (data.isNewUser) {
-          // Store LINE profile for registration page
-          sessionStorage.setItem("lineProfile", JSON.stringify(data.lineProfile));
-          navigate("/auth/register/profile");
-        } else {
-          // Existing user - store session and go to dashboard
-          const user = data.user;
-          const mockUser = {
-            id: user.id,
-            lastName: user.name.split(" ")[0] || user.name,
-            firstName: user.name.split(" ")[1] || "",
-            name: user.name,
-            email: "",
-            profileImagePreview:
-              user.image_url ||
-              `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=FFD6E8&color=333`,
-            type: "influencer",
-          };
-          sessionStorage.setItem("currentUser", JSON.stringify(mockUser));
-          navigate("/mypage");
+        // Check if user already exists in Lovable Cloud DB
+        const lineUserId = data.lineProfile?.userId || data.user?.line_user_id;
+        if (lineUserId) {
+          const { data: existing } = await supabase
+            .from("influencer_profiles")
+            .select("*")
+            .eq("line_user_id", lineUserId)
+            .maybeSingle();
+
+          if (existing) {
+            // Existing user - store session and go to dashboard
+            const mockUser = {
+              id: existing.id,
+              lastName: existing.name.split(" ")[0] || existing.name,
+              firstName: existing.name.split(" ")[1] || "",
+              name: existing.name,
+              email: "",
+              profileImagePreview:
+                existing.image_url ||
+                `https://ui-avatars.com/api/?name=${encodeURIComponent(existing.name)}&background=FFD6E8&color=333`,
+              type: "influencer",
+            };
+            sessionStorage.setItem("currentUser", JSON.stringify(mockUser));
+            navigate("/mypage");
+            return;
+          }
         }
+
+        // New user - go to registration
+        const lineProfile = data.lineProfile || {
+          userId: data.user?.line_user_id,
+          displayName: data.user?.name,
+          pictureUrl: data.user?.image_url,
+        };
+        sessionStorage.setItem("lineProfile", JSON.stringify(lineProfile));
+        navigate("/auth/register/profile");
       } catch {
         setError("通信エラーが発生しました");
       }

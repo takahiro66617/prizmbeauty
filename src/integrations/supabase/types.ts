@@ -184,12 +184,13 @@ export type Database = {
           id: string
           image_url: string | null
           instagram_followers: number | null
+          line_user_id: string | null
           name: string
           status: string
           tiktok_followers: number | null
           twitter_followers: number | null
           updated_at: string
-          user_id: string
+          user_id: string | null
           username: string
           youtube_followers: number | null
         }
@@ -200,12 +201,13 @@ export type Database = {
           id?: string
           image_url?: string | null
           instagram_followers?: number | null
+          line_user_id?: string | null
           name: string
           status?: string
           tiktok_followers?: number | null
           twitter_followers?: number | null
           updated_at?: string
-          user_id: string
+          user_id?: string | null
           username: string
           youtube_followers?: number | null
         }
@@ -216,12 +218,13 @@ export type Database = {
           id?: string
           image_url?: string | null
           instagram_followers?: number | null
+          line_user_id?: string | null
           name?: string
           status?: string
           tiktok_followers?: number | null
           twitter_followers?: number | null
           updated_at?: string
-          user_id?: string
+          user_id?: string | null
           username?: string
           youtube_followers?: number | null
         }

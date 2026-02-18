@@ -6,15 +6,13 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const EXTERNAL_SUPABASE_URL = "https://hisethfmyvvkohauuluq.supabase.co";
-
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { lineProfile, nickname, name } = await req.json();
+    const { lineProfile, nickname, name, category, bio } = await req.json();
 
     if (!lineProfile?.userId || !nickname || !name) {
       return new Response(
@@ -23,23 +21,28 @@ Deno.serve(async (req) => {
       );
     }
 
-    const serviceRoleKey = Deno.env.get("EXTERNAL_SUPABASE_SERVICE_ROLE_KEY");
-    if (!serviceRoleKey) {
-      console.error("EXTERNAL_SUPABASE_SERVICE_ROLE_KEY not set");
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    if (!supabaseUrl || !serviceRoleKey) {
+      console.error("SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY not set");
       return new Response(
         JSON.stringify({ error: "Server configuration error" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    const extSupabase = createClient(EXTERNAL_SUPABASE_URL, serviceRoleKey);
+    const supabase = createClient(supabaseUrl, serviceRoleKey);
 
-    const { data, error } = await extSupabase
-      .from("influencers")
-    .insert({
+    const { data, error } = await supabase
+      .from("influencer_profiles")
+      .insert({
         line_user_id: lineProfile.userId,
         username: nickname,
         name,
+        image_url: lineProfile.pictureUrl || null,
+        category: category || null,
+        bio: bio || null,
+        status: "pending",
       })
       .select()
       .single();

@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabaseExternal } from "@/lib/supabaseExternal";
+import { supabase } from "@/integrations/supabase/client";
 
 export interface ExternalInfluencer {
   id: string;
@@ -23,7 +23,7 @@ export function useExternalInfluencers() {
   return useQuery({
     queryKey: ["ext-influencers"],
     queryFn: async () => {
-      const { data, error } = await supabaseExternal.from("influencers").select("*").order("created_at", { ascending: false });
+      const { data, error } = await supabase.from("influencer_profiles").select("*").order("created_at", { ascending: false });
       if (error) throw error;
       return data as ExternalInfluencer[];
     },
@@ -35,7 +35,7 @@ export function useExternalInfluencer(id: string | null) {
     queryKey: ["ext-influencer", id],
     queryFn: async () => {
       if (!id) return null;
-      const { data, error } = await supabaseExternal.from("influencers").select("*").eq("id", id).single();
+      const { data, error } = await supabase.from("influencer_profiles").select("*").eq("id", id).single();
       if (error) throw error;
       return data as ExternalInfluencer;
     },
@@ -43,13 +43,18 @@ export function useExternalInfluencer(id: string | null) {
   });
 }
 
-// useUpdateInfluencerStatus is disabled because the external DB does not have a 'status' column
 export function useUpdateInfluencerStatus() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, status }: { id: string; status: string }) => {
-      console.warn("Status update is not supported: external DB has no 'status' column");
-      return { id, status };
+      const { data, error } = await supabase
+        .from("influencer_profiles")
+        .update({ status })
+        .eq("id", id)
+        .select()
+        .single();
+      if (error) throw error;
+      return data;
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["ext-influencers"] });
