@@ -71,6 +71,7 @@ export default function AdminInfluencersPage() {
               <tr><td colSpan={8} className="px-6 py-12 text-center text-gray-500">読み込み中...</td></tr>
             ) : filtered.map(inf => {
               const apps = applications.filter(a => a.influencer_id === inf.id);
+              const status = inf.status || "unknown";
               return (
                 <tr key={inf.id} className="hover:bg-gray-50 transition-colors">
                   <td className="px-6 py-4">
@@ -102,20 +103,12 @@ export default function AdminInfluencersPage() {
                   <td className="px-6 py-4 text-gray-600 font-medium">{apps.length}</td>
                   <td className="px-6 py-4 text-gray-500">{new Date(inf.created_at).toLocaleDateString("ja-JP")}</td>
                   <td className="px-6 py-4">
-                    <Badge className={inf.status === "approved" ? "bg-green-100 text-green-700" : inf.status === "pending" ? "bg-yellow-100 text-yellow-700" : inf.status === "active" ? "bg-blue-100 text-blue-700" : "bg-red-100 text-red-700"}>
-                      {inf.status === "approved" ? "承認済み" : inf.status === "pending" ? "審査中" : inf.status === "active" ? "有効" : "停止中"}
+                    <Badge className={status === "approved" ? "bg-green-100 text-green-700" : status === "pending" ? "bg-yellow-100 text-yellow-700" : status === "active" ? "bg-blue-100 text-blue-700" : "bg-gray-100 text-gray-600"}>
+                      {status === "approved" ? "承認済み" : status === "pending" ? "審査中" : status === "active" ? "有効" : status === "suspended" ? "停止中" : "未設定"}
                     </Badge>
                   </td>
                   <td className="px-6 py-4">
-                    <div className="flex gap-2">
-                      <Button variant="ghost" size="sm" className="text-blue-600 hover:text-blue-800">詳細</Button>
-                      {inf.status === "pending" && (
-                        <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white text-xs" onClick={() => handleStatusChange(inf.id, "approved")}>承認</Button>
-                      )}
-                      {inf.status === "approved" && (
-                        <Button size="sm" variant="outline" className="text-red-600 border-red-200 text-xs" onClick={() => handleStatusChange(inf.id, "suspended")}>停止</Button>
-                      )}
-                    </div>
+                    <Button variant="ghost" size="sm" className="text-blue-600 hover:text-blue-800">詳細</Button>
                   </td>
                 </tr>
               );
