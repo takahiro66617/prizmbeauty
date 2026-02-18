@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 
-import { supabaseExternal } from "@/lib/supabaseExternal";
+
 
 const PREFECTURES = [
   "北海道","青森県","岩手県","宮城県","秋田県","山形県","福島県",
@@ -68,25 +68,34 @@ export default function RegisterProfile() {
     setIsSubmitting(true);
 
     try {
-      const { data, error } = await supabaseExternal
-        .from("influencers")
-        .insert({
-          line_user_id: lineProfile.userId,
-          username: nickname,
-          name: `${lastName} ${firstName}`,
-          image_url: lineProfile.pictureUrl || null,
-          category: selectedGenres.join(","),
-          status: "pending",
-        })
-        .select()
-        .single();
+      const res = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/register-influencer`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            lineProfile: {
+              userId: lineProfile.userId,
+              displayName: lineProfile.displayName,
+              pictureUrl: lineProfile.pictureUrl,
+            },
+            nickname,
+            name: `${lastName} ${firstName}`,
+            category: selectedGenres.join(","),
+          }),
+        }
+      );
 
-      if (error) {
-        console.error("Insert error:", error);
-        alert("登録に失敗しました。もう一度お試しください。");
+      const result = await res.json();
+
+      if (!res.ok || !result.success) {
+        console.error("Register error:", result);
+        alert(result.details || "登録に失敗しました。もう一度お試しください。");
         setIsSubmitting(false);
         return;
       }
+
+      const data = result.data;
 
       // Store session
       const mockUser = {
