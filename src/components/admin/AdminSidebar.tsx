@@ -1,8 +1,7 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
-import {
-  LayoutDashboard, FileEdit, Building2, Users, Settings, LogOut, ClipboardList,
-} from "lucide-react";
+import { LayoutDashboard, FileEdit, Building2, Users, Settings, LogOut, ClipboardList } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 const navItems = [
   { title: "ダッシュボード", href: "/admin/dashboard", icon: LayoutDashboard },
@@ -16,9 +15,8 @@ export function AdminSidebar() {
   const location = useLocation();
   const navigate = useNavigate();
 
-  const handleLogout = () => {
-    sessionStorage.removeItem("admin_session");
-    sessionStorage.removeItem("admin_email");
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
     navigate("/admin/login");
   };
 
@@ -41,9 +39,6 @@ export function AdminSidebar() {
         })}
       </nav>
       <div className="p-4 border-t border-gray-800">
-        <Link to="/admin/dashboard" className="flex items-center space-x-3 px-4 py-3 text-gray-400 hover:text-white transition-colors text-sm">
-          <Settings className="w-5 h-5" /><span>設定</span>
-        </Link>
         <button onClick={handleLogout} className="w-full flex items-center space-x-3 px-4 py-3 text-red-400 hover:bg-red-900/20 rounded-lg transition-colors text-sm mt-2">
           <LogOut className="w-5 h-5" /><span>ログアウト</span>
         </button>

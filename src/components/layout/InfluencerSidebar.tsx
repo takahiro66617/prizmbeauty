@@ -1,19 +1,25 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { LayoutDashboard, Search, MessageCircle, Heart, Bell, Settings, LogOut, ClipboardList, PenTool, User } from "lucide-react";
 import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 export default function InfluencerSidebar() {
   const location = useLocation();
   const navigate = useNavigate();
-  const [user, setUser] = useState<any>(null);
+  const [profile, setProfile] = useState<any>(null);
 
   useEffect(() => {
-    const storedUser = sessionStorage.getItem("currentUser");
-    if (storedUser) setUser(JSON.parse(storedUser));
+    const load = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+      const { data } = await supabase.from("influencer_profiles").select("*").eq("user_id", session.user.id).maybeSingle();
+      setProfile(data);
+    };
+    load();
   }, []);
 
-  const handleLogout = () => {
-    sessionStorage.removeItem("currentUser");
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
     navigate("/auth/login");
   };
 
@@ -28,15 +34,13 @@ export default function InfluencerSidebar() {
     { icon: Settings, label: "登録情報", href: "/mypage/settings" },
   ];
 
-  if (!user) return null;
-
   return (
     <aside className="w-64 bg-white border-r border-gray-100 hidden md:flex flex-col h-screen sticky top-0">
       <div className="p-6">
         <div className="flex flex-col items-center mb-8">
           <div className="w-20 h-20 rounded-full overflow-hidden border-2 border-pink-300 shadow-md mb-3 relative">
-            {user.profileImagePreview ? (
-              <img src={user.profileImagePreview} alt={user.name} className="w-full h-full object-cover" />
+            {profile?.image_url ? (
+              <img src={profile.image_url} alt={profile.name} className="w-full h-full object-cover" />
             ) : (
               <div className="w-full h-full bg-gray-100 flex items-center justify-center text-gray-400">
                 <User className="w-8 h-8" />
@@ -44,10 +48,14 @@ export default function InfluencerSidebar() {
             )}
             <span className="absolute bottom-0 right-0 w-5 h-5 bg-green-500 border-2 border-white rounded-full"></span>
           </div>
-          <h2 className="font-bold text-gray-800">{user.lastName || ""} {user.firstName || user.name || ""}</h2>
-          <p className="text-xs text-gray-400">PRizm ID: {user.id}</p>
+          <h2 className="font-bold text-gray-800">{profile?.name || ""}</h2>
+          <p className="text-xs text-gray-400">@{profile?.username || ""}</p>
           <div className="mt-2 flex gap-1">
-            <span className="text-[10px] px-2 py-0.5 bg-yellow-100 text-yellow-700 rounded-full font-medium">審査中</span>
+            <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${
+              profile?.status === "approved" ? "bg-green-100 text-green-700" : "bg-yellow-100 text-yellow-700"
+            }`}>
+              {profile?.status === "approved" ? "承認済み" : "審査中"}
+            </span>
           </div>
         </div>
 
