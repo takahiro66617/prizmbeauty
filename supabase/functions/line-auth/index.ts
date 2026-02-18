@@ -69,28 +69,20 @@ Deno.serve(async (req) => {
     // 3. Check if user exists in external DB
     const extSupabase = createClient(EXTERNAL_SUPABASE_URL, EXTERNAL_SUPABASE_ANON_KEY);
 
-    // Debug: try selecting a nonexistent column to get error hints about actual columns
-    const { data: colTest, error: colError } = await extSupabase
-      .from("influencers")
-      .select("__nonexistent__")
-      .limit(1);
-    console.log("DEBUG column discovery error:", JSON.stringify(colError));
+    let existingUser = null;
+    try {
+      const { data, error } = await extSupabase
+        .from("influencers")
+        .select("*")
+        .eq("line_user_id", profileData.userId)
+        .maybeSingle();
 
-    // Also try selecting known possible columns individually
-    const colTests = ["id","name","username","email","line_uid","external_id","sns_id","instagram_id","tiktok_id","bio","image_url","category","status","created_at","updated_at","instagram_followers","tiktok_followers","youtube_followers","twitter_followers","phone","nickname","gender","birth_date","prefecture","line_user_id","user_id"];
-    const existingCols: string[] = [];
-    const missingCols: string[] = [];
-    for (const col of colTests) {
-      const { error: e } = await extSupabase.from("influencers").select(col).limit(0);
-      if (!e) existingCols.push(col);
-      else missingCols.push(col);
+      if (!error && data) {
+        existingUser = data;
+      }
+    } catch (e) {
+      console.error("DB lookup error:", e);
     }
-    console.log("DEBUG existing columns:", JSON.stringify(existingCols));
-    console.log("DEBUG missing columns:", JSON.stringify(missingCols));
-
-    // For now, since we don't know the right column, treat all as new users
-    // (the table is empty anyway)
-    const existingUser = null;
 
     return new Response(
       JSON.stringify({

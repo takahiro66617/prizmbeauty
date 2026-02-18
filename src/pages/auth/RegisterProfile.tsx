@@ -71,7 +71,7 @@ export default function RegisterProfile() {
       const { data, error } = await supabaseExternal
         .from("influencers")
         .insert({
-          user_id: lineProfile.userId,
+          line_user_id: lineProfile.userId,
           username: nickname,
           name: `${lastName} ${firstName}`,
           image_url: lineProfile.pictureUrl || null,
