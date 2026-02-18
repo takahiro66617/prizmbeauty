@@ -42,6 +42,7 @@ import MyPageNotifications from "./pages/mypage/MyPageNotifications";
 import MyPagePosts from "./pages/mypage/MyPagePosts";
 import MyPageSettings from "./pages/mypage/MyPageSettings";
 import MyPageCampaigns from "./pages/mypage/MyPageCampaigns";
+import MyPageRewards from "./pages/mypage/MyPageRewards";
 
 const queryClient = new QueryClient();
 
@@ -75,6 +76,7 @@ const App = () => (
             <Route path="notifications" element={<MyPageNotifications />} />
             <Route path="posts" element={<MyPagePosts />} />
             <Route path="settings" element={<MyPageSettings />} />
+            <Route path="rewards" element={<MyPageRewards />} />
           </Route>
           {/* Client (Company) Dashboard */}
           <Route path="/client/login" element={<ClientLogin />} />

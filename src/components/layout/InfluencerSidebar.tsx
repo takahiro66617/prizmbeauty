@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { LayoutDashboard, Search, MessageCircle, Heart, Bell, Settings, LogOut, ClipboardList, PenTool, User } from "lucide-react";
+import { LayoutDashboard, Search, MessageCircle, Heart, Bell, Settings, LogOut, ClipboardList, PenTool, User, Wallet } from "lucide-react";
 import { useEffect, useState } from "react";
 
 export default function InfluencerSidebar() {
@@ -23,6 +23,7 @@ export default function InfluencerSidebar() {
     { icon: ClipboardList, label: "応募履歴", href: "/mypage/applications" },
     { icon: PenTool, label: "投稿管理", href: "/mypage/posts" },
     { icon: MessageCircle, label: "メッセージ", href: "/mypage/messages" },
+    { icon: Wallet, label: "報酬管理", href: "/mypage/rewards" },
     { icon: Heart, label: "お気に入り", href: "/mypage/favorites" },
     { icon: Bell, label: "お知らせ", href: "/mypage/notifications" },
     { icon: Settings, label: "登録情報", href: "/mypage/settings" },
