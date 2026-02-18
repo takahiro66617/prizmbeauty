@@ -1,56 +1,46 @@
 
 
-## 問題の根本原因
+## LINEログイン修正プラン
 
-エッジファンクションのログ:
-```
-column influencers.line_user_id does not exist
-```
+外部DBに`line_user_id`カラムが追加されたので、コードを修正してLINEログインを完成させます。
 
-外部DBの`influencers`テーブルには`line_user_id`カラムが存在しません。LINE UserIDは`user_id`カラムに保存する必要があります。また、プロフィール登録時に存在しないカラム（`nickname`, `gender`, `birth_date`, `prefecture`, `line_user_id`）への挿入も失敗します。
+### 変更内容
 
-## 修正内容
+#### 1. エッジファンクション（LINE認証処理）
 
-### 1. エッジファンクション `supabase/functions/line-auth/index.ts`
+診断用コードを全て削除し、シンプルな処理に書き直す:
 
-LINE UserIDでの検索を`line_user_id`から`user_id`に変更:
+- LINE認証コードをトークンに交換
+- LINEプロフィールを取得
+- `line_user_id`カラムで既存ユーザーを検索
+- 見つかれば既存ユーザーとしてログイン、見つからなければ新規登録画面へ
 
-```
-// 変更前
-.eq("line_user_id", profileData.userId)
+#### 2. プロフィール登録画面
 
-// 変更後
-.eq("user_id", profileData.userId)
-```
+登録時のデータ保存を修正:
 
-### 2. プロフィール登録 `src/pages/auth/RegisterProfile.tsx`
+- `user_id`（存在しないカラム）の代わりに`line_user_id`を使用
+- 存在するカラムのみに挿入を限定: `line_user_id`, `username`, `name`, `image_url`, `category`, `status`
 
-挿入データから存在しないカラムを削除:
+### 技術的な詳細
 
-| 変更前のカラム | 対応 |
-|---|---|
-| `line_user_id` | 削除（`user_id`に統合） |
-| `nickname` | 削除（存在しないカラム） |
-| `gender` | 削除（存在しないカラム） |
-| `birth_date` | 削除（存在しないカラム） |
-| `prefecture` | 削除（存在しないカラム） |
+**エッジファンクション `supabase/functions/line-auth/index.ts`**
 
-挿入データは以下のみに:
-- `user_id` (LINE userId)
-- `username` (ニックネーム)
-- `name` (姓名)
-- `image_url`
-- `category`
-- `status`
+変更点:
+- 26個のカラム診断クエリを全て削除
+- `line_user_id`カラムで`.eq("line_user_id", profileData.userId)`による検索を実装
+- DB検索エラー時はフォールバックとして新規ユーザー扱い（500エラーを返さない）
 
-### 技術的な補足
+**プロフィール登録 `src/pages/auth/RegisterProfile.tsx`**
 
-UIのフォーム（性別・生年月日・居住地）は残しますが、外部DBに対応カラムがないため、これらの値はDB保存されません。将来的に外部DBにカラムを追加した際に再度挿入処理に追加できます。
+変更点:
+- `.insert()`の`user_id`を`line_user_id`に変更
+- 存在しないカラム（`nickname`, `gender`, `birth_date`, `prefecture`）は挿入しない
 
-## 変更ファイル一覧
+### 変更ファイル一覧
 
 | ファイル | 変更内容 |
 |---|---|
-| `supabase/functions/line-auth/index.ts` | `line_user_id` を `user_id` に変更 |
-| `src/pages/auth/RegisterProfile.tsx` | 存在しないカラムを挿入データから削除 |
+| `supabase/functions/line-auth/index.ts` | 診断コード全削除、`line_user_id`での検索に修正 |
+| `src/pages/auth/RegisterProfile.tsx` | `user_id`を`line_user_id`に変更 |
 
