@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { Search, FileText, DollarSign, Clock, Building2, Badge as BadgeIcon, Filter } from "lucide-react";
+import { Search, FileText, Clock, Building2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
@@ -75,7 +75,7 @@ export default function MyPageCampaigns() {
                     <h3 className="font-bold text-gray-900 line-clamp-2">{campaign.title}</h3>
                     <div className="flex items-center text-sm text-gray-500"><Building2 className="w-3.5 h-3.5 mr-1" />{campaign.companies?.name || "不明"}</div>
                     <div className="flex items-center justify-between text-sm">
-                      <div className="flex items-center text-gray-700"><DollarSign className="w-3.5 h-3.5 mr-1 text-pink-500" /><span className="font-bold">¥{(campaign.budget_max || campaign.budget_min || 0).toLocaleString()}</span></div>
+                      <div className="flex items-center text-gray-700"><span className="text-pink-500 font-bold mr-1">¥</span><span className="font-bold">{(campaign.budget_max || campaign.budget_min || 0).toLocaleString()}</span></div>
                       <div className="flex items-center text-gray-500"><Clock className="w-3.5 h-3.5 mr-1" />{campaign.deadline ? new Date(campaign.deadline).toLocaleDateString("ja-JP") : "-"}</div>
                     </div>
                   </div>
