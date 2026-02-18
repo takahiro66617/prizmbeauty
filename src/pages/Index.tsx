@@ -1,9 +1,72 @@
 import { Link } from "react-router-dom";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { MOCK_CAMPAIGNS } from "@/lib/mockData";
 import { ArrowRight, Sparkles, Search, HandshakeIcon } from "lucide-react";
+import heroSkincare from "@/assets/hero-skincare.jpg";
+import heroFacial from "@/assets/hero-facial.jpg";
+import heroMakeup from "@/assets/hero-makeup.jpg";
+
+const heroImages = [heroSkincare, heroFacial, heroMakeup];
+const heroLabels = ["スキンケア", "フェイシャル", "メイクアップ"];
+
+const HeroSection = () => {
+  const [current, setCurrent] = useState(0);
+
+  useEffect(() => {
+    const timer = setInterval(() => setCurrent((p) => (p + 1) % heroImages.length), 5000);
+    return () => clearInterval(timer);
+  }, []);
+
+  return (
+    <section className="relative overflow-hidden h-[500px] md:h-[600px]">
+      {heroImages.map((src, i) => (
+        <img
+          key={i}
+          src={src}
+          alt={heroLabels[i]}
+          className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ${i === current ? "opacity-100" : "opacity-0"}`}
+        />
+      ))}
+      <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-background/40 to-transparent" />
+      <div className="container mx-auto px-4 relative z-10 h-full flex flex-col items-center justify-center text-center">
+        <h1 className="text-4xl md:text-6xl font-extrabold mb-6 leading-tight text-white drop-shadow-lg">
+          <span className="gradient-text">あなたの美しさ</span>を
+          <br />
+          <span className="gradient-text">価値</span>に変える
+        </h1>
+        <p className="text-lg md:text-xl text-white/80 max-w-2xl mx-auto mb-10 leading-relaxed drop-shadow">
+          PRizm Beautyは美容インフルエンサーと企業をつなぐ
+          <br className="hidden md:block" />
+          マッチングプラットフォームです
+        </p>
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+          <Link to="/campaigns">
+            <Button variant="gradient" size="lg" className="text-base px-8">
+              案件を探す <ArrowRight className="w-5 h-5 ml-1" />
+            </Button>
+          </Link>
+          <Link to="/register">
+            <Button variant="outline" size="lg" className="text-base px-8 bg-white/20 backdrop-blur border-white/30 text-white hover:bg-white/30">
+              無料で新規登録
+            </Button>
+          </Link>
+        </div>
+        <div className="flex gap-2 mt-8">
+          {heroImages.map((_, i) => (
+            <button
+              key={i}
+              onClick={() => setCurrent(i)}
+              className={`w-2.5 h-2.5 rounded-full transition-all ${i === current ? "bg-white scale-125" : "bg-white/50"}`}
+            />
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+};
 
 const Index = () => {
   const featuredCampaigns = MOCK_CAMPAIGNS.slice(0, 3);
@@ -14,37 +77,8 @@ const Index = () => {
 
       <main className="flex-1">
         {/* Hero Section */}
-        <section className="relative overflow-hidden bg-gradient-to-br from-pastel-pink/40 via-card to-pastel-blue/40 py-20 md:py-32">
-          {/* Floating decorations */}
-          <div className="absolute top-20 left-10 w-20 h-20 rounded-full bg-pastel-pink/50 animate-float blur-xl" />
-          <div className="absolute bottom-20 right-10 w-32 h-32 rounded-full bg-pastel-blue/50 animate-float blur-xl" style={{ animationDelay: "2s" }} />
-          <div className="absolute top-40 right-1/4 w-16 h-16 rounded-full bg-pastel-purple/50 animate-float blur-xl" style={{ animationDelay: "4s" }} />
+        <HeroSection />
 
-          <div className="container mx-auto px-4 relative z-10 text-center">
-            <h1 className="text-4xl md:text-6xl font-extrabold mb-6 leading-tight">
-              <span className="gradient-text">あなたの美しさ</span>を
-              <br />
-              <span className="gradient-text">価値</span>に変える
-            </h1>
-            <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto mb-10 leading-relaxed">
-              PRizm Beautyは美容インフルエンサーと企業をつなぐ
-              <br className="hidden md:block" />
-              マッチングプラットフォームです
-            </p>
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-              <Link to="/campaigns">
-                <Button variant="gradient" size="lg" className="text-base px-8">
-                  案件を探す <ArrowRight className="w-5 h-5 ml-1" />
-                </Button>
-              </Link>
-              <Link to="/register">
-                <Button variant="outline" size="lg" className="text-base px-8">
-                  無料で新規登録
-                </Button>
-              </Link>
-            </div>
-          </div>
-        </section>
 
         {/* How it works */}
         <section className="py-20 bg-card">

@@ -3,12 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ArrowLeft, Instagram } from "lucide-react";
-
-const LineIcon = ({ className }: { className?: string }) => (
-  <svg viewBox="0 0 24 24" fill="currentColor" className={className}>
-    <path d="M21.5 10.8C21.5 5.8 17.2 1.8 12 1.8C6.8 1.8 2.5 5.8 2.5 10.8C2.5 14.8 5 18.3 8.8 19.3C9 19.4 9.2 19.9 9.1 20.4C9 20.9 8.8 21.8 8.8 21.8C8.8 21.8 8.7 22.1 8.9 22.2C9.1 22.3 9.4 22.2 9.4 22.2C10.4 22 14.2 19.4 14.8 19.1C18.6 18.5 21.5 15 21.5 10.8Z" />
-  </svg>
-);
+import lineIcon from "@/assets/line.png";
 
 const GoogleIcon = ({ className }: { className?: string }) => (
   <svg viewBox="0 0 24 24" className={className}>
@@ -57,7 +52,7 @@ export default function LoginPage() {
             </div>
 
             <Button onClick={handleLineLogin} disabled={isLoading} className="w-full h-12 text-base font-bold text-white shadow-md" style={{ backgroundColor: "#06C755" }}>
-              {isLoading ? <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <LineIcon className="w-6 h-6" />}
+              {isLoading ? <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <img src={lineIcon} alt="LINE" className="w-6 h-6" />}
               {isLoading ? "認証中..." : "LINEでログイン"}
             </Button>
 
