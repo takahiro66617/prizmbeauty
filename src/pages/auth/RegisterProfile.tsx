@@ -81,7 +81,6 @@ export default function RegisterProfile() {
             },
             nickname,
             name: `${lastName} ${firstName}`,
-            category: selectedGenres.join(","),
           }),
         }
       );
