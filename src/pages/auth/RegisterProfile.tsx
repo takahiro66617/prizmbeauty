@@ -68,6 +68,9 @@ export default function RegisterProfile() {
     setIsSubmitting(true);
 
     try {
+      const bio = `${gender} / ${birthDate} / ${prefecture}`;
+      const category = selectedGenres.join(", ");
+
       const res = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/register-influencer`,
         {
@@ -81,6 +84,8 @@ export default function RegisterProfile() {
             },
             nickname,
             name: `${lastName} ${firstName}`,
+            category,
+            bio,
           }),
         }
       );
