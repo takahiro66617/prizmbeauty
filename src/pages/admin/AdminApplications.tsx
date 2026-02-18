@@ -1,22 +1,20 @@
 import { useState } from "react";
-import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Search } from "lucide-react";
-import { MOCK_APPLICATIONS, getInfluencerById, getCampaignById, getCompanyById } from "@/lib/mockData";
+import { useExternalApplications } from "@/hooks/useExternalApplications";
 
 export default function AdminApplications() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [search, setSearch] = useState("");
+  const { data: applications = [], isLoading } = useExternalApplications();
 
-  const filtered = MOCK_APPLICATIONS.filter(a => {
+  const filtered = applications.filter(a => {
     const matchesStatus = statusFilter === "all" || a.status === statusFilter;
     if (!matchesStatus) return false;
     if (!search) return true;
-    const inf = getInfluencerById(a.influencerId);
-    const campaign = getCampaignById(a.campaignId);
     const q = search.toLowerCase();
-    return inf?.name.toLowerCase().includes(q) || campaign?.title.toLowerCase().includes(q);
+    return (a.influencer_profiles?.name || "").toLowerCase().includes(q) || (a.campaigns?.title || "").toLowerCase().includes(q);
   });
 
   const getStatusBadge = (status: string) => {
@@ -67,28 +65,25 @@ export default function AdminApplications() {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200">
-            {filtered.map(app => {
-              const inf = getInfluencerById(app.influencerId);
-              const campaign = getCampaignById(app.campaignId);
-              const company = getCompanyById(app.companyId);
-              return (
-                <tr key={app.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-2">
-                      {inf && <img src={inf.image} alt="" className="w-7 h-7 rounded-full" />}
-                      <span className="font-medium text-gray-900">{inf?.name || app.influencerId}</span>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 text-gray-700">{campaign?.title || app.campaignId}</td>
-                  <td className="px-6 py-4 text-gray-600">{company?.name || app.companyId}</td>
-                  <td className="px-6 py-4 text-gray-500">{new Date(app.appliedAt).toLocaleDateString("ja-JP")}</td>
-                  <td className="px-6 py-4">{getStatusBadge(app.status)}</td>
-                  <td className="px-6 py-4">
-                    <Button variant="ghost" size="sm" className="text-purple-600 hover:text-purple-800">詳細</Button>
-                  </td>
-                </tr>
-              );
-            })}
+            {isLoading ? (
+              <tr><td colSpan={6} className="px-6 py-12 text-center text-gray-500">読み込み中...</td></tr>
+            ) : filtered.map(app => (
+              <tr key={app.id} className="hover:bg-gray-50">
+                <td className="px-6 py-4">
+                  <div className="flex items-center gap-2">
+                    {app.influencer_profiles && <img src={app.influencer_profiles.image_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(app.influencer_profiles.name)}`} alt="" className="w-7 h-7 rounded-full" />}
+                    <span className="font-medium text-gray-900">{app.influencer_profiles?.name || "-"}</span>
+                  </div>
+                </td>
+                <td className="px-6 py-4 text-gray-700">{app.campaigns?.title || "-"}</td>
+                <td className="px-6 py-4 text-gray-600">{app.campaigns?.companies?.name || "-"}</td>
+                <td className="px-6 py-4 text-gray-500">{new Date(app.applied_at).toLocaleDateString("ja-JP")}</td>
+                <td className="px-6 py-4">{getStatusBadge(app.status)}</td>
+                <td className="px-6 py-4">
+                  <Button variant="ghost" size="sm" className="text-purple-600 hover:text-purple-800">詳細</Button>
+                </td>
+              </tr>
+            ))}
           </tbody>
         </table>
         <div className="p-4 border-t border-gray-200 text-center text-gray-500 text-sm">全 {filtered.length} 件</div>

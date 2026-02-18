@@ -2,25 +2,28 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { TrendingUp, FileText, Users, Bell, PlusCircle, MessageCircle } from "lucide-react";
-import { getCampaignsForCompany, getApplicationsForCompany, getMessagesForUser, MOCK_COMPANIES } from "@/lib/mockData";
+import { useExternalCampaigns } from "@/hooks/useExternalCampaigns";
+import { useExternalApplications } from "@/hooks/useExternalApplications";
+import { useExternalMessages } from "@/hooks/useExternalMessages";
+import { useExternalCompany } from "@/hooks/useExternalCompanies";
 
 export default function ClientDashboard() {
-  const companyId = sessionStorage.getItem("client_company_id") || "c1";
-  const company = MOCK_COMPANIES.find(c => c.id === companyId);
-  const campaigns = getCampaignsForCompany(companyId);
-  const applications = getApplicationsForCompany(companyId);
-  const messages = getMessagesForUser(companyId);
+  const companyId = sessionStorage.getItem("client_company_id") || "";
+  const { data: company } = useExternalCompany(companyId);
+  const { data: campaigns = [] } = useExternalCampaigns(companyId);
+  const { data: applications = [] } = useExternalApplications({ companyId });
+  const { data: messages = [] } = useExternalMessages(companyId);
 
   const activeCampaigns = campaigns.filter(c => c.status === "recruiting").length;
   const pendingApps = applications.filter(a => ["applied", "reviewing"].includes(a.status)).length;
   const approvedApps = applications.filter(a => a.status === "approved").length;
-  const unreadMessages = messages.filter(m => !m.read && m.receiverId === companyId).length;
+  const unreadMessages = messages.filter(m => !m.read && m.receiver_id === companyId).length;
 
   return (
     <div className="space-y-8">
       <div>
         <h1 className="text-2xl font-bold text-gray-800">ダッシュボード</h1>
-        <p className="text-gray-500 mt-1">{company?.name} の管理画面です。</p>
+        <p className="text-gray-500 mt-1">{company?.name || "企業"} の管理画面です。</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
@@ -72,8 +75,8 @@ export default function ClientDashboard() {
               <div key={app.id} className="flex items-start p-3 hover:bg-gray-50 rounded-lg transition-colors border border-gray-100">
                 <div className="w-2 h-2 mt-2 rounded-full bg-red-500 mr-3 flex-shrink-0" />
                 <div className="flex-1">
-                  <p className="text-sm font-medium text-gray-800">新しい応募が届いています（案件ID: {app.campaignId}）</p>
-                  <p className="text-xs text-gray-500 mt-1">{new Date(app.appliedAt).toLocaleDateString("ja-JP")} - 選考をお願いします</p>
+                  <p className="text-sm font-medium text-gray-800">新しい応募が届いています（{app.campaigns?.title || "案件"}）</p>
+                  <p className="text-xs text-gray-500 mt-1">{new Date(app.applied_at).toLocaleDateString("ja-JP")} - 選考をお願いします</p>
                 </div>
                 <Link to="/client/applicants"><Button className="h-8 text-xs bg-white border border-gray-200 text-gray-600 hover:bg-gray-50 shadow-none">確認</Button></Link>
               </div>

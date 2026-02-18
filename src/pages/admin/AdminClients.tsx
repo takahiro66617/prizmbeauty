@@ -1,14 +1,19 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Search, Building2, User, Mail, Phone, Calendar } from "lucide-react";
-import { MOCK_COMPANIES, getCampaignsForCompany, getApplicationsForCompany } from "@/lib/mockData";
+import { Plus, Search, Building2, User, Calendar } from "lucide-react";
+import { useExternalCompanies } from "@/hooks/useExternalCompanies";
+import { useExternalCampaigns } from "@/hooks/useExternalCampaigns";
+import { useExternalApplications } from "@/hooks/useExternalApplications";
 
 export default function AdminClientsPage() {
   const [search, setSearch] = useState("");
+  const { data: companies = [], isLoading } = useExternalCompanies();
+  const { data: campaigns = [] } = useExternalCampaigns();
+  const { data: applications = [] } = useExternalApplications();
 
-  const filtered = MOCK_COMPANIES.filter(c =>
-    !search || c.name.toLowerCase().includes(search.toLowerCase()) || c.contactName.toLowerCase().includes(search.toLowerCase())
+  const filtered = companies.filter(c =>
+    !search || c.name.toLowerCase().includes(search.toLowerCase()) || (c.contact_name || "").toLowerCase().includes(search.toLowerCase())
   );
 
   return (
@@ -44,9 +49,11 @@ export default function AdminClientsPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {filtered.map(company => {
-                const campaigns = getCampaignsForCompany(company.id);
-                const applications = getApplicationsForCompany(company.id);
+              {isLoading ? (
+                <tr><td colSpan={7} className="px-6 py-12 text-center text-gray-500">読み込み中...</td></tr>
+              ) : filtered.map(company => {
+                const companyCampaigns = campaigns.filter(c => c.company_id === company.id);
+                const companyApps = applications.filter(a => a.company_id === company.id);
                 return (
                   <tr key={company.id} className="hover:bg-gray-50 transition-colors">
                     <td className="px-6 py-4">
@@ -54,7 +61,7 @@ export default function AdminClientsPage() {
                         <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center text-gray-400"><Building2 className="w-5 h-5" /></div>
                         <div>
                           <div className="font-bold text-gray-900">{company.name}</div>
-                          <div className="text-xs text-gray-500">{company.address}</div>
+                          <div className="text-xs text-gray-500">{company.industry || ""}</div>
                         </div>
                       </div>
                     </td>
@@ -62,15 +69,15 @@ export default function AdminClientsPage() {
                       <div className="flex items-center gap-2">
                         <User className="w-4 h-4 text-gray-400" />
                         <div>
-                          <div className="font-medium text-gray-900">{company.contactName}</div>
-                          <div className="text-xs text-gray-500">{company.contactRole}</div>
+                          <div className="font-medium text-gray-900">{company.contact_name || "-"}</div>
+                          <div className="text-xs text-gray-500">{company.contact_email || ""}</div>
                         </div>
                       </div>
                     </td>
-                    <td className="px-6 py-4 text-gray-600 font-medium">{campaigns.length}</td>
-                    <td className="px-6 py-4 text-gray-600 font-medium">{applications.length}</td>
+                    <td className="px-6 py-4 text-gray-600 font-medium">{companyCampaigns.length}</td>
+                    <td className="px-6 py-4 text-gray-600 font-medium">{companyApps.length}</td>
                     <td className="px-6 py-4 text-gray-600">
-                      <div className="flex items-center gap-2"><Calendar className="w-3 h-3" />{new Date(company.createdAt).toLocaleDateString("ja-JP")}</div>
+                      <div className="flex items-center gap-2"><Calendar className="w-3 h-3" />{new Date(company.created_at).toLocaleDateString("ja-JP")}</div>
                     </td>
                     <td className="px-6 py-4">
                       <Badge className={company.status === "active" ? "bg-green-50 text-green-700" : company.status === "pending" ? "bg-yellow-50 text-yellow-700" : "bg-red-50 text-red-700"}>

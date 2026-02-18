@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ArrowLeft, Instagram } from "lucide-react";
 import lineIcon from "@/assets/line.png";
+import { supabaseExternal } from "@/lib/supabaseExternal";
 
 const GoogleIcon = ({ className }: { className?: string }) => (
   <svg viewBox="0 0 24 24" className={className}>
@@ -20,16 +21,36 @@ export default function LoginPage() {
 
   const handleLineLogin = async () => {
     setIsLoading(true);
-    await new Promise(r => setTimeout(r, 1500));
-    const mockUser = {
-      id: "inf_line_" + Math.random().toString(36).substr(2, 9),
-      lastName: "LINE", firstName: "太郎", name: "LINE 太郎",
-      email: "line_user@example.com",
-      profileImagePreview: "https://ui-avatars.com/api/?name=LINE+User&background=06C755&color=fff",
-      type: "influencer",
-    };
-    sessionStorage.setItem("currentUser", JSON.stringify(mockUser));
-    navigate("/mypage");
+    try {
+      // Get first influencer from DB as demo login
+      const { data, error } = await supabaseExternal
+        .from("influencer_profiles")
+        .select("*")
+        .limit(1)
+        .single();
+      
+      if (error || !data) {
+        alert("ログインに失敗しました");
+        setIsLoading(false);
+        return;
+      }
+
+      const mockUser = {
+        id: data.id,
+        lastName: data.name.split(" ")[0] || data.name,
+        firstName: data.name.split(" ")[1] || "",
+        name: data.name,
+        email: "",
+        profileImagePreview: data.image_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(data.name)}&background=FFD6E8&color=333`,
+        type: "influencer",
+      };
+      sessionStorage.setItem("currentUser", JSON.stringify(mockUser));
+      navigate("/mypage");
+    } catch {
+      alert("ログインに失敗しました");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (

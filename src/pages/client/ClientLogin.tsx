@@ -2,29 +2,36 @@ import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { MOCK_COMPANIES } from "@/lib/mockData";
-
-const clientAccounts = [
-  { email: "yamada@lumiere.co.jp", password: "lumiere123", companyId: "c1" },
-  { email: "suzuki@naturalbeauty.jp", password: "natural123", companyId: "c2" },
-  { email: "sato@bloom.co.jp", password: "bloom123", companyId: "c3" },
-];
+import { supabaseExternal } from "@/lib/supabaseExternal";
 
 export default function ClientLogin() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const account = clientAccounts.find(a => a.email === email && a.password === password);
-    if (account) {
+    setError("");
+    setIsLoading(true);
+    try {
+      const { data, error: dbError } = await supabaseExternal
+        .from("companies")
+        .select("*")
+        .eq("contact_email", email)
+        .single();
+      if (dbError || !data) {
+        setError("メールアドレスが見つかりません。");
+        return;
+      }
       sessionStorage.setItem("client_session", "true");
-      sessionStorage.setItem("client_company_id", account.companyId);
+      sessionStorage.setItem("client_company_id", data.id);
       navigate("/client/dashboard");
-    } else {
-      setError("メールアドレスまたはパスワードが正しくありません。");
+    } catch {
+      setError("ログインに失敗しました。");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -47,13 +54,11 @@ export default function ClientLogin() {
             <label className="block text-sm font-medium text-gray-700 mb-2">パスワード</label>
             <Input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="パスワード" required />
           </div>
-          <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white">ログイン</Button>
+          <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white" disabled={isLoading}>
+            {isLoading ? "ログイン中..." : "ログイン"}
+          </Button>
           <div className="text-center">
             <Link to="/" className="text-sm text-gray-500 hover:text-blue-600">← トップページに戻る</Link>
-          </div>
-          <div className="text-xs text-gray-400 bg-gray-50 p-3 rounded-lg">
-            <p className="font-medium mb-1">テストアカウント:</p>
-            <p>yamada@lumiere.co.jp / lumiere123</p>
           </div>
         </form>
       </div>

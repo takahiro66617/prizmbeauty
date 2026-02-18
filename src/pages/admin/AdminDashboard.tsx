@@ -4,15 +4,23 @@ import { Link } from "react-router-dom";
 import {
   ArrowRight, Bell, TrendingUp, Users, FileText, FileEdit, Building2, UserCheck,
 } from "lucide-react";
-import { MOCK_CAMPAIGNS, MOCK_COMPANIES, MOCK_INFLUENCERS, MOCK_APPLICATIONS } from "@/lib/mockData";
+import { useExternalCampaigns } from "@/hooks/useExternalCampaigns";
+import { useExternalCompanies } from "@/hooks/useExternalCompanies";
+import { useExternalInfluencers } from "@/hooks/useExternalInfluencers";
+import { useExternalApplications } from "@/hooks/useExternalApplications";
 
 export default function AdminDashboard() {
-  const activeCampaigns = MOCK_CAMPAIGNS.filter(c => c.status === "recruiting").length;
-  const totalApplicants = MOCK_APPLICATIONS.length;
-  const companyCount = MOCK_COMPANIES.length;
-  const influencerCount = MOCK_INFLUENCERS.length;
-  const approvedApps = MOCK_APPLICATIONS.filter(a => a.status === "approved").length;
-  const pendingApps = MOCK_APPLICATIONS.filter(a => ["applied", "reviewing"].includes(a.status)).length;
+  const { data: campaigns = [] } = useExternalCampaigns();
+  const { data: companies = [] } = useExternalCompanies();
+  const { data: influencers = [] } = useExternalInfluencers();
+  const { data: applications = [] } = useExternalApplications();
+
+  const activeCampaigns = campaigns.filter(c => c.status === "recruiting").length;
+  const totalApplicants = applications.length;
+  const companyCount = companies.length;
+  const influencerCount = influencers.length;
+  const approvedApps = applications.filter(a => a.status === "approved").length;
+  const pendingApps = applications.filter(a => ["applied", "reviewing"].includes(a.status)).length;
 
   return (
     <div className="space-y-8">
@@ -94,7 +102,7 @@ export default function AdminDashboard() {
             <div className="p-2 bg-purple-100 rounded-lg text-purple-600"><FileText className="w-5 h-5" /></div>
             <div>
               <p className="text-sm text-gray-500">完了案件</p>
-              <p className="text-xl font-bold text-gray-800">{MOCK_APPLICATIONS.filter(a => a.status === "completed").length}</p>
+              <p className="text-xl font-bold text-gray-800">{applications.filter(a => a.status === "completed").length}</p>
             </div>
           </div>
         </Card>
@@ -106,21 +114,23 @@ export default function AdminDashboard() {
             <h2 className="text-lg font-bold text-gray-800 flex items-center"><Bell className="w-5 h-5 mr-2 text-yellow-500" />ToDo / お知らせ</h2>
           </div>
           <div className="space-y-4">
-            {MOCK_APPLICATIONS.filter(a => a.status === "applied").slice(0, 3).map(app => (
+            {applications.filter(a => a.status === "applied").slice(0, 3).map(app => (
               <div key={app.id} className="flex items-start p-3 hover:bg-gray-50 rounded-lg transition-colors border border-gray-100">
                 <div className="w-2 h-2 mt-2 rounded-full bg-red-500 mr-3 flex-shrink-0" />
                 <div className="flex-1">
-                  <p className="text-sm font-medium text-gray-800">案件#{app.campaignId}に新しい応募（IF: {app.influencerId}）</p>
-                  <p className="text-xs text-gray-500 mt-1">{new Date(app.appliedAt).toLocaleDateString("ja-JP")}</p>
+                  <p className="text-sm font-medium text-gray-800">
+                    {app.campaigns?.title || "案件"}に新しい応募（{app.influencer_profiles?.name || "IF"})
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">{new Date(app.applied_at).toLocaleDateString("ja-JP")}</p>
                 </div>
               </div>
             ))}
-            {MOCK_COMPANIES.filter(c => c.status === "pending").map(c => (
+            {companies.filter(c => c.status === "pending").map(c => (
               <div key={c.id} className="flex items-start p-3 hover:bg-gray-50 rounded-lg transition-colors border border-gray-100">
                 <div className="w-2 h-2 mt-2 rounded-full bg-blue-500 mr-3 flex-shrink-0" />
                 <div className="flex-1">
                   <p className="text-sm font-medium text-gray-800">新規企業「{c.name}」の承認待ち</p>
-                  <p className="text-xs text-gray-500 mt-1">{new Date(c.createdAt).toLocaleDateString("ja-JP")}</p>
+                  <p className="text-xs text-gray-500 mt-1">{new Date(c.created_at).toLocaleDateString("ja-JP")}</p>
                 </div>
               </div>
             ))}

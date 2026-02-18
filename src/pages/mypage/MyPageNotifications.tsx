@@ -1,45 +1,37 @@
 import { Badge } from "@/components/ui/badge";
-import { getMessagesForUser, getApplicationsForInfluencer, getCampaignById, getCompanyById, MOCK_USER } from "@/lib/mockData";
+import { useExternalNotifications } from "@/hooks/useExternalNotifications";
+import { useExternalApplications } from "@/hooks/useExternalApplications";
 
 export default function MyPageNotifications() {
-  const userId = JSON.parse(sessionStorage.getItem("currentUser") || "null")?.id || MOCK_USER.id;
-  const messages = getMessagesForUser(userId).filter(m => m.receiverId === userId);
-  const applications = getApplicationsForInfluencer(userId);
+  const userId = JSON.parse(sessionStorage.getItem("currentUser") || "null")?.id || "";
+  const { data: dbNotifications = [], isLoading } = useExternalNotifications(userId);
+  const { data: applications = [] } = useExternalApplications({ influencerId: userId });
 
-  // Build notifications from messages + application status changes
+  // Build notifications from DB notifications + application status changes
   const notifications: { id: string; title: string; content: string; date: string; type: "message" | "application" | "system"; read: boolean }[] = [];
 
-  messages.forEach(msg => {
+  dbNotifications.forEach(n => {
     notifications.push({
-      id: msg.id,
-      title: msg.subject,
-      content: msg.content.substring(0, 100) + "...",
-      date: msg.createdAt,
-      type: msg.subject.includes("スカウト") ? "application" : "message",
-      read: msg.read,
+      id: n.id,
+      title: n.title,
+      content: n.message,
+      date: n.created_at,
+      type: n.type === "message" ? "message" : n.type === "application" ? "application" : "system",
+      read: n.read,
     });
   });
 
-  applications.filter(a => a.reviewedAt).forEach(app => {
-    const campaign = getCampaignById(app.campaignId);
-    const statusText = app.status === "approved" ? "採用されました" : app.status === "rejected" ? "不採用となりました" : "";
-    if (statusText && campaign) {
-      notifications.push({
-        id: `notif-${app.id}`,
-        title: `「${campaign.title}」の選考結果`,
-        content: `${statusText}${app.reviewComment ? ` - ${app.reviewComment}` : ""}`,
-        date: app.reviewedAt!,
-        type: "application",
-        read: true,
-      });
-    }
+  applications.filter(a => a.status === "approved" || a.status === "rejected").forEach(app => {
+    const statusText = app.status === "approved" ? "採用されました" : "不採用となりました";
+    notifications.push({
+      id: `notif-${app.id}`,
+      title: `「${app.campaigns?.title || "案件"}」の選考結果`,
+      content: statusText,
+      date: app.updated_at,
+      type: "application",
+      read: true,
+    });
   });
-
-  // System notifications
-  notifications.push(
-    { id: "sys-1", title: "システムメンテナンスのお知らせ", content: "2026年2月15日(木) AM 2:00〜4:00 の間、システムメンテナンスを実施いたします。", date: "2026-02-10", type: "system", read: true },
-    { id: "sys-2", title: "新機能「スカウト」が追加されました", content: "企業から直接オファーが届く「スカウト機能」がリリースされました。", date: "2026-02-05", type: "system", read: true },
-  );
 
   notifications.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
@@ -52,11 +44,13 @@ export default function MyPageNotifications() {
     }
   };
 
+  if (isLoading) return <div className="text-center py-12 text-gray-500">読み込み中...</div>;
+
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold text-gray-800">お知らせ</h1>
       <div className="space-y-4">
-        {notifications.map(notif => (
+        {notifications.length > 0 ? notifications.map(notif => (
           <div key={notif.id} className={`bg-white p-6 rounded-xl border shadow-sm ${!notif.read ? "border-pink-200 bg-pink-50/30" : "border-gray-100"}`}>
             <div className="flex justify-between items-start mb-2">
               <div className="flex items-center gap-2">
@@ -68,7 +62,9 @@ export default function MyPageNotifications() {
             </div>
             <p className="text-sm text-gray-600 leading-relaxed">{notif.content}</p>
           </div>
-        ))}
+        )) : (
+          <div className="text-center py-12 text-gray-500">お知らせはありません</div>
+        )}
       </div>
     </div>
   );
