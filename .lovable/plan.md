@@ -1,121 +1,126 @@
 
 
-# 外部Supabaseデータベース接続 実装計画
+# LINE認証によるインフルエンサー登録・ログイン実装計画
 
 ## 概要
 
-現在モックデータ（`mockData.ts`）で動いている全画面を、外部Supabaseデータベース（`hisethfmyvvkohauuluq.supabase.co`）のリアルデータに切り替えます。SQLの実行は完了済みなので、あとはコード側の実装のみです。
+画像で示されたgetpopのような流れで、LINEログインを使ったインフルエンサーの新規登録・ログインを実装します。
+
+## ユーザーフロー
+
+```text
+[ログインページ] → [LINEでログイン/新規登録ボタン]
+       ↓
+[LINE認証画面] (LINEが自動表示・許可する)
+       ↓
+[コールバック処理] (Edge Functionでトークン交換)
+       ↓
+  ┌─ 既存ユーザー → [マイページダッシュボード]
+  └─ 新規ユーザー → [プロフィール設定ページ]
+                          ↓
+                    姓・名・ニックネーム
+                    性別・生年月日
+                    居住地（都道府県）
+                    主な投稿ジャンル（複数選択）
+                          ↓
+                    [設定完了 → マイページへ]
+```
 
 ## 実装内容
 
-### 1. 外部Supabaseクライアント作成
-- `src/lib/supabaseExternal.ts` を新規作成
-- 外部Supabaseの接続情報（URL + anon key）を使用
-- 既存のLovable Cloudクライアント（`src/integrations/supabase/client.ts`）には触れない
+### 1. シークレット設定
 
-### 2. データ取得用カスタムフック作成（6ファイル）
+LINE チャネルシークレット（`5723b465e50172286f90e8c8e0fcdbd8`）をバックエンドのシークレットとして安全に保存します。チャネルID（`2009141875`）はフロントエンドで使用します。
 
-TanStack React Query を使い、外部Supabaseからデータを取得・更新するフックを作成:
+### 2. Edge Function作成: `line-auth`
 
-| フック | 機能 |
-|--------|------|
-| `useExternalCompanies` | 企業一覧取得・更新 |
-| `useExternalCampaigns` | 案件一覧取得・作成 |
-| `useExternalInfluencers` | IF一覧取得・ステータス更新 |
-| `useExternalApplications` | 応募一覧取得・承認/却下 |
-| `useExternalMessages` | メッセージ取得・送信 |
-| `useExternalNotifications` | 通知取得・既読処理 |
+LINEから返される認証コードをアクセストークンに交換し、ユーザープロフィールを取得するバックエンド処理です。
 
-### 3. ログイン画面の変更（3画面）
+処理の流れ:
+- フロントエンドから認証コードを受け取る
+- LINE API (`https://api.line.me/oauth2/v2.1/token`) でトークンを取得
+- LINE API (`https://api.line.me/v2/profile`) でユーザー情報（LINE ID、表示名、アイコン）を取得
+- 外部データベースの `influencer_profiles` テーブルで LINE ID を検索
+- 既存ユーザーなら情報を返す、新規なら「新規」フラグを返す
 
-- **管理者ログイン** (`AdminLogin.tsx`): ハードコードのままで維持（管理者は固定アカウント）
-- **企業ログイン** (`ClientLogin.tsx`): 外部Supabase の `companies` テーブルの `contact_email` で照合
-- **インフルエンサーログイン** (`Login.tsx`): 外部Supabase の `influencers` テーブルのメールで照合
+### 3. LINEコールバックページ: `/auth/line/callback`
 
-### 4. 全管理画面をリアルデータに切り替え（約20ファイル）
+LINEから認証コードを受け取り、Edge Functionに渡してトークン交換する画面です。ローディング表示をしながらバックグラウンドで処理します。
 
-**企業管理画面（/client/*）:**
-- `ClientDashboard.tsx` - リアルデータでKPI表示
-- `ClientCampaigns.tsx` - 自社案件をDBから取得
-- `ClientCampaignNew.tsx` - 案件作成を実際にDBにINSERT
-- `ClientApplicants.tsx` - 採用/不採用ボタンが実際にDBをUPDATE
-- `ClientMessages.tsx` - メッセージをDBから取得・返信INSERT
-- `ClientSettings.tsx` - 企業情報の保存がDBをUPDATE
-- `ClientLayout.tsx` - 企業名をDBから取得
+### 4. プロフィール設定ページ: `/auth/register/profile`
 
-**管理者画面（/admin/*）:**
-- `AdminDashboard.tsx` - 全体統計をDBから算出
-- `AdminCampaigns.tsx` - 全案件をDBから取得
-- `AdminClients.tsx` - 企業一覧をDBから取得
-- `AdminInfluencers.tsx` - IF一覧をDBから取得、承認/停止をUPDATE
-- `AdminApplications.tsx` - 全応募をDBから取得
+新規ユーザー向けのプロフィール入力フォームです（getpopの画像を参考）:
+- 姓（必須）
+- 名（必須）
+- ニックネーム（必須）
+- 性別（必須）: 女性 / 男性
+- 生年月日（必須）
+- 居住地（必須）: 都道府県選択
+- 主な投稿ジャンル（必須・複数選択）: ダンス、Vlog、美容・コスメ、動物、赤ちゃん・子ども、カップル・夫婦、お笑い、アニメ・漫画、芸能・エンタメ、映画・ドラマ、フィットネス・健康、音楽、お金・投資、スポーツ、ゲーム、アート
 
-**インフルエンサー画面（/mypage/*）:**
-- `MyPageDashboard.tsx` - 自分の統計をDBから表示
-- `MyPageApplications.tsx` - 応募履歴をDBから取得
-- `MyPageMessages.tsx` - メッセージをDBから取得
-- `MyPageNotifications.tsx` - 通知をDBから取得
+設定完了後、外部データベースの `influencer_profiles` テーブルにINSERTしてマイページへ遷移します。
 
-### 5. 操作ボタンの実装
+### 5. ログインページの更新: `/auth/login`
 
-現在UIだけで機能しないボタンを全て接続:
-- 「採用」「不採用」ボタン → `applications.status` をUPDATE
-- 「承認」「停止」ボタン → `influencers.status` / `companies.status` をUPDATE
-- 案件作成フォーム → `campaigns` テーブルにINSERT
-- メッセージ返信 → `messages` テーブルにINSERT
-- 企業設定保存 → `companies` テーブルをUPDATE
+現在のモック処理を削除し、実際のLINE OAuth認証URLにリダイレクトするように変更します。ボタンは「LINEでログイン/新規登録」に統一します。
+
+### 6. LINE Developersコンソール設定（ユーザー作業）
+
+コールバックURLを設定する必要があります:
+`https://id-preview--ac83c3e4-c73b-40f6-be54-73af9493150e.lovable.app/auth/line/callback`
 
 ---
 
 ## 技術詳細
 
-### 外部Supabaseクライアント
+### LINE OAuth認証URL
 
 ```text
-// src/lib/supabaseExternal.ts
-import { createClient } from '@supabase/supabase-js'
-
-const EXTERNAL_URL = "https://hisethfmyvvkohauuluq.supabase.co"
-const EXTERNAL_ANON_KEY = "eyJhbGciOiJIUzI1NiIs..."
-
-export const supabaseExternal = createClient(EXTERNAL_URL, EXTERNAL_ANON_KEY)
+https://access.line.me/oauth2/v2.1/authorize
+  ?response_type=code
+  &client_id=2009141875
+  &redirect_uri={callback_url}
+  &state={random_state}
+  &scope=profile openid
 ```
 
-### カスタムフックの例
+### Edge Function: `supabase/functions/line-auth/index.ts`
 
-```text
-// src/hooks/useExternalCampaigns.ts
-export function useExternalCampaigns(companyId?: string) {
-  return useQuery({
-    queryKey: ['ext-campaigns', companyId],
-    queryFn: async () => {
-      let query = supabaseExternal.from('campaigns').select('*');
-      if (companyId) query = query.eq('company_id', companyId);
-      const { data, error } = await query;
-      if (error) throw error;
-      return data;
-    }
-  });
-}
-```
+- 認証コードとリダイレクトURIを受け取る
+- LINE Token API でアクセストークンを取得
+- LINE Profile API でユーザー情報を取得
+- 外部Supabaseの `influencer_profiles` テーブルで `user_id` (LINE userId) を検索
+- 結果を返す（既存/新規 + LINEプロフィール情報）
 
-### ファイル一覧
+### influencer_profiles テーブルの変更
 
-| 種別 | ファイル |
-|------|---------|
-| 新規 | `src/lib/supabaseExternal.ts` |
-| 新規 | `src/hooks/useExternalCompanies.ts` |
-| 新規 | `src/hooks/useExternalCampaigns.ts` |
-| 新規 | `src/hooks/useExternalInfluencers.ts` |
-| 新規 | `src/hooks/useExternalApplications.ts` |
-| 新規 | `src/hooks/useExternalMessages.ts` |
-| 新規 | `src/hooks/useExternalNotifications.ts` |
-| 更新 | 上記の約20ページファイル |
+現在のテーブルに以下のカラムが不足している可能性があります。外部Supabaseで追加SQLが必要になる場合があります:
+- `line_user_id` (text) - LINE固有のユーザーID
+- `nickname` (text) - ニックネーム
+- `gender` (text) - 性別
+- `birth_date` (date) - 生年月日
+- `prefecture` (text) - 居住地
 
-### 注意点
+### 新規ファイル一覧
 
-- `mockData.ts` のインポートを全て外部Supabaseフックに置き換え
-- ローディング状態とエラーハンドリングを各画面に追加
-- `sessionStorage` によるログイン管理は維持（認証はSupabase Auth未使用）
-- 外部Supabaseのテーブルに合わせてフィールド名を調整（例: `contact_email` など）
+| ファイル | 内容 |
+|---------|------|
+| `supabase/functions/line-auth/index.ts` | LINEトークン交換Edge Function |
+| `src/pages/auth/LineCallback.tsx` | LINEコールバック処理ページ |
+| `src/pages/auth/RegisterProfile.tsx` | プロフィール設定ページ |
+
+### 更新ファイル一覧
+
+| ファイル | 変更内容 |
+|---------|---------|
+| `src/pages/Login.tsx` | LINE OAuthリダイレクトに変更 |
+| `src/App.tsx` | 新ルート追加 (`/auth/line/callback`, `/auth/register/profile`) |
+| `src/hooks/useExternalInfluencers.ts` | LINE IDでの検索・新規登録mutationを追加 |
+
+### 事前にユーザーが行う作業
+
+LINE Developersコンソール（https://developers.line.biz/console/）で:
+1. 該当チャネルの「LINE Login」設定を開く
+2. コールバックURLに以下を追加:
+   `https://id-preview--ac83c3e4-c73b-40f6-be54-73af9493150e.lovable.app/auth/line/callback`
 
