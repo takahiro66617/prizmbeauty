@@ -22,7 +22,7 @@ export function useExternalInfluencers() {
   return useQuery({
     queryKey: ["ext-influencers"],
     queryFn: async () => {
-      const { data, error } = await supabaseExternal.from("influencer_profiles").select("*").order("created_at", { ascending: false });
+      const { data, error } = await supabaseExternal.from("influencers").select("*").order("created_at", { ascending: false });
       if (error) throw error;
       return data as ExternalInfluencer[];
     },
@@ -34,7 +34,7 @@ export function useExternalInfluencer(id: string | null) {
     queryKey: ["ext-influencer", id],
     queryFn: async () => {
       if (!id) return null;
-      const { data, error } = await supabaseExternal.from("influencer_profiles").select("*").eq("id", id).single();
+      const { data, error } = await supabaseExternal.from("influencers").select("*").eq("id", id).single();
       if (error) throw error;
       return data as ExternalInfluencer;
     },
@@ -46,7 +46,7 @@ export function useUpdateInfluencerStatus() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, status }: { id: string; status: string }) => {
-      const { data, error } = await supabaseExternal.from("influencer_profiles").update({ status }).eq("id", id).select().single();
+      const { data, error } = await supabaseExternal.from("influencers").update({ status }).eq("id", id).select().single();
       if (error) throw error;
       return data;
     },

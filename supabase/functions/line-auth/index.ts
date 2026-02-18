@@ -70,7 +70,7 @@ Deno.serve(async (req) => {
     const extSupabase = createClient(EXTERNAL_SUPABASE_URL, EXTERNAL_SUPABASE_ANON_KEY);
 
     const { data: existingUser, error: searchError } = await extSupabase
-      .from("influencer_profiles")
+      .from("influencers")
       .select("*")
       .eq("line_user_id", profileData.userId)
       .maybeSingle();
