@@ -1,5 +1,4 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { cn } from "@/lib/utils";
 import {
   LayoutDashboard, FileEdit, Building2, Users, Settings, LogOut, ClipboardList, MessageCircle,
 } from "lucide-react";
@@ -24,31 +23,46 @@ export function AdminSidebar() {
   };
 
   return (
-    <div className="flex bg-gray-900 text-white w-64 min-h-screen flex-col">
-      <div className="p-6 border-b border-gray-800">
-        <h1 className="text-xl font-bold bg-gradient-to-r from-pink-400 to-purple-400 bg-clip-text text-transparent">PRizm Admin</h1>
-        <p className="text-xs text-gray-400 mt-1">事務局管理画面</p>
+    <aside className="w-64 bg-white border-r border-gray-100 hidden md:flex flex-col h-screen sticky top-0">
+      <div className="p-6">
+        <div className="flex flex-col items-center mb-8">
+          <div className="w-16 h-16 rounded-full bg-gradient-to-br from-pink-200 via-purple-200 to-blue-200 flex items-center justify-center text-purple-600 font-bold text-lg mb-3 shadow-md">
+            AD
+          </div>
+          <h2 className="font-bold text-gray-800">PRizm Admin</h2>
+          <p className="text-xs text-gray-400 mt-0.5">事務局管理画面</p>
+        </div>
+
+        <nav className="space-y-1">
+          {navItems.map((item) => {
+            const isActive = location.pathname.startsWith(item.href);
+            return (
+              <Link key={item.href} to={item.href}>
+                <div className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group text-sm
+                  ${isActive ? "bg-purple-50 text-purple-600 font-bold" : "text-gray-500 hover:bg-gray-50 hover:text-gray-900"}`}>
+                  <item.icon className={`w-5 h-5 ${isActive ? "text-purple-500" : "text-gray-400 group-hover:text-gray-600"}`} />
+                  <span>{item.title}</span>
+                  {isActive && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-purple-500"></div>}
+                </div>
+              </Link>
+            );
+          })}
+        </nav>
       </div>
-      <nav className="flex-1 p-4 space-y-2">
-        {navItems.map(item => {
-          const isActive = location.pathname.startsWith(item.href);
-          return (
-            <Link key={item.href} to={item.href}
-              className={cn("flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors text-sm",
-                isActive ? "bg-purple-600 text-white shadow-md" : "text-gray-400 hover:bg-gray-800 hover:text-white")}>
-              <item.icon className="w-5 h-5" /><span>{item.title}</span>
-            </Link>
-          );
-        })}
-      </nav>
-      <div className="p-4 border-t border-gray-800">
-        <Link to="/admin/dashboard" className="flex items-center space-x-3 px-4 py-3 text-gray-400 hover:text-white transition-colors text-sm">
-          <Settings className="w-5 h-5" /><span>設定</span>
+
+      <div className="mt-auto p-6 border-t border-gray-100">
+        <Link to="/admin/dashboard">
+          <div className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group text-sm
+            ${location.pathname === "/admin/settings" ? "bg-purple-50 text-purple-600 font-bold" : "text-gray-500 hover:bg-gray-50 hover:text-gray-900"}`}>
+            <Settings className="w-5 h-5 text-gray-400 group-hover:text-gray-600" />
+            <span>設定</span>
+          </div>
         </Link>
-        <button onClick={handleLogout} className="w-full flex items-center space-x-3 px-4 py-3 text-red-400 hover:bg-red-900/20 rounded-lg transition-colors text-sm mt-2">
-          <LogOut className="w-5 h-5" /><span>ログアウト</span>
+        <button onClick={handleLogout} className="w-full flex items-center gap-3 px-4 py-3 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all text-sm mt-1">
+          <LogOut className="w-5 h-5" />
+          <span>ログアウト</span>
         </button>
       </div>
-    </div>
+    </aside>
   );
 }
