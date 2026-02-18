@@ -33,6 +33,20 @@ Deno.serve(async (req) => {
 
     const supabase = createClient(supabaseUrl, serviceRoleKey);
 
+    // Check if user already exists (prevent duplicate key error)
+    const { data: existing } = await supabase
+      .from("influencer_profiles")
+      .select("*")
+      .eq("line_user_id", lineProfile.userId)
+      .maybeSingle();
+
+    if (existing) {
+      return new Response(
+        JSON.stringify({ success: true, data: existing }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     const { data, error } = await supabase
       .from("influencer_profiles")
       .insert({
