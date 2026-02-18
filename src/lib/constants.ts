@@ -15,6 +15,10 @@ export const APPLICATION_STATUSES = [
   { id: "reviewing", label: "選考中", color: "bg-yellow-100 text-yellow-700" },
   { id: "approved", label: "採用", color: "bg-green-100 text-green-700" },
   { id: "rejected", label: "不採用", color: "bg-red-100 text-red-700" },
+  { id: "in_progress", label: "進行中", color: "bg-purple-100 text-purple-700" },
+  { id: "post_submitted", label: "投稿済み", color: "bg-indigo-100 text-indigo-700" },
+  { id: "post_confirmed", label: "投稿確認済", color: "bg-teal-100 text-teal-700" },
+  { id: "payment_pending", label: "振込待ち", color: "bg-orange-100 text-orange-700" },
   { id: "completed", label: "完了", color: "bg-gray-100 text-gray-700" },
 ];
 

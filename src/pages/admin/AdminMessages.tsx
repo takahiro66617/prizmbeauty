@@ -49,9 +49,7 @@ export default function AdminMessages() {
 
   const handleSendNewMessage = () => {
     if (!newMsgReceiver || !newMsgContent.trim()) return;
-    const adminId = "admin";
     sendMessage.mutate({
-      sender_id: adminId,
       receiver_id: newMsgReceiver,
       content: newMsgContent,
     }, {
