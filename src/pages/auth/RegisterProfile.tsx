@@ -72,13 +72,8 @@ export default function RegisterProfile() {
         .from("influencers")
         .insert({
           user_id: lineProfile.userId,
-          line_user_id: lineProfile.userId,
           username: nickname,
           name: `${lastName} ${firstName}`,
-          nickname,
-          gender,
-          birth_date: birthDate,
-          prefecture,
           image_url: lineProfile.pictureUrl || null,
           category: selectedGenres.join(","),
           status: "active",
