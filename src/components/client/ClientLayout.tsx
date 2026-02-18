@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { Outlet, useNavigate } from "react-router-dom";
 import { ClientSidebar } from "./ClientSidebar";
-import { MOCK_COMPANIES } from "@/lib/mockData";
+import { useExternalCompany } from "@/hooks/useExternalCompanies";
 
 export function ClientLayout() {
   const navigate = useNavigate();
@@ -13,8 +13,8 @@ export function ClientLayout() {
     }
   }, [navigate]);
 
-  const companyId = sessionStorage.getItem("client_company_id") || "c1";
-  const company = MOCK_COMPANIES.find(c => c.id === companyId);
+  const companyId = sessionStorage.getItem("client_company_id") || "";
+  const { data: company } = useExternalCompany(companyId);
 
   return (
     <div className="flex min-h-screen bg-gray-50">
@@ -26,7 +26,7 @@ export function ClientLayout() {
           </h2>
           <div className="flex items-center space-x-4">
             <div className="text-sm text-gray-500">
-              担当: <span className="font-medium text-gray-900">{company?.contactName || ""}</span>
+              担当: <span className="font-medium text-gray-900">{company?.contact_name || ""}</span>
             </div>
             <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-xs">
               CL

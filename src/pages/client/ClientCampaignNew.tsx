@@ -3,20 +3,45 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
-import { CATEGORIES } from "@/lib/mockData";
 import { ArrowLeft } from "lucide-react";
+import { useCreateCampaign } from "@/hooks/useExternalCampaigns";
+import { toast } from "sonner";
+
+const CATEGORIES = [
+  "スキンケア", "メイク", "ヘアケア",
+  "ボディケア", "ネイル", "フレグランス",
+  "ダイエット", "ファッション", "ライフスタイル"
+];
 
 export default function ClientCampaignNew() {
   const navigate = useNavigate();
+  const createCampaign = useCreateCampaign();
+  const companyId = sessionStorage.getItem("client_company_id") || "";
   const [form, setForm] = useState({
     title: "", description: "", category: "スキンケア", reward: "",
     maxApplicants: "", deadline: "", requirements: "", platforms: [] as string[], deliverables: "",
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    alert("案件が作成されました（デモ）");
-    navigate("/client/campaigns");
+    createCampaign.mutate({
+      title: form.title,
+      description: form.description,
+      company_id: companyId,
+      category: form.category,
+      budget_min: Number(form.reward),
+      budget_max: Number(form.reward),
+      deadline: form.deadline,
+      requirements: form.requirements,
+      platform: form.platforms.join(","),
+      status: "recruiting",
+    }, {
+      onSuccess: () => {
+        toast.success("案件を作成しました");
+        navigate("/client/campaigns");
+      },
+      onError: () => toast.error("案件の作成に失敗しました"),
+    });
   };
 
   const togglePlatform = (p: string) => {
@@ -93,7 +118,9 @@ export default function ClientCampaignNew() {
           </div>
           <div className="flex justify-end gap-3 pt-4">
             <Button type="button" variant="outline" onClick={() => navigate(-1)}>キャンセル</Button>
-            <Button type="submit" className="bg-blue-600 hover:bg-blue-700">案件を作成</Button>
+            <Button type="submit" className="bg-blue-600 hover:bg-blue-700" disabled={createCampaign.isPending}>
+              {createCampaign.isPending ? "作成中..." : "案件を作成"}
+            </Button>
           </div>
         </form>
       </Card>

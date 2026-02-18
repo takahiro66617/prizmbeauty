@@ -1,12 +1,11 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { Search, FileText, DollarSign, CheckCircle, XCircle, Clock, Send, ChevronRight, X, Building2, ArrowRight } from "lucide-react";
+import { Search, FileText, DollarSign, CheckCircle, Clock, Send, ChevronRight, X, Building2, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { getApplicationsForInfluencer, getCampaignById, getCompanyById, MOCK_USER } from "@/lib/mockData";
-import type { Application } from "@/lib/mockData";
+import { useExternalApplications, type ExternalApplication } from "@/hooks/useExternalApplications";
 
 const TABS = [
   { id: "all", label: "すべて" },
@@ -17,19 +16,18 @@ const TABS = [
 ];
 
 export default function MyPageApplications() {
-  const userId = JSON.parse(sessionStorage.getItem("currentUser") || "null")?.id || MOCK_USER.id;
-  const applications = getApplicationsForInfluencer(userId);
+  const userId = JSON.parse(sessionStorage.getItem("currentUser") || "null")?.id || "";
+  const { data: applications = [], isLoading } = useExternalApplications({ influencerId: userId });
   const [activeTab, setActiveTab] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedApp, setSelectedApp] = useState<Application | null>(null);
+  const [selectedApp, setSelectedApp] = useState<ExternalApplication | null>(null);
 
   const filtered = applications.filter(app => {
     if (activeTab === "reviewing" && !["applied", "reviewing"].includes(app.status)) return false;
     else if (activeTab !== "all" && activeTab !== "reviewing" && app.status !== activeTab) return false;
     if (searchQuery) {
-      const campaign = getCampaignById(app.campaignId);
       const q = searchQuery.toLowerCase();
-      return campaign?.title.toLowerCase().includes(q) || campaign?.company.name.toLowerCase().includes(q);
+      return (app.campaigns?.title || "").toLowerCase().includes(q) || (app.campaigns?.companies?.name || "").toLowerCase().includes(q);
     }
     return true;
   });
@@ -66,27 +64,29 @@ export default function MyPageApplications() {
         </nav>
       </div>
 
-      {filtered.length > 0 ? (
+      {isLoading ? (
+        <div className="text-center py-12 text-gray-500">読み込み中...</div>
+      ) : filtered.length > 0 ? (
         <div className="grid gap-4">
           {filtered.map(app => {
-            const campaign = getCampaignById(app.campaignId);
+            const campaign = app.campaigns;
             return (
               <Card key={app.id} className="group hover:shadow-md transition-shadow border-gray-100">
                 <CardContent className="p-4 md:p-6">
                   <div className="flex flex-col md:flex-row gap-4 md:items-center">
                     <div className="w-full md:w-32 h-32 md:h-24 shrink-0 rounded-lg overflow-hidden bg-gray-100">
-                      {campaign ? <img src={campaign.images[0]} alt={campaign.title} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-gray-300"><FileText className="w-8 h-8" /></div>}
+                      {campaign?.image_url ? <img src={campaign.image_url} alt={campaign.title} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-gray-300"><FileText className="w-8 h-8" /></div>}
                     </div>
                     <div className="flex-1 min-w-0 space-y-2">
                       <div className="flex flex-wrap items-center gap-2 mb-1">
                         {getStatusBadge(app.status)}
-                        <span className="text-xs text-gray-500">応募日: {new Date(app.appliedAt).toLocaleDateString()}</span>
+                        <span className="text-xs text-gray-500">応募日: {new Date(app.applied_at).toLocaleDateString()}</span>
                       </div>
                       <h3 className="font-bold text-gray-900 truncate">{campaign?.title || "不明な案件"}</h3>
-                      <div className="flex items-center text-sm text-gray-500"><Building2 className="w-3.5 h-3.5 mr-1" />{campaign?.company.name || "不明"}</div>
+                      <div className="flex items-center text-sm text-gray-500"><Building2 className="w-3.5 h-3.5 mr-1" />{campaign?.companies?.name || "不明"}</div>
                       <div className="flex flex-wrap gap-4 text-xs md:text-sm pt-1">
-                        <div className="flex items-center text-gray-600"><DollarSign className="w-3.5 h-3.5 mr-1 text-gray-400" /><span className="font-medium">¥{campaign?.reward.toLocaleString()}</span></div>
-                        <div className="flex items-center text-gray-600"><Clock className="w-3.5 h-3.5 mr-1 text-gray-400" />締切: {campaign?.deadline || "-"}</div>
+                        <div className="flex items-center text-gray-600"><DollarSign className="w-3.5 h-3.5 mr-1 text-gray-400" /><span className="font-medium">¥{(campaign?.budget_max || campaign?.budget_min || 0).toLocaleString()}</span></div>
+                        <div className="flex items-center text-gray-600"><Clock className="w-3.5 h-3.5 mr-1 text-gray-400" />締切: {campaign?.deadline ? new Date(campaign.deadline).toLocaleDateString("ja-JP") : "-"}</div>
                       </div>
                     </div>
                     <div className="flex md:flex-col gap-2 justify-end mt-2 md:mt-0 border-t md:border-t-0 pt-3 md:pt-0">
@@ -119,24 +119,22 @@ export default function MyPageApplications() {
               <button onClick={() => setSelectedApp(null)} className="text-gray-400 hover:text-gray-600"><X className="w-5 h-5" /></button>
             </div>
             <div className="p-6 space-y-6 max-h-[70vh] overflow-y-auto">
-              {(() => { const campaign = getCampaignById(selectedApp.campaignId); return campaign ? (
+              {selectedApp.campaigns && (
                 <div className="flex gap-4 p-4 bg-gray-50 rounded-xl">
-                  <div className="w-20 h-20 rounded-lg overflow-hidden bg-gray-200 shrink-0"><img src={campaign.images[0]} alt="" className="w-full h-full object-cover" /></div>
+                  <div className="w-20 h-20 rounded-lg overflow-hidden bg-gray-200 shrink-0">
+                    {selectedApp.campaigns.image_url && <img src={selectedApp.campaigns.image_url} alt="" className="w-full h-full object-cover" />}
+                  </div>
                   <div>
-                    <h4 className="font-bold text-gray-900 mb-1">{campaign.title}</h4>
-                    <p className="text-sm text-gray-500 mb-2">{campaign.company.name}</p>
-                    <span className="font-bold text-pink-500">¥{campaign.reward.toLocaleString()}</span>
+                    <h4 className="font-bold text-gray-900 mb-1">{selectedApp.campaigns.title}</h4>
+                    <p className="text-sm text-gray-500 mb-2">{selectedApp.campaigns.companies?.name || ""}</p>
+                    <span className="font-bold text-pink-500">¥{(selectedApp.campaigns.budget_max || selectedApp.campaigns.budget_min || 0).toLocaleString()}</span>
                   </div>
                 </div>
-              ) : null; })()}
-              <div>
-                <h4 className="font-bold text-gray-800 mb-2 text-sm">応募動機</h4>
-                <div className="bg-gray-50 p-4 rounded-lg text-sm text-gray-700 leading-relaxed italic border border-gray-100">"{selectedApp.motivation}"</div>
-              </div>
-              {selectedApp.reviewComment && (
+              )}
+              {selectedApp.motivation && (
                 <div>
-                  <h4 className="font-bold text-gray-800 mb-2 text-sm">企業からのコメント</h4>
-                  <div className="bg-blue-50 p-4 rounded-lg text-sm text-blue-700 leading-relaxed border border-blue-100">{selectedApp.reviewComment}</div>
+                  <h4 className="font-bold text-gray-800 mb-2 text-sm">応募動機</h4>
+                  <div className="bg-gray-50 p-4 rounded-lg text-sm text-gray-700 leading-relaxed italic border border-gray-100">"{selectedApp.motivation}"</div>
                 </div>
               )}
             </div>

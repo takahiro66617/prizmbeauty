@@ -3,7 +3,8 @@ import { Link } from "react-router-dom";
 import { FileText, Clock, CheckCircle, Circle, ArrowRight, Megaphone, Calendar, DollarSign, MessageCircle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { getApplicationsForInfluencer, getMessagesForUser, getCampaignById, MOCK_USER } from "@/lib/mockData";
+import { useExternalApplications } from "@/hooks/useExternalApplications";
+import { useExternalMessages } from "@/hooks/useExternalMessages";
 
 const formatDate = (date: Date) =>
   new Intl.DateTimeFormat("ja-JP", { year: "numeric", month: "long", day: "numeric", weekday: "short" }).format(date);
@@ -14,15 +15,15 @@ export default function MyPageDashboard() {
   useEffect(() => {
     const storedUser = sessionStorage.getItem("currentUser");
     if (storedUser) setUser(JSON.parse(storedUser));
-    else setUser(MOCK_USER);
   }, []);
 
-  if (!user) return null;
+  const userId = user?.id || "";
+  const { data: applications = [] } = useExternalApplications({ influencerId: userId });
+  const { data: messages = [] } = useExternalMessages(userId);
 
-  const userId = user.id || "inf_001";
-  const applications = getApplicationsForInfluencer(userId);
-  const messages = getMessagesForUser(userId);
-  const unreadMessages = messages.filter(m => !m.read && m.receiverId === userId).length;
+  if (!user) return <div className="text-center py-12 text-gray-500">ログインしてください</div>;
+
+  const unreadMessages = messages.filter(m => !m.read && m.receiver_id === userId).length;
 
   const stats = {
     applications: applications.filter(a => ["applied", "reviewing"].includes(a.status)).length,
@@ -33,8 +34,7 @@ export default function MyPageDashboard() {
 
   const todos: any[] = [];
   applications.filter(a => a.status === "approved").forEach(a => {
-    const campaign = getCampaignById(a.campaignId);
-    if (campaign) todos.push({ id: `todo-${a.id}`, text: `「${campaign.title}」の投稿準備をしましょう`, link: "/mypage/posts", type: "urgent" });
+    if (a.campaigns) todos.push({ id: `todo-${a.id}`, text: `「${a.campaigns.title}」の投稿準備をしましょう`, link: "/mypage/posts", type: "urgent" });
   });
   if (applications.length === 0) {
     todos.push({ id: "todo-1", text: "プロフィールを充実させて、スカウトを受け取りやすくしましょう！", link: "/mypage/settings", type: "info" });
@@ -101,13 +101,13 @@ export default function MyPageDashboard() {
               <CardTitle className="text-lg font-bold text-gray-800 flex items-center gap-2"><Megaphone className="w-5 h-5 text-pink-500" />お知らせ</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {messages.filter(m => m.receiverId === userId).slice(0, 3).map(msg => (
+              {messages.filter(m => m.receiver_id === userId).slice(0, 3).map(msg => (
                 <div key={msg.id} className="pb-3 border-b border-gray-100 last:border-0 last:pb-0">
                   <div className="flex justify-between items-start mb-1">
-                    <span className="text-xs text-gray-400">{new Date(msg.createdAt).toLocaleDateString("ja-JP")}</span>
+                    <span className="text-xs text-gray-400">{new Date(msg.created_at).toLocaleDateString("ja-JP")}</span>
                     {!msg.read && <span className="text-[10px] bg-red-100 text-red-600 px-2 py-0.5 rounded-full">新着</span>}
                   </div>
-                  <p className="text-sm font-medium text-gray-700 hover:text-purple-500 cursor-pointer transition-colors line-clamp-2">{msg.subject}</p>
+                  <p className="text-sm font-medium text-gray-700 hover:text-purple-500 cursor-pointer transition-colors line-clamp-2">{msg.content.slice(0, 60)}</p>
                 </div>
               ))}
               <Link to="/mypage/notifications" className="w-full block">

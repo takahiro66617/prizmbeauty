@@ -3,11 +3,13 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Plus } from "lucide-react";
-import { getCampaignsForCompany, getApplicationsForCampaign } from "@/lib/mockData";
+import { useExternalCampaigns } from "@/hooks/useExternalCampaigns";
+import { useExternalApplications } from "@/hooks/useExternalApplications";
 
 export default function ClientCampaigns() {
-  const companyId = sessionStorage.getItem("client_company_id") || "c1";
-  const campaigns = getCampaignsForCompany(companyId);
+  const companyId = sessionStorage.getItem("client_company_id") || "";
+  const { data: campaigns = [], isLoading } = useExternalCampaigns(companyId);
+  const { data: applications = [] } = useExternalApplications({ companyId });
   const [statusFilter, setStatusFilter] = useState("all");
 
   const filtered = campaigns.filter(c => statusFilter === "all" || c.status === statusFilter);
@@ -40,26 +42,28 @@ export default function ClientCampaigns() {
               <th className="px-6 py-4">案件名</th>
               <th className="px-6 py-4">カテゴリ</th>
               <th className="px-6 py-4">報酬</th>
-              <th className="px-6 py-4">応募状況</th>
+              <th className="px-6 py-4">応募数</th>
               <th className="px-6 py-4">ステータス</th>
               <th className="px-6 py-4">締切</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200">
-            {filtered.map(campaign => {
-              const apps = getApplicationsForCampaign(campaign.id);
+            {isLoading ? (
+              <tr><td colSpan={6} className="px-6 py-12 text-center text-gray-500">読み込み中...</td></tr>
+            ) : filtered.map(campaign => {
+              const appCount = applications.filter(a => a.campaign_id === campaign.id).length;
               return (
                 <tr key={campaign.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4 font-medium text-gray-900">{campaign.title}</td>
-                  <td className="px-6 py-4"><Badge variant="outline">{campaign.category}</Badge></td>
-                  <td className="px-6 py-4 text-gray-600">¥{campaign.reward.toLocaleString()}</td>
-                  <td className="px-6 py-4 text-gray-600">{apps.length} / {campaign.maxApplicants}</td>
+                  <td className="px-6 py-4"><Badge variant="outline">{campaign.category || "-"}</Badge></td>
+                  <td className="px-6 py-4 text-gray-600">¥{(campaign.budget_max || campaign.budget_min || 0).toLocaleString()}</td>
+                  <td className="px-6 py-4 text-gray-600">{appCount}</td>
                   <td className="px-6 py-4">
                     <Badge className={campaign.status === "recruiting" ? "bg-green-100 text-green-700" : campaign.status === "closed" ? "bg-red-100 text-red-700" : "bg-gray-100 text-gray-700"}>
                       {campaign.status === "recruiting" ? "募集中" : campaign.status === "closed" ? "終了" : "完了"}
                     </Badge>
                   </td>
-                  <td className="px-6 py-4 text-gray-500">{campaign.deadline}</td>
+                  <td className="px-6 py-4 text-gray-500">{campaign.deadline ? new Date(campaign.deadline).toLocaleDateString("ja-JP") : "-"}</td>
                 </tr>
               );
             })}

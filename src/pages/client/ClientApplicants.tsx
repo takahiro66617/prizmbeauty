@@ -2,15 +2,24 @@ import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle, XCircle, Clock, Eye } from "lucide-react";
-import { getApplicationsForCompany, getInfluencerById, getCampaignById } from "@/lib/mockData";
+import { CheckCircle, XCircle, Eye } from "lucide-react";
+import { useExternalApplications, useUpdateApplicationStatus } from "@/hooks/useExternalApplications";
+import { toast } from "sonner";
 
 export default function ClientApplicants() {
-  const companyId = sessionStorage.getItem("client_company_id") || "c1";
-  const applications = getApplicationsForCompany(companyId);
+  const companyId = sessionStorage.getItem("client_company_id") || "";
+  const { data: applications = [], isLoading } = useExternalApplications({ companyId });
+  const updateStatus = useUpdateApplicationStatus();
   const [statusFilter, setStatusFilter] = useState("all");
 
   const filtered = applications.filter(a => statusFilter === "all" || a.status === statusFilter);
+
+  const handleStatusChange = (id: string, status: string) => {
+    updateStatus.mutate({ id, status }, {
+      onSuccess: () => toast.success(status === "approved" ? "採用しました" : "不採用にしました"),
+      onError: () => toast.error("更新に失敗しました"),
+    });
+  };
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -45,50 +54,56 @@ export default function ClientApplicants() {
         ))}
       </div>
 
-      <div className="space-y-4">
-        {filtered.map(app => {
-          const influencer = getInfluencerById(app.influencerId);
-          const campaign = getCampaignById(app.campaignId);
-          if (!influencer || !campaign) return null;
-
-          return (
-            <Card key={app.id} className="p-6 border-0 shadow-sm hover:shadow-md transition-shadow">
-              <div className="flex items-start gap-4">
-                <img src={influencer.image} alt={influencer.name} className="w-12 h-12 rounded-full bg-gray-200" />
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-3 mb-1">
-                    <h3 className="font-bold text-gray-900">{influencer.name}</h3>
-                    <span className="text-sm text-gray-500">@{influencer.username}</span>
-                    {getStatusBadge(app.status)}
+      {isLoading ? (
+        <div className="text-center py-12 text-gray-500">読み込み中...</div>
+      ) : (
+        <div className="space-y-4">
+          {filtered.map(app => {
+            const inf = app.influencer_profiles;
+            const campaign = app.campaigns;
+            return (
+              <Card key={app.id} className="p-6 border-0 shadow-sm hover:shadow-md transition-shadow">
+                <div className="flex items-start gap-4">
+                  <img src={inf?.image_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(inf?.name || "?")}`} alt={inf?.name || ""} className="w-12 h-12 rounded-full bg-gray-200" />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-3 mb-1">
+                      <h3 className="font-bold text-gray-900">{inf?.name || "-"}</h3>
+                      <span className="text-sm text-gray-500">@{inf?.username || "-"}</span>
+                      {getStatusBadge(app.status)}
+                    </div>
+                    <p className="text-sm text-gray-600 mb-2">
+                      案件: <span className="font-medium">{campaign?.title || "-"}</span>
+                    </p>
+                    <div className="flex items-center gap-4 text-xs text-gray-500">
+                      <span>応募日: {new Date(app.applied_at).toLocaleDateString("ja-JP")}</span>
+                      {inf?.instagram_followers ? <span className="text-pink-600">IG: {inf.instagram_followers.toLocaleString()}</span> : null}
+                      {inf?.tiktok_followers ? <span>TT: {inf.tiktok_followers.toLocaleString()}</span> : null}
+                      {inf?.youtube_followers ? <span className="text-red-600">YT: {inf.youtube_followers.toLocaleString()}</span> : null}
+                    </div>
+                    {app.motivation && <p className="text-sm text-gray-600 mt-2 bg-gray-50 p-3 rounded-lg italic">"{app.motivation}"</p>}
                   </div>
-                  <p className="text-sm text-gray-600 mb-2">
-                    案件: <span className="font-medium">{campaign.title}</span>
-                  </p>
-                  <div className="flex items-center gap-4 text-xs text-gray-500">
-                    <span>応募日: {new Date(app.appliedAt).toLocaleDateString("ja-JP")}</span>
-                    {influencer.platforms.instagram && <span className="text-pink-600">IG: {influencer.platforms.instagram.toLocaleString()}</span>}
-                    {influencer.platforms.tiktok && <span>TT: {influencer.platforms.tiktok.toLocaleString()}</span>}
-                    {influencer.platforms.youtube && <span className="text-red-600">YT: {influencer.platforms.youtube?.toLocaleString()}</span>}
+                  <div className="flex flex-col gap-2 shrink-0">
+                    {(app.status === "applied" || app.status === "reviewing") && (
+                      <>
+                        <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white" onClick={() => handleStatusChange(app.id, "approved")} disabled={updateStatus.isPending}>
+                          <CheckCircle className="w-3 h-3 mr-1" />採用
+                        </Button>
+                        <Button size="sm" variant="outline" className="text-red-600 border-red-200 hover:bg-red-50" onClick={() => handleStatusChange(app.id, "rejected")} disabled={updateStatus.isPending}>
+                          <XCircle className="w-3 h-3 mr-1" />不採用
+                        </Button>
+                      </>
+                    )}
+                    <Button size="sm" variant="ghost" className="text-gray-500"><Eye className="w-3 h-3 mr-1" />詳細</Button>
                   </div>
-                  <p className="text-sm text-gray-600 mt-2 bg-gray-50 p-3 rounded-lg italic">"{app.motivation}"</p>
                 </div>
-                <div className="flex flex-col gap-2 shrink-0">
-                  {(app.status === "applied" || app.status === "reviewing") && (
-                    <>
-                      <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white"><CheckCircle className="w-3 h-3 mr-1" />採用</Button>
-                      <Button size="sm" variant="outline" className="text-red-600 border-red-200 hover:bg-red-50"><XCircle className="w-3 h-3 mr-1" />不採用</Button>
-                    </>
-                  )}
-                  <Button size="sm" variant="ghost" className="text-gray-500"><Eye className="w-3 h-3 mr-1" />詳細</Button>
-                </div>
-              </div>
-            </Card>
-          );
-        })}
-        {filtered.length === 0 && (
-          <div className="text-center py-12 text-gray-500">該当する応募はありません</div>
-        )}
-      </div>
+              </Card>
+            );
+          })}
+          {filtered.length === 0 && (
+            <div className="text-center py-12 text-gray-500">該当する応募はありません</div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
