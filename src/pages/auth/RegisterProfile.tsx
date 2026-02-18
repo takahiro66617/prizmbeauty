@@ -76,7 +76,7 @@ export default function RegisterProfile() {
           name: `${lastName} ${firstName}`,
           image_url: lineProfile.pictureUrl || null,
           category: selectedGenres.join(","),
-          status: "active",
+          status: "pending",
         })
         .select()
         .single();
