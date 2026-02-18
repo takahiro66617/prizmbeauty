@@ -1,81 +1,102 @@
 
-## 登録フロー完全修正プラン（最終確定版）
 
-### 前回までの失敗の根本原因
+## Lovable Cloud DB切り替え＆登録フロー修正プラン
 
-PostgREST（外部DBの API）は INSERT 文に存在しないカラムが含まれている場合、**最初に見つけた1つ目の不正カラムだけ**エラーで返します。そのため毎回1つだけ削除 → 次の不正カラムで再度エラー、を繰り返していました。
+### なぜ今まで失敗し続けたのか（根本原因）
 
-```text
-1回目: category, image_url, status が不正 → category でエラー → 削除
-2回目: image_url, status が不正 → image_url でエラー → 削除
-3回目: status が不正 → status でエラー ← 今ここ
-```
+外部DB（`hisethfmyvvkohauuluq`）の `influencers` テーブルに `category`, `image_url`, `status`, `username` カラムが存在しなかったのに、コードから1つずつ削除するという対症療法を繰り返していた。**テーブル構造自体を修正する**という正しいアプローチを取らなかったのが原因。
 
-### 今回の修正で100%解決する根拠
+### 今回のアプローチ：Lovable Cloud DBに切り替え
 
-43行目の `status: "pending"` を削除すると、INSERT に含まれるカラムは以下の3つだけになります：
-
-- `line_user_id` -- 過去3回のエラーで一度も指摘されていない = 存在する
-- `username` -- 同上
-- `name` -- 同上
-
-PostgREST のエラーは「スキーマキャッシュにカラムが見つからない」というもので、存在するカラムではこのエラーは絶対に発生しません。
-
-### 修正箇所 1: Edge Function（register-influencer/index.ts 43行目）
-
-43行目の `status: "pending",` を削除します。
+Lovable Cloud DBの `influencer_profiles` テーブルには必要なカラムが**全て揃っている**ため、スキーマ不一致エラーは発生しない。
 
 ```text
-変更前（39-44行目）:
-    .insert({
-      line_user_id: lineProfile.userId,
-      username: nickname,
-      name,
-      status: "pending",    ← この行を削除
-    })
-
-変更後:
-    .insert({
-      line_user_id: lineProfile.userId,
-      username: nickname,
-      name,
-    })
+Lovable Cloud DB の influencer_profiles テーブル:
+  id, user_id, username, name, bio, image_url, category, status,
+  instagram_followers, tiktok_followers, youtube_followers, twitter_followers,
+  created_at, updated_at
 ```
 
-### 修正箇所 2: 管理画面のステータス更新（useExternalInfluencers.ts）
+### 必要なDB変更
 
-`useUpdateInfluencerStatus` 関数（49-51行目）は `status` カラムを UPDATE しようとしますが、外部DBに `status` カラムが存在しない以上、管理画面で「承認」「停止」ボタンを押してもエラーになります。
+`influencer_profiles` テーブルに以下の変更が必要:
 
-この関数は一旦コメントアウトまたは無効化し、エラーにならないようにします。
+1. `line_user_id` カラム追加（TEXT型、UNIQUE） -- LINEユーザー識別用
+2. `user_id` を NULL許容に変更 -- LINEログインユーザーはSupabase Authアカウントを持たないため
 
-### 修正箇所 3: 管理画面の表示（AdminInfluencers.tsx）
+### RLSポリシーの追加
 
-`status` が外部DBに存在しないため、SELECT結果にも含まれません。以下の対応を行います：
+Edge FunctionがService Role Keyで書き込むため、既存のRLSポリシーはバイパスされる（Service Roleは全てのポリシーを無視する）。読み取りは既に `true` でSELECT可能。問題なし。
 
-- ステータスのBadge表示: `inf.status` が null/undefined の場合「未設定」と表示
-- ステータスフィルタ: null ケースに対応
-- 「承認」「停止」ボタン: `status` が存在しないため非表示にする（UPDATE もエラーになるため）
-
-### 変更ファイル一覧
+### 修正ファイル一覧
 
 | ファイル | 変更内容 |
 |---|---|
-| `supabase/functions/register-influencer/index.ts` | 43行目 `status: "pending"` を削除 |
-| `src/hooks/useExternalInfluencers.ts` | `useUpdateInfluencerStatus` を無効化（status カラムが存在しないため） |
-| `src/pages/admin/AdminInfluencers.tsx` | ステータス表示に null フォールバック追加、承認/停止ボタンを非表示 |
+| DB migration | `line_user_id` 追加、`user_id` NULL許容化 |
+| `supabase/functions/register-influencer/index.ts` | 接続先をLovable Cloud DBに変更。全フィールド（username, category等）をINSERT |
+| `src/pages/auth/RegisterProfile.tsx` | 全入力項目（ニックネーム、性別、生年月日、居住地、ジャンル）を維持。Edge Functionへ送信するデータにcategory等を追加 |
+| `src/hooks/useExternalInfluencers.ts` | `supabaseExternal` → Lovable Cloud の `supabase` クライアントに変更。テーブル名を `influencer_profiles` に変更 |
+| `src/pages/admin/AdminInfluencers.tsx` | 全カラムが存在するので、username, category, status, SNSフォロワー数が正常に表示される。ステータス更新ボタンも復活 |
+| `src/pages/auth/LineCallback.tsx` | 既存ユーザー確認クエリをLovable Cloud DBに変更 |
 
-### Edge Function 再デプロイ
+### 技術詳細
 
-修正後、必ず再デプロイして反映させます。
+#### DB Migration（SQL）
+
+```text
+ALTER TABLE influencer_profiles
+  ADD COLUMN line_user_id TEXT UNIQUE;
+
+ALTER TABLE influencer_profiles
+  ALTER COLUMN user_id DROP NOT NULL;
+```
+
+#### Edge Function変更（register-influencer/index.ts）
+
+- 接続先: `EXTERNAL_SUPABASE_URL` → 環境変数 `SUPABASE_URL`（Lovable Cloud DB）
+- 認証キー: `EXTERNAL_SUPABASE_SERVICE_ROLE_KEY` → `SUPABASE_SERVICE_ROLE_KEY`
+- テーブル名: `influencers` → `influencer_profiles`
+- INSERT対象カラム: `line_user_id`, `username`（nickname）, `name`, `category`, `image_url`（LINE写真URL）, `status`（"pending"）
+
+フロントから送信された全データを保存できるようになる。
+
+#### RegisterProfile.tsx変更
+
+- 現在の入力項目（姓、名、ニックネーム、性別、生年月日、居住地、主な投稿ジャンル）を全て維持
+- `handleSubmit` で Edge Function に `category`（選択したジャンル）、`image_url`（LINE写真）も送信
+- `bio` フィールドに「性別 / 生年月日 / 居住地」を格納（専用カラムが無いため）
+
+#### useExternalInfluencers.ts変更
+
+```text
+変更前: supabaseExternal.from("influencers")
+変更後: supabase.from("influencer_profiles")
+```
+
+- `supabase` は `@/integrations/supabase/client` からインポート
+- インターフェースはそのまま（全カラムが存在するため）
+
+#### LineCallback.tsx変更
+
+- 既存ユーザー判定: `supabaseExternal.from("influencers").select("*").eq("line_user_id", ...)` → `supabase.from("influencer_profiles").select("*").eq("line_user_id", ...)`
+
+### 外部DBとの関係
+
+- `useExternalApplications`、`useExternalCampaigns`、`useExternalCompanies` 等は引き続き外部DBを使用
+- インフルエンサーのデータだけLovable Cloud DBに移行
+- 将来的に全体を移行する際は、同様の手順で各テーブルを切り替え可能
 
 ### 期待される動作
 
 ```text
 登録フロー:
-  LINE認証 → プロフィール入力 → Edge Function（3カラムのみINSERT）→ 成功 → /mypage へ遷移
+  LINE認証 → プロフィール入力（姓名、ニックネーム、性別、生年月日、居住地、ジャンル）
+  → Edge Function（Lovable Cloud DB の influencer_profiles にINSERT）
+  → 全カラムが存在するので INSERT成功
+  → /mypage へ遷移
 
 管理画面:
-  /admin/influencers → SELECT * → 外部DBに存在するカラムだけ返される
-  → ステータスは null のため「未設定」と表示
-  → 承認/停止ボタンは非表示（status カラムが存在しないため操作不可）
+  /admin/influencers → influencer_profiles から SELECT *
+  → username, category, status, SNSフォロワー数が全て正常表示
+  → ステータス更新（承認/停止）も動作
 ```
