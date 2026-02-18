@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
 import { supabaseExternal } from "@/lib/supabaseExternal";
 
 const PREFECTURES = [
@@ -181,16 +181,16 @@ export default function RegisterProfile() {
           {/* 居住地 */}
           <div className="space-y-1.5">
             <Label className="text-xs font-semibold">居住地 <span className="text-destructive">*</span></Label>
-            <Select value={prefecture} onValueChange={setPrefecture}>
-              <SelectTrigger>
-                <SelectValue placeholder="都道府県を選択" />
-              </SelectTrigger>
-              <SelectContent>
-                {PREFECTURES.map((p) => (
-                  <SelectItem key={p} value={p}>{p}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <select
+              value={prefecture}
+              onChange={(e) => setPrefecture(e.target.value)}
+              className="flex h-10 w-full items-center rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+            >
+              <option value="" disabled>都道府県を選択</option>
+              {PREFECTURES.map((p) => (
+                <option key={p} value={p}>{p}</option>
+              ))}
+            </select>
           </div>
 
           {/* ジャンル */}
