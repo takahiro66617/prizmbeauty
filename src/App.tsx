@@ -23,6 +23,7 @@ import AdminCampaignsPage from "./pages/admin/AdminCampaigns";
 import AdminClientsPage from "./pages/admin/AdminClients";
 import AdminInfluencersPage from "./pages/admin/AdminInfluencers";
 import AdminApplications from "./pages/admin/AdminApplications";
+import AdminMessages from "./pages/admin/AdminMessages";
 import { AdminLayout } from "./components/admin/AdminLayout";
 import { ClientLayout } from "./components/client/ClientLayout";
 import ClientLogin from "./pages/client/ClientLogin";
@@ -93,6 +94,7 @@ const App = () => (
             <Route path="clients" element={<AdminClientsPage />} />
             <Route path="influencers" element={<AdminInfluencersPage />} />
             <Route path="applications" element={<AdminApplications />} />
+            <Route path="messages" element={<AdminMessages />} />
           </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>

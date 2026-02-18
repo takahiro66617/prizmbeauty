@@ -5,50 +5,32 @@ import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { ArrowLeft } from "lucide-react";
 import { useCreateCampaign } from "@/hooks/useExternalCampaigns";
+import { CATEGORIES, PLATFORMS } from "@/lib/constants";
 import { toast } from "sonner";
-
-const CATEGORIES = [
-  "スキンケア", "メイク", "ヘアケア",
-  "ボディケア", "ネイル", "フレグランス",
-  "ダイエット", "ファッション", "ライフスタイル"
-];
 
 export default function ClientCampaignNew() {
   const navigate = useNavigate();
   const createCampaign = useCreateCampaign();
   const companyId = sessionStorage.getItem("client_company_id") || "";
   const [form, setForm] = useState({
-    title: "", description: "", category: "スキンケア", reward: "",
-    maxApplicants: "", deadline: "", requirements: "", platforms: [] as string[], deliverables: "",
+    title: "", description: "", category: "スキンケア", budgetMin: "", budgetMax: "",
+    maxApplicants: "", deadline: "", paymentDate: "", requirements: "", platforms: [] as string[], deliverables: "",
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     createCampaign.mutate({
-      title: form.title,
-      description: form.description,
-      company_id: companyId,
-      category: form.category,
-      budget_min: Number(form.reward),
-      budget_max: Number(form.reward),
-      deadline: form.deadline,
-      requirements: form.requirements,
-      platform: form.platforms.join(","),
-      status: "recruiting",
+      title: form.title, description: form.description, company_id: companyId, category: form.category,
+      budget_min: Number(form.budgetMin), budget_max: Number(form.budgetMax || form.budgetMin),
+      deadline: form.deadline, requirements: form.requirements, platform: form.platforms.join(","), status: "recruiting",
     }, {
-      onSuccess: () => {
-        toast.success("案件を作成しました");
-        navigate("/client/campaigns");
-      },
+      onSuccess: () => { toast.success("案件を作成しました"); navigate("/client/campaigns"); },
       onError: () => toast.error("案件の作成に失敗しました"),
     });
   };
 
   const togglePlatform = (p: string) => {
-    setForm(prev => ({
-      ...prev,
-      platforms: prev.platforms.includes(p) ? prev.platforms.filter(x => x !== p) : [...prev.platforms, p],
-    }));
+    setForm(prev => ({ ...prev, platforms: prev.platforms.includes(p) ? prev.platforms.filter(x => x !== p) : [...prev.platforms, p] }));
   };
 
   return (
@@ -81,27 +63,37 @@ export default function ClientCampaignNew() {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">報酬額（円）</label>
-              <Input type="number" value={form.reward} onChange={e => setForm({ ...form, reward: e.target.value })} placeholder="50000" required />
+              <label className="block text-sm font-medium text-gray-700 mb-2">募集人数</label>
+              <Input type="number" value={form.maxApplicants} onChange={e => setForm({ ...form, maxApplicants: e.target.value })} placeholder="10" />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-6">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">募集人数</label>
-              <Input type="number" value={form.maxApplicants} onChange={e => setForm({ ...form, maxApplicants: e.target.value })} placeholder="10" required />
+              <label className="block text-sm font-medium text-gray-700 mb-2">報酬額（最小・円）</label>
+              <Input type="number" value={form.budgetMin} onChange={e => setForm({ ...form, budgetMin: e.target.value })} placeholder="30000" required />
             </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">報酬額（最大・円）</label>
+              <Input type="number" value={form.budgetMax} onChange={e => setForm({ ...form, budgetMax: e.target.value })} placeholder="100000" />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-6">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">応募締切</label>
               <Input type="date" value={form.deadline} onChange={e => setForm({ ...form, deadline: e.target.value })} required />
             </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">振込予定日</label>
+              <Input type="date" value={form.paymentDate} onChange={e => setForm({ ...form, paymentDate: e.target.value })} />
+            </div>
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">プラットフォーム</label>
-            <div className="flex gap-3">
-              {["instagram", "tiktok", "youtube"].map(p => (
+            <div className="flex gap-2 flex-wrap">
+              {PLATFORMS.map(p => (
                 <button key={p} type="button" onClick={() => togglePlatform(p)}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium border transition-colors ${form.platforms.includes(p) ? "bg-blue-600 text-white border-blue-600" : "bg-white text-gray-600 border-gray-300 hover:border-blue-400"}`}>
-                  {p === "instagram" ? "Instagram" : p === "tiktok" ? "TikTok" : "YouTube"}
+                  className={`px-3 py-1.5 rounded-lg text-sm font-medium border transition-colors ${form.platforms.includes(p) ? "bg-blue-600 text-white border-blue-600" : "bg-white text-gray-600 border-gray-300 hover:border-blue-400"}`}>
+                  {p}
                 </button>
               ))}
             </div>

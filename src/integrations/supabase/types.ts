@@ -77,9 +77,12 @@ export type Database = {
           company_id: string
           created_at: string
           deadline: string | null
+          deliverables: string | null
           description: string | null
           id: string
           image_url: string | null
+          max_applicants: number | null
+          payment_date: string | null
           platform: string | null
           requirements: string | null
           status: string
@@ -93,9 +96,12 @@ export type Database = {
           company_id: string
           created_at?: string
           deadline?: string | null
+          deliverables?: string | null
           description?: string | null
           id?: string
           image_url?: string | null
+          max_applicants?: number | null
+          payment_date?: string | null
           platform?: string | null
           requirements?: string | null
           status?: string
@@ -109,9 +115,12 @@ export type Database = {
           company_id?: string
           created_at?: string
           deadline?: string | null
+          deliverables?: string | null
           description?: string | null
           id?: string
           image_url?: string | null
+          max_applicants?: number | null
+          payment_date?: string | null
           platform?: string | null
           requirements?: string | null
           status?: string
