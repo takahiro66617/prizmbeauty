@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { Search, FileText, DollarSign, CheckCircle, Clock, Send, ChevronRight, X, Building2, ArrowRight } from "lucide-react";
+import { Search, FileText, CheckCircle, Clock, Send, ChevronRight, X, Building2, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
@@ -85,7 +85,7 @@ export default function MyPageApplications() {
                       <h3 className="font-bold text-gray-900 truncate">{campaign?.title || "不明な案件"}</h3>
                       <div className="flex items-center text-sm text-gray-500"><Building2 className="w-3.5 h-3.5 mr-1" />{campaign?.companies?.name || "不明"}</div>
                       <div className="flex flex-wrap gap-4 text-xs md:text-sm pt-1">
-                        <div className="flex items-center text-gray-600"><DollarSign className="w-3.5 h-3.5 mr-1 text-gray-400" /><span className="font-medium">¥{(campaign?.budget_max || campaign?.budget_min || 0).toLocaleString()}</span></div>
+                        <div className="flex items-center text-gray-600"><span className="text-pink-500 font-bold mr-1">¥</span><span className="font-medium">{(campaign?.budget_max || campaign?.budget_min || 0).toLocaleString()}</span></div>
                         <div className="flex items-center text-gray-600"><Clock className="w-3.5 h-3.5 mr-1 text-gray-400" />締切: {campaign?.deadline ? new Date(campaign.deadline).toLocaleDateString("ja-JP") : "-"}</div>
                       </div>
                     </div>

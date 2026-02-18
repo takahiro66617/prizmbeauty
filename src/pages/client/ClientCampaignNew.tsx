@@ -1,31 +1,75 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Upload, X } from "lucide-react";
 import { useCreateCampaign } from "@/hooks/useExternalCampaigns";
 import { CATEGORIES, PLATFORMS } from "@/lib/constants";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 export default function ClientCampaignNew() {
   const navigate = useNavigate();
   const createCampaign = useCreateCampaign();
   const companyId = sessionStorage.getItem("client_company_id") || "";
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
   const [form, setForm] = useState({
     title: "", description: "", category: "スキンケア", budgetMin: "", budgetMax: "",
     maxApplicants: "", deadline: "", paymentDate: "", requirements: "", platforms: [] as string[], deliverables: "",
   });
 
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setImageFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => setImagePreview(reader.result as string);
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const removeImage = () => {
+    setImageFile(null);
+    setImagePreview(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const uploadImage = async (): Promise<string | null> => {
+    if (!imageFile) return null;
+    const ext = imageFile.name.split(".").pop();
+    const fileName = `${companyId}/${Date.now()}.${ext}`;
+    const { error } = await supabase.storage.from("campaign-images").upload(fileName, imageFile);
+    if (error) {
+      console.error("Upload error:", error);
+      toast.error("画像のアップロードに失敗しました");
+      return null;
+    }
+    const { data: urlData } = supabase.storage.from("campaign-images").getPublicUrl(fileName);
+    return urlData.publicUrl;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsUploading(true);
+
+    let imageUrl: string | undefined;
+    if (imageFile) {
+      const url = await uploadImage();
+      if (url) imageUrl = url;
+    }
+
     createCampaign.mutate({
       title: form.title, description: form.description, company_id: companyId, category: form.category,
       budget_min: Number(form.budgetMin), budget_max: Number(form.budgetMax || form.budgetMin),
-      deadline: form.deadline, requirements: form.requirements, platform: form.platforms.join(","), status: "recruiting",
+      deadline: form.deadline, requirements: form.requirements, platform: form.platforms.join(","),
+      status: "recruiting", image_url: imageUrl,
     }, {
       onSuccess: () => { toast.success("案件を作成しました"); navigate("/client/campaigns"); },
-      onError: () => toast.error("案件の作成に失敗しました"),
+      onError: () => { toast.error("案件の作成に失敗しました"); setIsUploading(false); },
     });
   };
 
@@ -45,6 +89,28 @@ export default function ClientCampaignNew() {
 
       <Card className="p-8 border-0 shadow-lg">
         <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Image Upload */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">案件イメージ画像</label>
+            {imagePreview ? (
+              <div className="relative w-full aspect-video rounded-lg overflow-hidden bg-gray-100 border border-gray-200">
+                <img src={imagePreview} alt="Preview" className="w-full h-full object-cover" />
+                <button type="button" onClick={removeImage}
+                  className="absolute top-2 right-2 w-8 h-8 bg-black/50 rounded-full flex items-center justify-center text-white hover:bg-black/70">
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            ) : (
+              <button type="button" onClick={() => fileInputRef.current?.click()}
+                className="w-full aspect-video rounded-lg border-2 border-dashed border-gray-300 flex flex-col items-center justify-center text-gray-400 hover:border-blue-400 hover:text-blue-500 transition-colors">
+                <Upload className="w-8 h-8 mb-2" />
+                <span className="text-sm">画像をアップロード</span>
+                <span className="text-xs mt-1">JPG, PNG, WEBP (最大5MB)</span>
+              </button>
+            )}
+            <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageSelect} />
+          </div>
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">案件タイトル</label>
             <Input value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} placeholder="例：新作スキンケアラインのPR投稿" required />
@@ -110,8 +176,8 @@ export default function ClientCampaignNew() {
           </div>
           <div className="flex justify-end gap-3 pt-4">
             <Button type="button" variant="outline" onClick={() => navigate(-1)}>キャンセル</Button>
-            <Button type="submit" className="bg-blue-600 hover:bg-blue-700" disabled={createCampaign.isPending}>
-              {createCampaign.isPending ? "作成中..." : "案件を作成"}
+            <Button type="submit" className="bg-blue-600 hover:bg-blue-700" disabled={createCampaign.isPending || isUploading}>
+              {createCampaign.isPending || isUploading ? "作成中..." : "案件を作成"}
             </Button>
           </div>
         </form>

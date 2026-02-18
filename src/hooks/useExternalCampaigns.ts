@@ -16,6 +16,9 @@ export interface ExternalCampaign {
   status: string;
   created_at: string;
   updated_at: string;
+  max_applicants: number | null;
+  payment_date: string | null;
+  deliverables: string | null;
   companies?: { id: string; name: string; logo_url: string | null } | null;
 }
 
