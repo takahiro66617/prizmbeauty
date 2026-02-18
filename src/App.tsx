@@ -13,6 +13,12 @@ import RegisterPage from "./pages/Register";
 import PrivacyPage from "./pages/Privacy";
 import TermsPage from "./pages/Terms";
 import MyPage from "./pages/MyPage";
+import AdminLoginPage from "./pages/admin/AdminLogin";
+import AdminDashboard from "./pages/admin/AdminDashboard";
+import AdminCampaignsPage from "./pages/admin/AdminCampaigns";
+import AdminClientsPage from "./pages/admin/AdminClients";
+import AdminInfluencersPage from "./pages/admin/AdminInfluencers";
+import { AdminLayout } from "./components/admin/AdminLayout";
 
 const queryClient = new QueryClient();
 
@@ -32,6 +38,13 @@ const App = () => (
           <Route path="/privacy" element={<PrivacyPage />} />
           <Route path="/terms" element={<TermsPage />} />
           <Route path="/mypage" element={<MyPage />} />
+          <Route path="/admin/login" element={<AdminLoginPage />} />
+          <Route path="/admin" element={<AdminLayout />}>
+            <Route path="dashboard" element={<AdminDashboard />} />
+            <Route path="campaigns" element={<AdminCampaignsPage />} />
+            <Route path="clients" element={<AdminClientsPage />} />
+            <Route path="influencers" element={<AdminInfluencersPage />} />
+          </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
