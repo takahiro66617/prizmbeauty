@@ -2,6 +2,7 @@ import { Link, useLocation } from "react-router-dom";
 import { useState } from "react";
 import { Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import lineIcon from "@/assets/line.png";
 
 const navItems = [
   { label: "案件を探す", href: "/campaigns" },
@@ -42,9 +43,7 @@ export function Header() {
               className="h-10 px-5 font-bold text-white border-0"
               style={{ backgroundColor: "#06C755" }}
             >
-              <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 mr-1">
-                <path d="M21.5 10.8C21.5 5.8 17.2 1.8 12 1.8C6.8 1.8 2.5 5.8 2.5 10.8C2.5 14.8 5 18.3 8.8 19.3C9 19.4 9.2 19.9 9.1 20.4C9 20.9 8.8 21.8 8.8 21.8C8.8 21.8 8.7 22.1 8.9 22.2C9.1 22.3 9.4 22.2 9.4 22.2C10.4 22 14.2 19.4 14.8 19.1C18.6 18.5 21.5 15 21.5 10.8Z" />
-              </svg>
+              <img src={lineIcon} alt="LINE" className="w-5 h-5 mr-1" />
               LINEでログイン
             </Button>
           </Link>
