@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Plus, Search, Building2, User, Calendar, X, Save, Trash2 } from "lucide-react";
+import { Plus, Search, Building2, User, Calendar, X, Save, Trash2, KeyRound } from "lucide-react";
 import { useExternalCompanies, useUpdateCompany } from "@/hooks/useExternalCompanies";
 import { useExternalCampaigns } from "@/hooks/useExternalCampaigns";
 import { useExternalApplications } from "@/hooks/useExternalApplications";
@@ -21,6 +21,9 @@ export default function AdminClientsPage() {
   const [showRegister, setShowRegister] = useState(false);
   const [regForm, setRegForm] = useState({ email: "", password: "", company_name: "", contact_name: "", industry: "", phone: "", website: "", description: "" });
   const [regLoading, setRegLoading] = useState(false);
+  const [authEmail, setAuthEmail] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [authLoading, setAuthLoading] = useState(false);
 
   const { data: companies = [], isLoading, refetch } = useExternalCompanies();
   const { data: campaigns = [] } = useExternalCampaigns();
@@ -36,13 +39,24 @@ export default function AdminClientsPage() {
     return matchesSearch && matchesStatus && matchesIndustry && matchesDateFrom && matchesDateTo;
   });
 
-  const openDetail = (company: any) => {
+  const openDetail = async (company: any) => {
     setSelectedCompany(company);
+    setNewPassword("");
+    setAuthEmail("");
     setEditForm({
       name: company.name, contact_name: company.contact_name || "", contact_email: company.contact_email || "",
       phone: company.phone || "", industry: company.industry || "", website: company.website || "",
       description: company.description || "", status: company.status,
     });
+    // Fetch auth email for this company's user
+    if (company.user_id) {
+      try {
+        const { data } = await supabase.functions.invoke("admin-get-user-email", {
+          body: { userId: company.user_id },
+        });
+        if (data?.email) setAuthEmail(data.email);
+      } catch { /* silent */ }
+    }
   };
 
   const handleSave = () => {
@@ -234,6 +248,43 @@ export default function AdminClientsPage() {
                   ))}
                 </div>
               </div>
+
+              {/* Login Credentials Section */}
+              {selectedCompany.user_id && (
+                <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 space-y-3">
+                  <h4 className="font-bold text-gray-800 flex items-center gap-2"><KeyRound className="w-4 h-4" />ログイン情報</h4>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">ログインメールアドレス</label>
+                      <Input value={authEmail} onChange={e => setAuthEmail(e.target.value)} placeholder="メールアドレス" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">新しいパスワード</label>
+                      <Input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} placeholder="変更する場合のみ入力" />
+                    </div>
+                  </div>
+                  <Button size="sm" variant="outline" className="text-amber-700 border-amber-300" disabled={authLoading}
+                    onClick={async () => {
+                      if (!authEmail && !newPassword) return;
+                      setAuthLoading(true);
+                      try {
+                        const { data, error } = await supabase.functions.invoke("admin-update-user-auth", {
+                          body: { userId: selectedCompany.user_id, email: authEmail || undefined, password: newPassword || undefined },
+                        });
+                        if (error) throw error;
+                        if (data?.error) throw new Error(data.error);
+                        toast.success("ログイン情報を更新しました");
+                        setNewPassword("");
+                      } catch (e: any) {
+                        toast.error("更新に失敗しました: " + (e.message || ""));
+                      } finally {
+                        setAuthLoading(false);
+                      }
+                    }}>
+                    <KeyRound className="w-3 h-3 mr-1" />ログイン情報を更新
+                  </Button>
+                </div>
+              )}
 
               <div>
                 <h4 className="font-bold text-gray-800 mb-2">この企業の案件</h4>
