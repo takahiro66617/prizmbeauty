@@ -54,6 +54,7 @@ serve(async (req) => {
           sender_id: company?.user_id || updatedApp.company_id,
           receiver_id: receiverId,
           content: message,
+          application_id: applicationId,
         });
         if (msgError) console.error("Message insert error:", msgError);
       } catch (e) {

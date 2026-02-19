@@ -10,6 +10,7 @@ import { APPLICATION_STATUSES, CATEGORIES } from "@/lib/constants";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import ThreadConversation from "@/components/ThreadConversation";
 
 const STATUS_FLOW: Record<string, string> = {
   approved: "in_progress",
@@ -44,7 +45,8 @@ export default function ClientApplicants() {
   const [msgModal, setMsgModal] = useState<any>(null);
   const [msgText, setMsgText] = useState("");
   const [bankInfo, setBankInfo] = useState<any>(null);
-
+  const [threadAppId, setThreadAppId] = useState<string | null>(null);
+  const companyUserId = sessionStorage.getItem("client_user_id") || "";
   const filtered = applications.filter(a => {
     const matchesStatus = statusFilter === "all" || a.status === statusFilter;
     const matchesCampaign = campaignFilter === "all" || a.campaign_id === campaignFilter;
@@ -85,7 +87,8 @@ export default function ClientApplicants() {
         `🎉 おめでとうございます！「${app.campaigns?.title || "案件"}」に採用されました。詳細は追ってご連絡いたします。`,
         { title: "案件採用通知", message: `「${app.campaigns?.title || "案件"}」に採用されました！`, type: "success" }
       );
-      toast.success("採用しました");
+      toast.success("採用しました - メッセージスレッドを開きます");
+      setThreadAppId(app.id);
     } catch {
       toast.error("更新に失敗しました");
     }
@@ -152,6 +155,19 @@ export default function ClientApplicants() {
   };
 
   const clearFilters = () => { setSearch(""); setStatusFilter("all"); setCampaignFilter("all"); setCategoryFilter("all"); setDateFrom(""); setDateTo(""); };
+
+  if (threadAppId) {
+    return (
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden h-[calc(100vh-120px)]">
+        <ThreadConversation
+          applicationId={threadAppId}
+          userType="company"
+          senderId={companyUserId}
+          onBack={() => { setThreadAppId(null); queryClient.invalidateQueries({ queryKey: ["ext-applications"] }); }}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -230,14 +246,9 @@ export default function ClientApplicants() {
                         </Button>
                       </>
                     )}
-                    {nextLabel && app.status !== "applied" && app.status !== "reviewing" && app.status !== "rejected" && (
-                      <Button size="sm" className="bg-purple-600 hover:bg-purple-700 text-white" onClick={() => handleAdvanceStatus(app)} disabled={isUpdating}>
-                        <ArrowRight className="w-3 h-3 mr-1" />{nextLabel}
-                      </Button>
-                    )}
-                    {(inf?.user_id || inf?.id) && app.status !== "rejected" && (
-                      <Button size="sm" variant="outline" className="text-blue-600 border-blue-200" onClick={() => setMsgModal(app)}>
-                        <MessageCircle className="w-3 h-3 mr-1" />メッセージ
+                    {app.status !== "applied" && app.status !== "reviewing" && app.status !== "rejected" && (
+                      <Button size="sm" className="bg-purple-600 hover:bg-purple-700 text-white" onClick={() => setThreadAppId(app.id)}>
+                        <MessageCircle className="w-3 h-3 mr-1" />スレッドを開く
                       </Button>
                     )}
                     <Button size="sm" variant="ghost" className="text-gray-500" onClick={async () => {
