@@ -3,8 +3,8 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Plus, Search, AlertTriangle, Pencil } from "lucide-react";
-import { useExternalCampaigns, useUpdateCampaign, ExternalCampaign } from "@/hooks/useExternalCampaigns";
+import { Plus, Search, AlertTriangle, Pencil, Trash2 } from "lucide-react";
+import { useExternalCampaigns, useUpdateCampaign, useDeleteCampaign, ExternalCampaign } from "@/hooks/useExternalCampaigns";
 import { useExternalApplications } from "@/hooks/useExternalApplications";
 import { CATEGORIES, PLATFORMS, CAMPAIGN_STATUSES } from "@/lib/constants";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -151,6 +151,7 @@ function EditCampaignDialog({ campaign, open, onOpenChange }: { campaign: Extern
 export default function ClientCampaigns() {
   const companyId = sessionStorage.getItem("client_company_id") || "";
   const { data: campaigns = [], isLoading } = useExternalCampaigns(companyId);
+  const deleteCampaign = useDeleteCampaign();
   const { data: applications = [] } = useExternalApplications({ companyId });
   const [statusFilter, setStatusFilter] = useState("all");
   const [categoryFilter, setCategoryFilter] = useState("all");
@@ -242,11 +243,26 @@ export default function ClientCampaigns() {
                   <td className="px-6 py-4 text-gray-600">{appCount}</td>
                   <td className="px-6 py-4"><Badge className={st?.color || ""}>{st?.label || campaign.status}</Badge></td>
                   <td className="px-6 py-4 text-gray-500">{campaign.deadline ? new Date(campaign.deadline).toLocaleDateString("ja-JP") : "-"}</td>
-                  <td className="px-6 py-4">
-                    <Button variant="ghost" size="sm" onClick={() => setEditCampaign(campaign)}>
-                      <Pencil className="w-4 h-4 mr-1" />編集
-                    </Button>
-                  </td>
+                    <td className="px-6 py-4">
+                      <div className="flex gap-2">
+                        <Button variant="ghost" size="sm" onClick={() => setEditCampaign(campaign)}>
+                          <Pencil className="w-4 h-4 mr-1" />編集
+                        </Button>
+                        <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                          onClick={() => {
+                            if (window.confirm(`「${campaign.title}」を削除しますか？この操作は取り消せません。`)) {
+                              deleteCampaign.mutate(campaign.id, {
+                                onSuccess: () => toast.success("案件を削除しました"),
+                                onError: () => toast.error("削除に失敗しました"),
+                              });
+                            }
+                          }}
+                          disabled={deleteCampaign.isPending}
+                        >
+                          <Trash2 className="w-4 h-4 mr-1" />削除
+                        </Button>
+                      </div>
+                    </td>
                 </tr>
               );
             })}
