@@ -14,10 +14,29 @@ export interface ExternalApplication {
   influencer_profiles?: { id: string; name: string; username: string; image_url: string | null; instagram_followers: number | null; tiktok_followers: number | null; youtube_followers: number | null; category: string | null; bio: string | null; status: string; user_id: string | null } | null;
 }
 
+function getInfluencerProfileId(): string | null {
+  const u = sessionStorage.getItem("currentUser");
+  if (u) return JSON.parse(u).id || null;
+  return null;
+}
+
 export function useExternalApplications(filters?: { companyId?: string; influencerId?: string; campaignId?: string }) {
   return useQuery({
     queryKey: ["ext-applications", filters],
     queryFn: async () => {
+      const profileId = getInfluencerProfileId();
+
+      // Use edge function for LINE-auth influencer queries
+      if (filters?.influencerId && profileId && filters.influencerId === profileId) {
+        const { data, error } = await supabase.functions.invoke("get-my-applications", {
+          body: { influencerProfileId: profileId },
+        });
+        if (error) throw error;
+        if (data?.error) throw new Error(data.error);
+        return (data.data || []) as ExternalApplication[];
+      }
+
+      // Standard Supabase query for company/admin users
       let query = supabase
         .from("applications")
         .select("*, campaigns(id, title, image_url, budget_min, budget_max, deadline, category, companies(id, name)), influencer_profiles(id, name, username, image_url, instagram_followers, tiktok_followers, youtube_followers, category, bio, status, user_id)")
