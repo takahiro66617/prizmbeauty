@@ -322,10 +322,13 @@ export default function ThreadConversation({ applicationId, userType, senderId, 
           messages.map(msg => {
             const isMine = msg.sender_id === senderId;
             const isPostReport = msg.message_type === "post_report";
+            const isBankInfo = msg.message_type === "bank_info";
             return (
               <div key={msg.id} className={`flex ${isMine ? "justify-end" : "justify-start"}`}>
                 <div className={`max-w-[80%] rounded-2xl px-4 py-2.5 ${
-                  isPostReport
+                  isBankInfo
+                    ? "bg-green-50 border border-green-200 text-gray-900 rounded-bl-md"
+                    : isPostReport
                     ? "bg-blue-100 border border-blue-200 text-gray-900 rounded-bl-md"
                     : isMine
                     ? "bg-purple-600 text-white rounded-br-md"
@@ -337,13 +340,19 @@ export default function ThreadConversation({ applicationId, userType, senderId, 
                       <span className="text-xs font-bold text-blue-600">投稿報告</span>
                     </div>
                   )}
+                  {msg.message_type === "bank_info" && (
+                    <div className="flex items-center gap-1 mb-1">
+                      <Building2 className="w-3 h-3 text-green-600" />
+                      <span className="text-xs font-bold text-green-600">振込先情報</span>
+                    </div>
+                  )}
                   <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
                   {msg.image_url && (
                     <a href={msg.image_url} target="_blank" rel="noopener noreferrer" className="block mt-2">
                       <img src={msg.image_url} alt="添付画像" className="max-w-full max-h-60 rounded-lg border border-gray-200 cursor-pointer hover:opacity-90" />
                     </a>
                   )}
-                  <p className={`text-[10px] mt-1 ${isPostReport ? "text-blue-400" : isMine ? "text-purple-200" : "text-gray-400"}`}>
+                  <p className={`text-[10px] mt-1 ${isBankInfo ? "text-green-400" : isPostReport ? "text-blue-400" : isMine ? "text-purple-200" : "text-gray-400"}`}>
                     {new Date(msg.created_at).toLocaleString("ja-JP", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
                   </p>
                 </div>
