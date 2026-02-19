@@ -114,6 +114,28 @@ export default function ClientApplicants() {
     updateStatus.mutate({ id: app.id, status: nextStatus }, {
       onSuccess: async () => {
         toast.success(`ステータスを「${statusLabel}」に更新しました`);
+        // Auto-create payment record when advancing to payment_pending
+        if (nextStatus === "payment_pending" && userIdTarget) {
+          try {
+            const amount = app.campaigns?.budget_max || app.campaigns?.budget_min || 0;
+            await supabase.from("payments").insert({
+              application_id: app.id,
+              campaign_id: app.campaign_id,
+              company_id: app.company_id,
+              influencer_user_id: userIdTarget,
+              amount,
+              status: "pending",
+            });
+          } catch { /* silent */ }
+        }
+        // Auto-mark payment as paid when completing
+        if (nextStatus === "completed" && userIdTarget) {
+          try {
+            await supabase.from("payments")
+              .update({ status: "paid", paid_at: new Date().toISOString() })
+              .eq("application_id", app.id);
+          } catch { /* silent */ }
+        }
         if (userIdTarget) {
           try {
             await sendMessage.mutateAsync({
