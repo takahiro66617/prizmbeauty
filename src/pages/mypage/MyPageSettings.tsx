@@ -4,17 +4,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
-import { useToast } from "@/hooks/use-toast";
-import { User, Instagram, Youtube, Wallet, Save, Camera, Mail, Lock, AlertTriangle, Eye, EyeOff, Building2, Search } from "lucide-react";
+import { User, Instagram, Youtube, Wallet, Save, Camera, Lock, AlertTriangle, Building2, Search } from "lucide-react";
 import { useBankAccount, useUpsertBankAccount, usePayments } from "@/hooks/usePayments";
-
-const PREFECTURES = [
-  "北海道","青森県","岩手県","宮城県","秋田県","山形県","福島県","茨城県","栃木県","群馬県",
-  "埼玉県","千葉県","東京都","神奈川県","新潟県","富山県","石川県","福井県","山梨県","長野県",
-  "岐阜県","静岡県","愛知県","三重県","滋賀県","京都府","大阪府","兵庫県","奈良県","和歌山県",
-  "鳥取県","島根県","岡山県","広島県","山口県","徳島県","香川県","愛媛県","高知県","福岡県",
-  "佐賀県","長崎県","熊本県","大分県","宮崎県","鹿児島県","沖縄県",
-];
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 const CATEGORIES = ["スキンケア", "メイク", "ヘアケア", "ボディケア", "ネイル", "フレグランス"];
 
@@ -22,99 +15,115 @@ type TabType = "basic" | "sns" | "activity" | "account" | "reward";
 
 export default function MyPageSettings() {
   const navigate = useNavigate();
-  const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<TabType>("basic");
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [showPassword, setShowPassword] = useState({ current: false, new: false, confirm: false });
+  const [profile, setProfile] = useState<any>(null);
+  const [authUserId, setAuthUserId] = useState("");
 
   const [formData, setFormData] = useState({
-    id: "", lastName: "", firstName: "", email: "",
-    birthYear: "", birthMonth: "", birthDay: "", gender: "", prefecture: "",
-    profileImagePreview: "",
-    instagramUserName: "", instagramFollowers: "",
-    tiktokEnabled: false, tiktokUserName: "", tiktokFollowers: "",
-    youtubeEnabled: false, youtubeUrl: "", youtubeFollowers: "",
-    categories: [] as string[], bio: "", portfolioUrl: "",
-    currentPassword: "", newPassword: "", confirmPassword: "", newEmail: "",
+    name: "", username: "", bio: "", category: "",
+    image_url: "",
+    instagram_followers: 0, tiktok_followers: 0, youtube_followers: 0, twitter_followers: 0,
+    categories: [] as string[],
   });
-  const [originalUser, setOriginalUser] = useState<any>(null);
 
   useEffect(() => {
-    const sessionUser = sessionStorage.getItem("currentUser");
-    if (sessionUser) {
-      const parsed = JSON.parse(sessionUser);
-      const allUsers = JSON.parse(localStorage.getItem("prizm_influencers") || "[]");
-      const found = allUsers.find((u: any) => u.email === parsed.email) || parsed;
-      setOriginalUser(found);
-      setFormData((prev) => ({ ...prev, ...found, categories: found.categories || [], tiktokEnabled: !!found.tiktokUserName, youtubeEnabled: !!found.youtubeUrl }));
-    } else {
-      navigate("/auth/login");
-    }
+    const loadProfile = async () => {
+      // Try Supabase auth first
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        setAuthUserId(session.user.id);
+        const { data } = await supabase.from("influencer_profiles").select("*").eq("user_id", session.user.id).maybeSingle();
+        if (data) {
+          setProfile(data);
+          setFormData({
+            name: data.name || "",
+            username: data.username || "",
+            bio: data.bio || "",
+            category: data.category || "",
+            image_url: data.image_url || "",
+            instagram_followers: data.instagram_followers || 0,
+            tiktok_followers: data.tiktok_followers || 0,
+            youtube_followers: data.youtube_followers || 0,
+            twitter_followers: data.twitter_followers || 0,
+            categories: data.category ? data.category.split(",").map((c: string) => c.trim()) : [],
+          });
+          return;
+        }
+      }
+      // Fallback to sessionStorage
+      const u = sessionStorage.getItem("currentUser");
+      if (u) {
+        const parsed = JSON.parse(u);
+        setProfile(parsed);
+        setFormData({
+          name: parsed.name || "",
+          username: parsed.username || "",
+          bio: parsed.bio || "",
+          category: parsed.category || "",
+          image_url: parsed.image_url || parsed.profileImagePreview || "",
+          instagram_followers: parsed.instagram_followers || 0,
+          tiktok_followers: parsed.tiktok_followers || 0,
+          youtube_followers: parsed.youtube_followers || 0,
+          twitter_followers: parsed.twitter_followers || 0,
+          categories: parsed.category ? parsed.category.split(",").map((c: string) => c.trim()) : [],
+        });
+      } else {
+        navigate("/auth/login");
+      }
+    };
+    loadProfile();
   }, [navigate]);
 
-  const handleChange = (key: string, value: any) => setFormData((prev) => ({ ...prev, [key]: value }));
-
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => setFormData((prev) => ({ ...prev, profileImagePreview: reader.result as string }));
-      reader.readAsDataURL(file);
-    }
-  };
+  const handleChange = (key: string, value: any) => setFormData(prev => ({ ...prev, [key]: value }));
 
   const handleCategoryToggle = (cat: string) => {
-    setFormData((prev) => ({
+    setFormData(prev => ({
       ...prev,
-      categories: prev.categories.includes(cat) ? prev.categories.filter((c) => c !== cat) : [...prev.categories, cat],
+      categories: prev.categories.includes(cat) ? prev.categories.filter(c => c !== cat) : [...prev.categories, cat],
     }));
   };
 
-  const saveData = (updatedData: any) => {
-    const allUsers = JSON.parse(localStorage.getItem("prizm_influencers") || "[]");
-    const updated = allUsers.map((u: any) => (u.email === originalUser.email ? { ...u, ...updatedData } : u));
-    localStorage.setItem("prizm_influencers", JSON.stringify(updated));
-    sessionStorage.setItem("currentUser", JSON.stringify({ ...originalUser, ...updatedData }));
-    setOriginalUser({ ...originalUser, ...updatedData });
-    toast({ title: "保存しました" });
+  const handleSaveProfile = async (updates: Record<string, any>) => {
+    setIsLoading(true);
+    try {
+      if (profile?.id) {
+        const { error } = await supabase.from("influencer_profiles").update(updates).eq("id", profile.id);
+        if (error) throw error;
+        setProfile({ ...profile, ...updates });
+        // Update sessionStorage too
+        const u = sessionStorage.getItem("currentUser");
+        if (u) sessionStorage.setItem("currentUser", JSON.stringify({ ...JSON.parse(u), ...updates }));
+        toast.success("保存しました");
+      }
+    } catch (e: any) {
+      toast.error(e.message || "保存に失敗しました");
+    }
     setIsLoading(false);
   };
 
   const handleSaveBasic = (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
-    saveData({ lastName: formData.lastName, firstName: formData.firstName, gender: formData.gender, prefecture: formData.prefecture, profileImagePreview: formData.profileImagePreview });
+    handleSaveProfile({ name: formData.name, username: formData.username });
   };
 
   const handleSaveSNS = (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
-    saveData({ instagramUserName: formData.instagramUserName, instagramFollowers: formData.instagramFollowers, tiktokUserName: formData.tiktokEnabled ? formData.tiktokUserName : "", tiktokFollowers: formData.tiktokEnabled ? formData.tiktokFollowers : "", youtubeUrl: formData.youtubeEnabled ? formData.youtubeUrl : "", youtubeFollowers: formData.youtubeEnabled ? formData.youtubeFollowers : "" });
+    handleSaveProfile({
+      instagram_followers: Number(formData.instagram_followers) || 0,
+      tiktok_followers: Number(formData.tiktok_followers) || 0,
+      youtube_followers: Number(formData.youtube_followers) || 0,
+      twitter_followers: Number(formData.twitter_followers) || 0,
+    });
   };
 
   const handleSaveActivity = (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
-    saveData({ categories: formData.categories, bio: formData.bio, portfolioUrl: formData.portfolioUrl });
-  };
-
-  const handleUpdatePassword = () => {
-    if (!formData.currentPassword || !formData.newPassword || !formData.confirmPassword) { toast({ title: "すべてのパスワード項目を入力してください", variant: "destructive" }); return; }
-    if (formData.newPassword.length < 8) { toast({ title: "8文字以上で設定してください", variant: "destructive" }); return; }
-    if (formData.newPassword !== formData.confirmPassword) { toast({ title: "パスワードが一致しません", variant: "destructive" }); return; }
-    setIsLoading(true);
-    saveData({ password: btoa(formData.newPassword) });
-    setFormData((prev) => ({ ...prev, currentPassword: "", newPassword: "", confirmPassword: "" }));
-  };
-
-  const handleDeleteAccount = () => {
-    if (window.confirm("本当にアカウントを削除しますか？\nこの操作は取り消せません。")) {
-      const allUsers = JSON.parse(localStorage.getItem("prizm_influencers") || "[]");
-      localStorage.setItem("prizm_influencers", JSON.stringify(allUsers.filter((u: any) => u.email !== originalUser.email)));
-      sessionStorage.removeItem("currentUser");
-      navigate("/");
-    }
+    handleSaveProfile({
+      category: formData.categories.join(", "),
+      bio: formData.bio,
+    });
   };
 
   const TabButton = ({ tab, label, icon: Icon }: { tab: TabType; label: string; icon?: any }) => (
@@ -124,13 +133,15 @@ export default function MyPageSettings() {
     </button>
   );
 
-  const SaveButton = ({ onClick }: { onClick?: any }) => (
+  const SaveButton = () => (
     <div className="flex justify-end mt-6">
-      <Button type="submit" onClick={onClick} disabled={isLoading} className="bg-pink-500 hover:bg-pink-400 text-white shadow-md px-8">
+      <Button type="submit" disabled={isLoading} className="bg-pink-500 hover:bg-pink-400 text-white shadow-md px-8">
         {isLoading ? <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <><Save className="w-4 h-4 mr-2" />保存する</>}
       </Button>
     </div>
   );
+
+  if (!profile) return <div className="text-center py-12 text-gray-500">読み込み中...</div>;
 
   return (
     <div className="space-y-6 pb-20">
@@ -151,26 +162,14 @@ export default function MyPageSettings() {
           <form onSubmit={handleSaveBasic} className="space-y-6">
             <div className="flex flex-col items-center sm:flex-row sm:items-start gap-6">
               <div className="flex flex-col items-center gap-3">
-                <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-pink-50 shadow-inner bg-gray-100 relative group">
-                  {formData.profileImagePreview ? <img src={formData.profileImagePreview} alt="Profile" className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-gray-300"><User className="w-12 h-12" /></div>}
+                <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-pink-50 shadow-inner bg-gray-100">
+                  {formData.image_url ? <img src={formData.image_url} alt="Profile" className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-gray-300"><User className="w-12 h-12" /></div>}
                 </div>
-                <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleImageUpload} />
-                <Button type="button" variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} className="text-xs">画像を変更</Button>
               </div>
               <div className="flex-1 space-y-4 w-full">
                 <div className="grid grid-cols-2 gap-4">
-                  <div><label className="block text-sm font-medium text-gray-700 mb-1">姓</label><Input value={formData.lastName} onChange={(e) => handleChange("lastName", e.target.value)} /></div>
-                  <div><label className="block text-sm font-medium text-gray-700 mb-1">名</label><Input value={formData.firstName} onChange={(e) => handleChange("firstName", e.target.value)} /></div>
-                </div>
-                <div><label className="block text-sm font-medium text-gray-700 mb-1">性別</label>
-                  <select value={formData.gender} onChange={(e) => handleChange("gender", e.target.value)} className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm">
-                    <option value="">選択してください</option><option value="女性">女性</option><option value="男性">男性</option><option value="その他">その他</option>
-                  </select>
-                </div>
-                <div><label className="block text-sm font-medium text-gray-700 mb-1">居住地</label>
-                  <select value={formData.prefecture} onChange={(e) => handleChange("prefecture", e.target.value)} className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm">
-                    <option value="">選択してください</option>{PREFECTURES.map((p) => <option key={p} value={p}>{p}</option>)}
-                  </select>
+                  <div><label className="block text-sm font-medium text-gray-700 mb-1">名前</label><Input value={formData.name} onChange={e => handleChange("name", e.target.value)} /></div>
+                  <div><label className="block text-sm font-medium text-gray-700 mb-1">ユーザーネーム</label><Input value={formData.username} onChange={e => handleChange("username", e.target.value)} /></div>
                 </div>
               </div>
             </div>
@@ -182,34 +181,18 @@ export default function MyPageSettings() {
           <form onSubmit={handleSaveSNS} className="space-y-8">
             <div className="space-y-4">
               <h3 className="flex items-center gap-2 font-bold text-gray-800 border-b pb-2"><Instagram className="w-5 h-5 text-pink-500" /> Instagram</h3>
-              <div className="grid md:grid-cols-2 gap-4">
-                <div><label className="block text-sm font-medium text-gray-700 mb-1">ユーザーネーム</label><Input placeholder="@example_user" value={formData.instagramUserName} onChange={(e) => handleChange("instagramUserName", e.target.value)} /></div>
-                <div><label className="block text-sm font-medium text-gray-700 mb-1">フォロワー数</label><Input type="number" placeholder="1200" value={formData.instagramFollowers} onChange={(e) => handleChange("instagramFollowers", e.target.value)} /></div>
-              </div>
+              <div><label className="block text-sm font-medium text-gray-700 mb-1">フォロワー数</label>
+                <Input type="number" value={formData.instagram_followers} onChange={e => handleChange("instagram_followers", e.target.value)} /></div>
             </div>
             <div className="space-y-4">
-              <div className="flex items-center justify-between border-b pb-2">
-                <h3 className="font-bold text-gray-800">TikTok</h3>
-                <div className="flex items-center gap-2"><Checkbox id="tiktok-toggle" checked={formData.tiktokEnabled} onCheckedChange={(c) => handleChange("tiktokEnabled", c)} /><label htmlFor="tiktok-toggle" className="text-sm text-gray-600 cursor-pointer">TikTokアカウントを連携</label></div>
-              </div>
-              {formData.tiktokEnabled && (
-                <div className="grid md:grid-cols-2 gap-4">
-                  <div><label className="block text-sm font-medium text-gray-700 mb-1">ユーザーネーム</label><Input placeholder="@tiktok_user" value={formData.tiktokUserName} onChange={(e) => handleChange("tiktokUserName", e.target.value)} /></div>
-                  <div><label className="block text-sm font-medium text-gray-700 mb-1">フォロワー数</label><Input type="number" value={formData.tiktokFollowers} onChange={(e) => handleChange("tiktokFollowers", e.target.value)} /></div>
-                </div>
-              )}
+              <h3 className="font-bold text-gray-800 border-b pb-2">TikTok</h3>
+              <div><label className="block text-sm font-medium text-gray-700 mb-1">フォロワー数</label>
+                <Input type="number" value={formData.tiktok_followers} onChange={e => handleChange("tiktok_followers", e.target.value)} /></div>
             </div>
             <div className="space-y-4">
-              <div className="flex items-center justify-between border-b pb-2">
-                <h3 className="flex items-center gap-2 font-bold text-gray-800"><Youtube className="w-5 h-5 text-red-600" /> YouTube</h3>
-                <div className="flex items-center gap-2"><Checkbox id="youtube-toggle" checked={formData.youtubeEnabled} onCheckedChange={(c) => handleChange("youtubeEnabled", c)} /><label htmlFor="youtube-toggle" className="text-sm text-gray-600 cursor-pointer">YouTubeチャンネルを連携</label></div>
-              </div>
-              {formData.youtubeEnabled && (
-                <div className="grid md:grid-cols-2 gap-4">
-                  <div><label className="block text-sm font-medium text-gray-700 mb-1">チャンネルURL</label><Input placeholder="https://youtube.com/channel/..." value={formData.youtubeUrl} onChange={(e) => handleChange("youtubeUrl", e.target.value)} /></div>
-                  <div><label className="block text-sm font-medium text-gray-700 mb-1">登録者数</label><Input type="number" value={formData.youtubeFollowers} onChange={(e) => handleChange("youtubeFollowers", e.target.value)} /></div>
-                </div>
-              )}
+              <h3 className="flex items-center gap-2 font-bold text-gray-800 border-b pb-2"><Youtube className="w-5 h-5 text-red-600" /> YouTube</h3>
+              <div><label className="block text-sm font-medium text-gray-700 mb-1">登録者数</label>
+                <Input type="number" value={formData.youtube_followers} onChange={e => handleChange("youtube_followers", e.target.value)} /></div>
             </div>
             <SaveButton />
           </form>
@@ -219,7 +202,7 @@ export default function MyPageSettings() {
           <form onSubmit={handleSaveActivity} className="space-y-6">
             <div><label className="block text-sm font-medium text-gray-700 mb-3">得意なカテゴリ <span className="text-xs text-gray-500">(複数選択可)</span></label>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                {CATEGORIES.map((cat) => (
+                {CATEGORIES.map(cat => (
                   <div key={cat} className="flex items-center space-x-2 border rounded-md p-3 hover:bg-gray-50 transition-colors">
                     <Checkbox id={`cat-${cat}`} checked={formData.categories.includes(cat)} onCheckedChange={() => handleCategoryToggle(cat)} />
                     <label htmlFor={`cat-${cat}`} className="text-sm cursor-pointer w-full">{cat}</label>
@@ -228,50 +211,18 @@ export default function MyPageSettings() {
               </div>
             </div>
             <div><label className="block text-sm font-medium text-gray-700 mb-1">自己紹介 <span className="text-xs text-gray-400">({formData.bio.length}/500文字)</span></label>
-              <Textarea value={formData.bio} onChange={(e) => { if (e.target.value.length <= 500) handleChange("bio", e.target.value); }} placeholder="PR案件に対する意気込みや、得意な投稿スタイルなどを記載してください。" />
+              <Textarea value={formData.bio} onChange={e => { if (e.target.value.length <= 500) handleChange("bio", e.target.value); }} placeholder="PR案件に対する意気込みや、得意な投稿スタイルなどを記載してください。" />
             </div>
-            <div><label className="block text-sm font-medium text-gray-700 mb-1">ポートフォリオURL <span className="text-xs text-gray-400">(任意)</span></label><Input placeholder="https://..." value={formData.portfolioUrl} onChange={(e) => handleChange("portfolioUrl", e.target.value)} /></div>
             <SaveButton />
           </form>
         )}
 
         {activeTab === "account" && (
           <div className="space-y-10">
-            <div className="space-y-4">
-              <h3 className="font-bold text-gray-800 border-b pb-2 flex items-center gap-2"><Mail className="w-4 h-4" /> メールアドレス変更</h3>
-              <div className="grid md:grid-cols-2 gap-4 items-end">
-                <div><label className="block text-sm font-medium text-gray-700 mb-1">現在のメールアドレス</label><Input value={formData.email} disabled className="bg-gray-100 text-gray-500" /></div>
-                <div><label className="block text-sm font-medium text-gray-700 mb-1">新しいメールアドレス</label><Input type="email" value={formData.newEmail} onChange={(e) => handleChange("newEmail", e.target.value)} placeholder="new@example.com" /></div>
-              </div>
-            </div>
-            <div className="space-y-4">
-              <h3 className="font-bold text-gray-800 border-b pb-2 flex items-center gap-2"><Lock className="w-4 h-4" /> パスワード変更</h3>
-              <div className="space-y-3 max-w-md">
-                {(["current", "new", "confirm"] as const).map((field) => (
-                  <div key={field}>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      {field === "current" ? "現在のパスワード" : field === "new" ? "新しいパスワード" : "パスワード確認"}
-                    </label>
-                    <div className="relative">
-                      <Input
-                        type={showPassword[field] ? "text" : "password"}
-                        value={field === "current" ? formData.currentPassword : field === "new" ? formData.newPassword : formData.confirmPassword}
-                        onChange={(e) => handleChange(field === "current" ? "currentPassword" : field === "new" ? "newPassword" : "confirmPassword", e.target.value)}
-                      />
-                      <button type="button" className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600" onClick={() => setShowPassword((p) => ({ ...p, [field]: !p[field] }))}>
-                        {showPassword[field] ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <div className="flex justify-end"><Button onClick={handleUpdatePassword} variant="outline" className="border-pink-500 text-pink-500 hover:bg-pink-50">変更する</Button></div>
-            </div>
-            <div className="pt-8 mt-8 border-t border-gray-100">
+            <div className="pt-8 border-t border-gray-100">
               <h3 className="font-bold text-red-600 mb-2 flex items-center gap-2"><AlertTriangle className="w-5 h-5" /> アカウント削除</h3>
-              <div className="bg-red-50 border border-red-100 rounded-lg p-4 flex flex-col sm:flex-row justify-between items-center gap-4">
-                <p className="text-sm text-red-700">一度削除したアカウントは復元できません。すべてのデータが完全に削除されます。</p>
-                <Button variant="ghost" onClick={handleDeleteAccount} className="bg-white text-red-600 border border-red-200 hover:bg-red-600 hover:text-white transition-colors whitespace-nowrap">アカウントを削除</Button>
+              <div className="bg-red-50 border border-red-100 rounded-lg p-4">
+                <p className="text-sm text-red-700">アカウント削除については事務局までお問い合わせください。</p>
               </div>
             </div>
           </div>
@@ -284,7 +235,6 @@ export default function MyPageSettings() {
 }
 
 function RewardTab() {
-  const { toast } = useToast();
   const { data: bankAccount, isLoading: bankLoading } = useBankAccount();
   const { data: payments = [], isLoading: paymentsLoading } = usePayments();
   const upsertBank = useUpsertBankAccount();
@@ -310,12 +260,12 @@ function RewardTab() {
 
   const handleSaveBank = () => {
     if (!bankForm.bank_name || !bankForm.branch_name || !bankForm.account_number || !bankForm.account_holder) {
-      toast({ title: "すべての項目を入力してください", variant: "destructive" });
+      toast.error("すべての項目を入力してください");
       return;
     }
     upsertBank.mutate(bankForm, {
-      onSuccess: () => { toast({ title: "振込先情報を保存しました" }); setShowBankForm(false); },
-      onError: () => toast({ title: "保存に失敗しました", variant: "destructive" }),
+      onSuccess: () => { toast.success("振込先情報を保存しました"); setShowBankForm(false); },
+      onError: () => toast.error("保存に失敗しました"),
     });
   };
 
@@ -342,7 +292,6 @@ function RewardTab() {
 
   return (
     <div className="space-y-8">
-      {/* Bank Account Section */}
       <div>
         <div className="flex items-center justify-between mb-4">
           <h3 className="font-bold text-gray-800 flex items-center gap-2"><Building2 className="w-5 h-5 text-gray-500" />振込先情報</h3>
@@ -388,7 +337,6 @@ function RewardTab() {
         ) : null}
       </div>
 
-      {/* Payment Summary */}
       <div>
         <h3 className="font-bold text-gray-800 mb-4 flex items-center gap-2"><Wallet className="w-5 h-5 text-gray-500" />報酬サマリー</h3>
         <div className="grid grid-cols-3 gap-4">
@@ -407,7 +355,6 @@ function RewardTab() {
         </div>
       </div>
 
-      {/* Payment History with Filters */}
       <div>
         <h3 className="font-bold text-gray-800 mb-4">報酬履歴</h3>
         <div className="flex gap-3 flex-wrap items-center mb-4">
@@ -451,4 +398,3 @@ function RewardTab() {
     </div>
   );
 }
-
