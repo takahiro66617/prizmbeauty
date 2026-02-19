@@ -34,10 +34,10 @@ serve(async (req) => {
 
     if (appError) throw appError;
 
-    // Get messages for this thread
+    // Get messages for this thread including image_url and message_type
     const { data: messages, error: msgError } = await supabaseAdmin
       .from("messages")
-      .select("*")
+      .select("id, sender_id, receiver_id, content, read, created_at, application_id, image_url, message_type")
       .eq("application_id", applicationId)
       .order("created_at", { ascending: true });
 

@@ -12,9 +12,9 @@ serve(async (req) => {
   }
 
   try {
-    const { applicationId, senderProfileId, content } = await req.json();
-    if (!applicationId || !content) {
-      return new Response(JSON.stringify({ error: "Missing applicationId or content" }), {
+    const { applicationId, senderProfileId, content, imageUrl, messageType } = await req.json();
+    if (!applicationId || (!content && !imageUrl)) {
+      return new Response(JSON.stringify({ error: "Missing applicationId or content/imageUrl" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -34,7 +34,7 @@ serve(async (req) => {
 
     if (appError) throw appError;
 
-    // Check if application is completed - no new messages allowed
+    // Check if application is completed
     if (app.status === "completed") {
       return new Response(JSON.stringify({ error: "この案件は完了しています。メッセージを送信できません。" }), {
         status: 400,
@@ -53,15 +53,12 @@ serve(async (req) => {
       senderId = senderProfileId;
       receiverId = companyUserId;
     } else {
-      // Will be determined by auth header for Supabase-auth users
-      // For now, check authorization header
       const authHeader = req.headers.get("authorization");
       if (authHeader) {
         const token = authHeader.replace("Bearer ", "");
         const { data: { user } } = await supabaseAdmin.auth.getUser(token);
         if (user) {
           senderId = user.id;
-          // Determine receiver based on who the sender is
           if (senderId === companyUserId) {
             receiverId = influencerUserId;
           } else {
@@ -78,8 +75,10 @@ serve(async (req) => {
     const { data, error } = await supabaseAdmin.from("messages").insert({
       sender_id: senderId!,
       receiver_id: receiverId!,
-      content,
+      content: content || "",
       application_id: applicationId,
+      image_url: imageUrl || null,
+      message_type: messageType || "text",
     }).select().single();
 
     if (error) throw error;
