@@ -3,9 +3,9 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle, XCircle, Eye, X, Search, MessageCircle, ArrowRight, Send, Wallet } from "lucide-react";
-import { useExternalApplications, useUpdateApplicationStatus } from "@/hooks/useExternalApplications";
+import { useExternalApplications } from "@/hooks/useExternalApplications";
 import { useExternalCampaigns } from "@/hooks/useExternalCampaigns";
-import { useSendMessage, useSendNotification } from "@/hooks/useExternalMessages";
+import { useQueryClient } from "@tanstack/react-query";
 import { APPLICATION_STATUSES, CATEGORIES } from "@/lib/constants";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
@@ -31,10 +31,9 @@ export default function ClientApplicants() {
   const companyId = sessionStorage.getItem("client_company_id") || "";
   const { data: applications = [], isLoading } = useExternalApplications({ companyId });
   const { data: campaigns = [] } = useExternalCampaigns(companyId);
-  const updateStatus = useUpdateApplicationStatus();
-  const sendMessage = useSendMessage();
-  const sendNotification = useSendNotification();
+  const queryClient = useQueryClient();
   const navigate = useNavigate();
+  const [isUpdating, setIsUpdating] = useState(false);
   const [statusFilter, setStatusFilter] = useState("all");
   const [campaignFilter, setCampaignFilter] = useState("all");
   const [categoryFilter, setCategoryFilter] = useState("all");
@@ -56,107 +55,95 @@ export default function ClientApplicants() {
     return matchesStatus && matchesCampaign && matchesCategory && matchesSearch && matchesDateFrom && matchesDateTo;
   });
 
+  const invokeStatusUpdate = async (app: any, newStatus: string, message?: string, notification?: { title: string; message: string; type?: string; link?: string }) => {
+    setIsUpdating(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("send-status-notification", {
+        body: {
+          applicationId: app.id,
+          newStatus,
+          message: message || null,
+          notificationTitle: notification?.title || null,
+          notificationMessage: notification?.message || null,
+          notificationType: notification?.type || "info",
+          notificationLink: notification?.link || "/mypage/applications",
+        },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      queryClient.invalidateQueries({ queryKey: ["ext-applications"] });
+      return data;
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
   const handleApprove = async (app: any) => {
-    const userIdTarget = app.influencer_profiles?.user_id;
-    updateStatus.mutate({ id: app.id, status: "approved" }, {
-      onSuccess: async () => {
-        toast.success("採用しました");
-        if (userIdTarget) {
-          try {
-            await sendMessage.mutateAsync({
-              receiver_id: userIdTarget,
-              content: `🎉 おめでとうございます！「${app.campaigns?.title || "案件"}」に採用されました。詳細は追ってご連絡いたします。`,
-            });
-            await sendNotification.mutateAsync({
-              user_id: userIdTarget,
-              title: "案件採用通知",
-              message: `「${app.campaigns?.title || "案件"}」に採用されました！`,
-              type: "success",
-              link: "/mypage/applications",
-            });
-          } catch { /* silent */ }
-        }
-      },
-      onError: () => toast.error("更新に失敗しました"),
-    });
+    try {
+      await invokeStatusUpdate(
+        app, "approved",
+        `🎉 おめでとうございます！「${app.campaigns?.title || "案件"}」に採用されました。詳細は追ってご連絡いたします。`,
+        { title: "案件採用通知", message: `「${app.campaigns?.title || "案件"}」に採用されました！`, type: "success" }
+      );
+      toast.success("採用しました");
+    } catch {
+      toast.error("更新に失敗しました");
+    }
   };
 
   const handleReject = async (app: any) => {
-    const userIdTarget = app.influencer_profiles?.user_id;
-    updateStatus.mutate({ id: app.id, status: "rejected" }, {
-      onSuccess: async () => {
-        toast.success("不採用にしました");
-        if (userIdTarget) {
-          try {
-            await sendMessage.mutateAsync({
-              receiver_id: userIdTarget,
-              content: `「${app.campaigns?.title || "案件"}」について、慎重に検討させていただきましたが、今回はご期待に沿えない結果となりました。またの機会にぜひご応募ください。`,
-            });
-            await sendNotification.mutateAsync({
-              user_id: userIdTarget,
-              title: "選考結果のお知らせ",
-              message: `「${app.campaigns?.title || "案件"}」の選考結果をお知らせします。`,
-              type: "info",
-              link: "/mypage/applications",
-            });
-          } catch { /* silent */ }
-        }
-      },
-      onError: () => toast.error("更新に失敗しました"),
-    });
+    try {
+      await invokeStatusUpdate(
+        app, "rejected",
+        `「${app.campaigns?.title || "案件"}」について、慎重に検討させていただきましたが、今回はご期待に沿えない結果となりました。またの機会にぜひご応募ください。`,
+        { title: "選考結果のお知らせ", message: `「${app.campaigns?.title || "案件"}」の選考結果をお知らせします。` }
+      );
+      toast.success("不採用にしました");
+    } catch {
+      toast.error("更新に失敗しました");
+    }
   };
 
-  const handleAdvanceStatus = (app: any) => {
+  const handleAdvanceStatus = async (app: any) => {
     const nextStatus = STATUS_FLOW[app.status];
     if (!nextStatus) return;
-    const userIdTarget = app.influencer_profiles?.user_id;
     const statusLabel = APPLICATION_STATUSES.find(s => s.id === nextStatus)?.label || nextStatus;
-    updateStatus.mutate({ id: app.id, status: nextStatus }, {
-      onSuccess: async () => {
-        toast.success(`ステータスを「${statusLabel}」に更新しました`);
-        // Auto-create payment record when advancing to payment_pending
-        if (nextStatus === "payment_pending" && userIdTarget) {
-          try {
-            const amount = app.campaigns?.budget_max || app.campaigns?.budget_min || 0;
-            await supabase.from("payments").insert({
-              application_id: app.id,
-              campaign_id: app.campaign_id,
-              company_id: app.company_id,
-              influencer_user_id: userIdTarget,
-              amount,
-              status: "pending",
-            });
-          } catch { /* silent */ }
-        }
-        // Auto-mark payment as paid when completing
-        if (nextStatus === "completed" && userIdTarget) {
-          try {
-            await supabase.from("payments")
-              .update({ status: "paid", paid_at: new Date().toISOString() })
-              .eq("application_id", app.id);
-          } catch { /* silent */ }
-        }
-        if (userIdTarget) {
-          try {
-            await sendMessage.mutateAsync({
-              receiver_id: userIdTarget,
-              content: `「${app.campaigns?.title || "案件"}」のステータスが「${statusLabel}」に更新されました。`,
-            });
-          } catch { /* silent */ }
-        }
-      },
-      onError: () => toast.error("更新に失敗しました"),
-    });
+    try {
+      await invokeStatusUpdate(
+        app, nextStatus,
+        `「${app.campaigns?.title || "案件"}」のステータスが「${statusLabel}」に更新されました。`,
+      );
+      toast.success(`ステータスを「${statusLabel}」に更新しました`);
+    } catch {
+      toast.error("更新に失敗しました");
+    }
   };
 
-  const handleSendDirectMessage = () => {
+  const handleSendDirectMessage = async () => {
     if (!msgText.trim() || !msgModal) return;
-    const receiverId = msgModal.influencer_profiles?.user_id;
+    const inf = msgModal.influencer_profiles;
+    const receiverId = inf?.user_id || inf?.id;
     if (!receiverId) { toast.error("このインフルエンサーにはメッセージを送信できません"); return; }
-    sendMessage.mutate({ receiver_id: receiverId, content: msgText }, {
-      onSuccess: () => { toast.success("送信しました"); setMsgText(""); setMsgModal(null); },
-      onError: () => toast.error("送信に失敗しました"),
-    });
+    setIsUpdating(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const senderId = session?.user?.id;
+      if (!senderId) { toast.error("ログインが必要です"); return; }
+      await supabase.functions.invoke("send-status-notification", {
+        body: {
+          applicationId: msgModal.id,
+          newStatus: msgModal.status, // keep same status
+          message: msgText,
+        },
+      });
+      toast.success("送信しました");
+      setMsgText("");
+      setMsgModal(null);
+    } catch {
+      toast.error("送信に失敗しました");
+    } finally {
+      setIsUpdating(false);
+    }
   };
 
   const getStatusBadge = (status: string) => {
@@ -235,20 +222,20 @@ export default function ClientApplicants() {
                   <div className="flex flex-col gap-2 shrink-0">
                     {(app.status === "applied" || app.status === "reviewing") && (
                       <>
-                        <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white" onClick={() => handleApprove(app)} disabled={updateStatus.isPending}>
+                        <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white" onClick={() => handleApprove(app)} disabled={isUpdating}>
                           <CheckCircle className="w-3 h-3 mr-1" />採用
                         </Button>
-                        <Button size="sm" variant="outline" className="text-red-600 border-red-200" onClick={() => handleReject(app)} disabled={updateStatus.isPending}>
+                        <Button size="sm" variant="outline" className="text-red-600 border-red-200" onClick={() => handleReject(app)} disabled={isUpdating}>
                           <XCircle className="w-3 h-3 mr-1" />不採用
                         </Button>
                       </>
                     )}
                     {nextLabel && app.status !== "applied" && app.status !== "reviewing" && app.status !== "rejected" && (
-                      <Button size="sm" className="bg-purple-600 hover:bg-purple-700 text-white" onClick={() => handleAdvanceStatus(app)} disabled={updateStatus.isPending}>
+                      <Button size="sm" className="bg-purple-600 hover:bg-purple-700 text-white" onClick={() => handleAdvanceStatus(app)} disabled={isUpdating}>
                         <ArrowRight className="w-3 h-3 mr-1" />{nextLabel}
                       </Button>
                     )}
-                    {inf?.user_id && app.status !== "rejected" && (
+                    {(inf?.user_id || inf?.id) && app.status !== "rejected" && (
                       <Button size="sm" variant="outline" className="text-blue-600 border-blue-200" onClick={() => setMsgModal(app)}>
                         <MessageCircle className="w-3 h-3 mr-1" />メッセージ
                       </Button>
@@ -351,7 +338,7 @@ export default function ClientApplicants() {
             </div>
             <div className="p-6 border-t flex justify-end gap-3">
               <Button variant="outline" onClick={() => setMsgModal(null)}>キャンセル</Button>
-              <Button className="bg-blue-600 hover:bg-blue-700" onClick={handleSendDirectMessage} disabled={sendMessage.isPending}>
+              <Button className="bg-blue-600 hover:bg-blue-700" onClick={handleSendDirectMessage} disabled={isUpdating}>
                 <Send className="w-4 h-4 mr-2" />送信
               </Button>
             </div>

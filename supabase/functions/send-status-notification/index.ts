@@ -1,0 +1,120 @@
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+};
+
+serve(async (req) => {
+  if (req.method === "OPTIONS") {
+    return new Response("ok", { headers: corsHeaders });
+  }
+
+  try {
+    const { applicationId, newStatus, message, notificationTitle, notificationMessage, notificationType, notificationLink } = await req.json();
+    if (!applicationId || !newStatus) {
+      return new Response(JSON.stringify({ error: "Missing applicationId or newStatus" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const supabaseAdmin = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+    );
+
+    // 1. Update application status
+    const { data: updatedApp, error: updateError } = await supabaseAdmin
+      .from("applications")
+      .update({ status: newStatus })
+      .eq("id", applicationId)
+      .select("*, campaigns(id, title, budget_min, budget_max, companies(id, name)), influencer_profiles(id, name, username, user_id, line_user_id)")
+      .single();
+
+    if (updateError) throw updateError;
+
+    const influencer = updatedApp.influencer_profiles;
+    const senderId = updatedApp.campaigns?.companies?.id || null;
+
+    // 2. Send message if provided - use influencer_profile.id as fallback receiver
+    if (message && influencer) {
+      const receiverId = influencer.user_id || influencer.id;
+      try {
+        // Get the company's user_id for sender
+        const { data: company } = await supabaseAdmin
+          .from("companies")
+          .select("user_id")
+          .eq("id", updatedApp.company_id)
+          .single();
+        
+        console.log("Sending message:", { sender: company?.user_id, receiver: receiverId });
+        const { error: msgError } = await supabaseAdmin.from("messages").insert({
+          sender_id: company?.user_id || updatedApp.company_id,
+          receiver_id: receiverId,
+          content: message,
+        });
+        if (msgError) console.error("Message insert error:", msgError);
+      } catch (e) {
+        console.error("Failed to send message:", e);
+      }
+    }
+
+    // 3. Send notification if provided
+    if (notificationTitle && influencer) {
+      const targetUserId = influencer.user_id || influencer.id;
+      try {
+        console.log("Sending notification:", { user_id: targetUserId, title: notificationTitle });
+        const { error: notifError } = await supabaseAdmin.from("notifications").insert({
+          user_id: targetUserId,
+          title: notificationTitle,
+          message: notificationMessage || notificationTitle,
+          type: notificationType || "info",
+          link: notificationLink || "/mypage/applications",
+        });
+        if (notifError) console.error("Notification insert error:", notifError);
+      } catch (e) {
+        console.error("Failed to send notification:", e);
+      }
+    }
+
+    // 4. Auto-create payment record when advancing to payment_pending
+    if (newStatus === "payment_pending" && influencer) {
+      const amount = updatedApp.campaigns?.budget_max || updatedApp.campaigns?.budget_min || 0;
+      const targetUserId = influencer.user_id || influencer.id;
+      try {
+        await supabaseAdmin.from("payments").insert({
+          application_id: applicationId,
+          campaign_id: updatedApp.campaign_id,
+          company_id: updatedApp.company_id,
+          influencer_user_id: targetUserId,
+          amount,
+          status: "pending",
+        });
+      } catch (e) {
+        console.error("Failed to create payment:", e);
+      }
+    }
+
+    // 5. Auto-mark payment as paid when completing
+    if (newStatus === "completed") {
+      try {
+        await supabaseAdmin.from("payments")
+          .update({ status: "paid", paid_at: new Date().toISOString() })
+          .eq("application_id", applicationId);
+      } catch (e) {
+        console.error("Failed to update payment:", e);
+      }
+    }
+
+    return new Response(JSON.stringify({ data: updatedApp }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  } catch (e) {
+    return new Response(JSON.stringify({ error: e.message }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+});
