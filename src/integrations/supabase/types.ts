@@ -306,6 +306,7 @@ export type Database = {
       }
       messages: {
         Row: {
+          application_id: string | null
           content: string
           created_at: string
           id: string
@@ -314,6 +315,7 @@ export type Database = {
           sender_id: string
         }
         Insert: {
+          application_id?: string | null
           content: string
           created_at?: string
           id?: string
@@ -322,6 +324,7 @@ export type Database = {
           sender_id: string
         }
         Update: {
+          application_id?: string | null
           content?: string
           created_at?: string
           id?: string
@@ -329,7 +332,15 @@ export type Database = {
           receiver_id?: string
           sender_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "messages_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "applications"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       notifications: {
         Row: {

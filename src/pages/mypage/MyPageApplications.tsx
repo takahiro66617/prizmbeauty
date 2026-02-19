@@ -1,11 +1,12 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { Search, FileText, CheckCircle, Clock, Send, ChevronRight, X, Building2, ArrowRight } from "lucide-react";
+import { Search, FileText, CheckCircle, Clock, Send, ChevronRight, X, Building2, ArrowRight, MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useExternalApplications, type ExternalApplication } from "@/hooks/useExternalApplications";
+import ThreadConversation from "@/components/ThreadConversation";
 
 const TABS = [
   { id: "all", label: "すべて" },
@@ -16,11 +17,13 @@ const TABS = [
 ];
 
 export default function MyPageApplications() {
-  const userId = JSON.parse(sessionStorage.getItem("currentUser") || "null")?.id || "";
+  const currentUser = JSON.parse(sessionStorage.getItem("currentUser") || "null");
+  const userId = currentUser?.id || "";
   const { data: applications = [], isLoading } = useExternalApplications({ influencerId: userId });
   const [activeTab, setActiveTab] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedApp, setSelectedApp] = useState<ExternalApplication | null>(null);
+  const [threadAppId, setThreadAppId] = useState<string | null>(null);
 
   const filtered = applications.filter(app => {
     if (activeTab === "reviewing" && !["applied", "reviewing"].includes(app.status)) return false;
@@ -37,10 +40,28 @@ export default function MyPageApplications() {
       case "applied": case "reviewing": return <Badge variant="secondary" className="bg-blue-100 text-blue-700">選考中</Badge>;
       case "approved": return <Badge variant="secondary" className="bg-green-100 text-green-700">採用</Badge>;
       case "rejected": return <Badge variant="secondary" className="bg-red-100 text-red-700">不採用</Badge>;
+      case "in_progress": return <Badge variant="secondary" className="bg-purple-100 text-purple-700">進行中</Badge>;
+      case "post_submitted": return <Badge variant="secondary" className="bg-indigo-100 text-indigo-700">投稿済み</Badge>;
+      case "post_confirmed": return <Badge variant="secondary" className="bg-teal-100 text-teal-700">投稿確認済</Badge>;
+      case "payment_pending": return <Badge variant="secondary" className="bg-orange-100 text-orange-700">振込待ち</Badge>;
       case "completed": return <Badge variant="secondary" className="bg-gray-100 text-gray-700">完了</Badge>;
       default: return <Badge variant="outline">不明</Badge>;
     }
   };
+
+  // Show thread view
+  if (threadAppId) {
+    return (
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden h-[calc(100vh-120px)]">
+        <ThreadConversation
+          applicationId={threadAppId}
+          userType="influencer"
+          senderId={userId}
+          onBack={() => setThreadAppId(null)}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 pb-20">
@@ -70,6 +91,7 @@ export default function MyPageApplications() {
         <div className="grid gap-4">
           {filtered.map(app => {
             const campaign = app.campaigns;
+            const hasThread = ["approved", "in_progress", "post_submitted", "post_confirmed", "payment_pending", "completed"].includes(app.status);
             return (
               <Card key={app.id} className="group hover:shadow-md transition-shadow border-gray-100">
                 <CardContent className="p-4 md:p-6">
@@ -90,11 +112,12 @@ export default function MyPageApplications() {
                       </div>
                     </div>
                     <div className="flex md:flex-col gap-2 justify-end mt-2 md:mt-0 border-t md:border-t-0 pt-3 md:pt-0">
-                      {app.status === "approved" ? (
-                        <Button size="sm" className="bg-pink-500 hover:bg-pink-400 text-white shadow-sm w-full md:w-auto"><Send className="w-3 h-3 mr-1" />投稿する</Button>
-                      ) : (
-                        <Button variant="ghost" size="sm" onClick={() => setSelectedApp(app)} className="w-full md:w-auto text-gray-500 hover:text-gray-900">詳細 <ChevronRight className="w-3 h-3 ml-1" /></Button>
+                      {hasThread && (
+                        <Button size="sm" className="bg-purple-500 hover:bg-purple-400 text-white shadow-sm w-full md:w-auto" onClick={() => setThreadAppId(app.id)}>
+                          <MessageCircle className="w-3 h-3 mr-1" />スレッド
+                        </Button>
                       )}
+                      <Button variant="ghost" size="sm" onClick={() => setSelectedApp(app)} className="w-full md:w-auto text-gray-500 hover:text-gray-900">詳細 <ChevronRight className="w-3 h-3 ml-1" /></Button>
                     </div>
                   </div>
                 </CardContent>
@@ -111,6 +134,7 @@ export default function MyPageApplications() {
         </div>
       )}
 
+      {/* Application Detail Modal - now includes full campaign info */}
       {selectedApp && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" onClick={() => setSelectedApp(null)}>
           <div className="bg-white rounded-2xl w-full max-w-2xl overflow-hidden shadow-xl my-8" onClick={e => e.stopPropagation()}>
@@ -120,17 +144,37 @@ export default function MyPageApplications() {
             </div>
             <div className="p-6 space-y-6 max-h-[70vh] overflow-y-auto">
               {selectedApp.campaigns && (
-                <div className="flex gap-4 p-4 bg-gray-50 rounded-xl">
-                  <div className="w-20 h-20 rounded-lg overflow-hidden bg-gray-200 shrink-0">
-                    {selectedApp.campaigns.image_url && <img src={selectedApp.campaigns.image_url} alt="" className="w-full h-full object-cover" />}
+                <>
+                  <div className="flex gap-4 p-4 bg-gray-50 rounded-xl">
+                    <div className="w-20 h-20 rounded-lg overflow-hidden bg-gray-200 shrink-0">
+                      {selectedApp.campaigns.image_url && <img src={selectedApp.campaigns.image_url} alt="" className="w-full h-full object-cover" />}
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-gray-900 mb-1">{selectedApp.campaigns.title}</h4>
+                      <p className="text-sm text-gray-500 mb-2">{selectedApp.campaigns.companies?.name || ""}</p>
+                      <div className="flex flex-wrap gap-3">
+                        <span className="font-bold text-pink-500">¥{(selectedApp.campaigns.budget_max || selectedApp.campaigns.budget_min || 0).toLocaleString()}</span>
+                        {selectedApp.campaigns.deadline && (
+                          <span className="text-sm text-gray-500 flex items-center gap-1"><Clock className="w-3 h-3" />締切: {new Date(selectedApp.campaigns.deadline).toLocaleDateString("ja-JP")}</span>
+                        )}
+                      </div>
+                    </div>
                   </div>
-                  <div>
-                    <h4 className="font-bold text-gray-900 mb-1">{selectedApp.campaigns.title}</h4>
-                    <p className="text-sm text-gray-500 mb-2">{selectedApp.campaigns.companies?.name || ""}</p>
-                    <span className="font-bold text-pink-500">¥{(selectedApp.campaigns.budget_max || selectedApp.campaigns.budget_min || 0).toLocaleString()}</span>
-                  </div>
-                </div>
+                  {/* Campaign category */}
+                  {selectedApp.campaigns.category && (
+                    <div className="flex gap-2">
+                      <Badge variant="outline">{selectedApp.campaigns.category}</Badge>
+                    </div>
+                  )}
+                </>
               )}
+
+              {/* Status */}
+              <div>
+                <h4 className="font-bold text-gray-800 mb-2 text-sm">ステータス</h4>
+                <div>{getStatusBadge(selectedApp.status)}</div>
+              </div>
+
               {selectedApp.motivation && (
                 <div>
                   <h4 className="font-bold text-gray-800 mb-2 text-sm">応募動機</h4>
@@ -139,6 +183,11 @@ export default function MyPageApplications() {
               )}
             </div>
             <div className="p-6 border-t border-gray-100 flex justify-end gap-3 sticky bottom-0 bg-white">
+              {["approved", "in_progress", "post_submitted", "post_confirmed", "payment_pending", "completed"].includes(selectedApp.status) && (
+                <Button className="bg-purple-500 hover:bg-purple-400 text-white" onClick={() => { setSelectedApp(null); setThreadAppId(selectedApp.id); }}>
+                  <MessageCircle className="w-4 h-4 mr-2" />スレッドを開く
+                </Button>
+              )}
               <Button variant="outline" onClick={() => setSelectedApp(null)}>閉じる</Button>
             </div>
           </div>

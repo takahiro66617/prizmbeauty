@@ -34,6 +34,7 @@ export default function ClientLogin() {
       if (company) {
         sessionStorage.setItem("client_session", "true");
         sessionStorage.setItem("client_company_id", company.id);
+        sessionStorage.setItem("client_user_id", authData.user.id);
       }
       navigate("/client/dashboard");
     } catch {
