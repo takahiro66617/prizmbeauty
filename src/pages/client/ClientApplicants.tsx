@@ -2,13 +2,14 @@ import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle, XCircle, Eye, X, Search, MessageCircle, ArrowRight, Send } from "lucide-react";
+import { CheckCircle, XCircle, Eye, X, Search, MessageCircle, ArrowRight, Send, Wallet } from "lucide-react";
 import { useExternalApplications, useUpdateApplicationStatus } from "@/hooks/useExternalApplications";
 import { useExternalCampaigns } from "@/hooks/useExternalCampaigns";
 import { useSendMessage, useSendNotification } from "@/hooks/useExternalMessages";
 import { APPLICATION_STATUSES, CATEGORIES } from "@/lib/constants";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 
 const STATUS_FLOW: Record<string, string> = {
   approved: "in_progress",
@@ -43,6 +44,7 @@ export default function ClientApplicants() {
   const [selectedApp, setSelectedApp] = useState<any>(null);
   const [msgModal, setMsgModal] = useState<any>(null);
   const [msgText, setMsgText] = useState("");
+  const [bankInfo, setBankInfo] = useState<any>(null);
 
   const filtered = applications.filter(a => {
     const matchesStatus = statusFilter === "all" || a.status === statusFilter;
@@ -229,7 +231,14 @@ export default function ClientApplicants() {
                         <MessageCircle className="w-3 h-3 mr-1" />メッセージ
                       </Button>
                     )}
-                    <Button size="sm" variant="ghost" className="text-gray-500" onClick={() => setSelectedApp(app)}><Eye className="w-3 h-3 mr-1" />詳細</Button>
+                    <Button size="sm" variant="ghost" className="text-gray-500" onClick={async () => {
+                      setSelectedApp(app);
+                      setBankInfo(null);
+                      if (app.influencer_profiles?.user_id) {
+                        const { data } = await supabase.from("bank_accounts").select("*").eq("user_id", app.influencer_profiles.user_id).maybeSingle();
+                        setBankInfo(data);
+                      }
+                    }}><Eye className="w-3 h-3 mr-1" />詳細</Button>
                   </div>
                 </div>
               </Card>
@@ -281,6 +290,23 @@ export default function ClientApplicants() {
               </div>
               {selectedApp.motivation && (
                 <div><p className="text-sm font-medium text-gray-700 mb-1">応募動機</p><p className="text-sm bg-gray-50 p-3 rounded-lg italic">"{selectedApp.motivation}"</p></div>
+              )}
+              {/* Bank Info */}
+              {(selectedApp.status === "payment_pending" || selectedApp.status === "post_confirmed" || selectedApp.status === "approved" || selectedApp.status === "in_progress") && (
+                <div className="bg-blue-50 p-4 rounded-lg">
+                  <p className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-2"><Wallet className="w-4 h-4" />振込先情報</p>
+                  {bankInfo ? (
+                    <div className="grid grid-cols-2 gap-2 text-sm">
+                      <div><span className="text-gray-500">銀行名:</span> <span className="font-medium">{bankInfo.bank_name}</span></div>
+                      <div><span className="text-gray-500">支店名:</span> <span className="font-medium">{bankInfo.branch_name}</span></div>
+                      <div><span className="text-gray-500">口座種別:</span> <span className="font-medium">{bankInfo.account_type === "ordinary" ? "普通" : "当座"}</span></div>
+                      <div><span className="text-gray-500">口座番号:</span> <span className="font-medium">{bankInfo.account_number}</span></div>
+                      <div className="col-span-2"><span className="text-gray-500">口座名義:</span> <span className="font-medium">{bankInfo.account_holder}</span></div>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-gray-500">振込先情報が未登録です</p>
+                  )}
+                </div>
               )}
             </div>
             <div className="p-6 border-t flex justify-end"><Button variant="outline" onClick={() => setSelectedApp(null)}>閉じる</Button></div>

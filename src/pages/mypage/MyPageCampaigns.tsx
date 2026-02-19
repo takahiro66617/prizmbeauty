@@ -57,7 +57,7 @@ export default function MyPageCampaigns() {
       ) : filtered.length > 0 ? (
         <div className="grid gap-4 md:grid-cols-2">
           {filtered.map(campaign => (
-            <Link key={campaign.id} to={`/campaigns/${campaign.id}`}>
+            <Link key={campaign.id} to={`/mypage/campaigns/${campaign.id}`}>
               <Card className="group hover:shadow-lg transition-all border-gray-100 h-full">
                 <CardContent className="p-0">
                   <div className="h-40 bg-gray-100 overflow-hidden rounded-t-lg">
