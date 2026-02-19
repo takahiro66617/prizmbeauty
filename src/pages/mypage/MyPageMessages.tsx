@@ -1,70 +1,33 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
+import { MessageCircle, Building2, Clock, FileText } from "lucide-react";
 import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { MessageCircle, Send } from "lucide-react";
-import { useExternalMessages, useSendMessage, ExternalMessage } from "@/hooks/useExternalMessages";
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
-
-interface UserInfo { id: string; name: string }
+import { useExternalApplications } from "@/hooks/useExternalApplications";
+import ThreadConversation from "@/components/ThreadConversation";
 
 export default function MyPageMessages() {
-  const { data: messages = [], isLoading } = useExternalMessages();
-  const sendMessage = useSendMessage();
-  const [selectedThread, setSelectedThread] = useState<string | null>(null);
-  const [replyText, setReplyText] = useState("");
-  const [userMap, setUserMap] = useState<Record<string, UserInfo>>({});
-  const [authUserId, setAuthUserId] = useState("");
+  const currentUser = JSON.parse(sessionStorage.getItem("currentUser") || "null");
+  const userId = currentUser?.id || "";
+  const { data: applications = [], isLoading } = useExternalApplications({ influencerId: userId });
+  const [threadAppId, setThreadAppId] = useState<string | null>(null);
 
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) setAuthUserId(session.user.id);
-    });
-  }, []);
+  // Only show applications that have an active thread (approved+)
+  const threadApps = applications.filter(app =>
+    ["approved", "in_progress", "post_submitted", "post_confirmed", "payment_pending", "completed"].includes(app.status)
+  );
 
-  useEffect(() => {
-    if (messages.length === 0 || !authUserId) return;
-    const ids = new Set<string>();
-    messages.forEach(m => { ids.add(m.sender_id); ids.add(m.receiver_id); });
-    ids.delete(authUserId);
-    const lookupUsers = async () => {
-      const idArr = Array.from(ids);
-      const map: Record<string, UserInfo> = {};
-      const { data: comps } = await supabase.from("companies").select("id, name, user_id").in("user_id", idArr);
-      comps?.forEach(c => { map[c.user_id] = { id: c.user_id, name: c.name }; });
-      const { data: infs } = await supabase.from("influencer_profiles").select("id, name, user_id").in("user_id", idArr);
-      infs?.forEach(i => { if (i.user_id) map[i.user_id] = { id: i.user_id, name: i.name }; });
-      setUserMap(map);
-    };
-    lookupUsers();
-  }, [messages, authUserId]);
-
-  const getName = (id: string) => userMap[id]?.name || id.slice(0, 8);
-
-  const threads = new Map<string, ExternalMessage[]>();
-  messages.forEach(m => {
-    const partnerId = m.sender_id === authUserId ? m.receiver_id : m.sender_id;
-    if (!threads.has(partnerId)) threads.set(partnerId, []);
-    threads.get(partnerId)!.push(m);
-  });
-
-  const threadList = Array.from(threads.entries()).map(([partnerId, msgs]) => ({
-    partnerId,
-    messages: msgs,
-    latest: msgs[0],
-    unread: msgs.some(m => !m.read && m.receiver_id === authUserId),
-  }));
-
-  const selectedMessages = selectedThread ? (threads.get(selectedThread) || []) : [];
-
-  const handleSendReply = () => {
-    if (!replyText.trim() || !selectedThread) return;
-    sendMessage.mutate({ receiver_id: selectedThread, content: replyText }, {
-      onSuccess: () => { toast.success("送信しました"); setReplyText(""); },
-      onError: () => toast.error("送信に失敗しました"),
-    });
-  };
+  if (threadAppId) {
+    return (
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden h-[calc(100vh-120px)]">
+        <ThreadConversation
+          applicationId={threadAppId}
+          userType="influencer"
+          senderId={userId}
+          onBack={() => setThreadAppId(null)}
+        />
+      </div>
+    );
+  }
 
   if (isLoading) return <div className="text-center py-12 text-gray-500">読み込み中...</div>;
 
@@ -72,60 +35,65 @@ export default function MyPageMessages() {
     <div className="space-y-6">
       <h1 className="text-2xl font-bold text-gray-800">メッセージ</h1>
 
-      {threadList.length > 0 ? (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-1 space-y-3">
-            {threadList.map(t => (
-              <Card key={t.partnerId}
-                className={`p-4 cursor-pointer transition-all border-0 shadow-sm hover:shadow-md ${selectedThread === t.partnerId ? "ring-2 ring-pink-500" : ""}`}
-                onClick={() => setSelectedThread(t.partnerId)}>
-                <div className="flex items-start justify-between mb-1">
-                  <span className="font-medium text-gray-900 text-sm truncate">{getName(t.partnerId)}</span>
-                  {t.unread && <Badge className="bg-red-500 text-white text-[10px]">新着</Badge>}
-                </div>
-                <p className="text-sm font-medium text-gray-700 truncate">{t.latest.content.slice(0, 50)}</p>
-                <p className="text-xs text-gray-400 mt-1">{new Date(t.latest.created_at).toLocaleDateString("ja-JP")}</p>
-              </Card>
-            ))}
-          </div>
-
-          <div className="lg:col-span-2">
-            {selectedThread ? (
-              <Card className="p-6 border-0 shadow-lg">
-                <div className="border-b border-gray-100 pb-4 mb-4">
-                  <h3 className="font-bold text-gray-900">{getName(selectedThread)}</h3>
-                </div>
-                <div className="space-y-3 max-h-[50vh] overflow-y-auto">
-                  {[...selectedMessages].reverse().map(msg => (
-                    <div key={msg.id} className={`p-3 rounded-lg ${msg.sender_id === authUserId ? "bg-pink-50 ml-8" : "bg-gray-50 mr-8"}`}>
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="text-xs font-medium text-gray-700">{msg.sender_id === authUserId ? "あなた" : getName(msg.sender_id)}</span>
-                        <span className="text-xs text-gray-400">{new Date(msg.created_at).toLocaleString("ja-JP")}</span>
-                      </div>
-                      <p className="text-sm text-gray-700 whitespace-pre-wrap">{msg.content}</p>
+      {threadApps.length > 0 ? (
+        <div className="grid gap-4">
+          {threadApps.map(app => {
+            const campaign = app.campaigns;
+            const company = campaign?.companies;
+            const isCompleted = app.status === "completed";
+            return (
+              <Card
+                key={app.id}
+                className="p-4 cursor-pointer transition-all border-0 shadow-sm hover:shadow-md"
+                onClick={() => setThreadAppId(app.id)}
+              >
+                <div className="flex gap-4 items-start">
+                  {campaign?.image_url ? (
+                    <div className="w-16 h-16 rounded-lg overflow-hidden bg-gray-100 shrink-0">
+                      <img src={campaign.image_url} alt="" className="w-full h-full object-cover" />
                     </div>
-                  ))}
-                </div>
-                <div className="mt-6 pt-4 border-t border-gray-100">
-                  <div className="flex gap-2">
-                    <input type="text" value={replyText} onChange={e => setReplyText(e.target.value)} placeholder="返信を入力..."
-                      onKeyDown={e => e.key === "Enter" && handleSendReply()}
-                      className="flex-1 px-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pink-500" />
-                    <Button className="bg-pink-500 hover:bg-pink-400" onClick={handleSendReply} disabled={sendMessage.isPending}>
-                      <Send className="w-4 h-4" />
-                    </Button>
+                  ) : (
+                    <div className="w-16 h-16 rounded-lg bg-gray-100 flex items-center justify-center shrink-0">
+                      <FileText className="w-6 h-6 text-gray-300" />
+                    </div>
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <h3 className="font-bold text-gray-900 truncate text-sm">
+                        {campaign?.title || "不明な案件"}
+                      </h3>
+                      {isCompleted ? (
+                        <Badge variant="secondary" className="bg-gray-100 text-gray-500 text-[10px] shrink-0">完了</Badge>
+                      ) : (
+                        <Badge className="bg-green-100 text-green-700 text-[10px] shrink-0">進行中</Badge>
+                      )}
+                    </div>
+                    <div className="flex items-center text-xs text-gray-500 mb-1">
+                      <Building2 className="w-3 h-3 mr-1" />
+                      {company?.name || "不明な企業"}
+                    </div>
+                    <div className="flex flex-wrap gap-3 text-xs text-gray-400">
+                      {campaign?.category && <Badge variant="outline" className="text-[10px]">{campaign.category}</Badge>}
+                      <span className="text-pink-500 font-medium">¥{(campaign?.budget_max || campaign?.budget_min || 0).toLocaleString()}</span>
+                      {campaign?.deadline && (
+                        <span className="flex items-center gap-0.5">
+                          <Clock className="w-3 h-3" />
+                          {new Date(campaign.deadline).toLocaleDateString("ja-JP")}
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
               </Card>
-            ) : (
-              <div className="flex items-center justify-center h-64 text-gray-400 bg-white rounded-xl border border-dashed border-gray-200">メッセージを選択してください</div>
-            )}
-          </div>
+            );
+          })}
         </div>
       ) : (
         <div className="flex flex-col items-center justify-center min-h-[60vh] text-center space-y-4">
-          <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center"><MessageCircle className="w-8 h-8 text-blue-500" /></div>
-          <p className="text-gray-500">現在、新着メッセージはありません。<br />企業からの連絡をお待ちください。</p>
+          <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center">
+            <MessageCircle className="w-8 h-8 text-blue-500" />
+          </div>
+          <p className="text-gray-500">現在、メッセージスレッドはありません。<br />企業から採用されるとスレッドが開設されます。</p>
         </div>
       )}
     </div>
