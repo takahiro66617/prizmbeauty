@@ -89,10 +89,14 @@ export default function MyPageSettings() {
     setIsLoading(true);
     try {
       if (profile?.id) {
-        const { error } = await supabase.from("influencer_profiles").update(updates).eq("id", profile.id);
-        if (error) throw error;
-        setProfile({ ...profile, ...updates });
-        // Update sessionStorage too
+        // Use edge function to bypass RLS for LINE-auth influencers without user_id
+        const { data: fnData, error: fnError } = await supabase.functions.invoke("update-influencer-profile", {
+          body: { profileId: profile.id, updates },
+        });
+        if (fnError) throw fnError;
+        if (fnData?.error) throw new Error(fnData.error);
+        const updatedProfile = fnData?.data || { ...profile, ...updates };
+        setProfile(updatedProfile);
         const u = sessionStorage.getItem("currentUser");
         if (u) sessionStorage.setItem("currentUser", JSON.stringify({ ...JSON.parse(u), ...updates }));
         toast.success("保存しました");
