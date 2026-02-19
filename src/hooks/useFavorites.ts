@@ -11,14 +11,23 @@ export function useFavorites() {
   return useQuery({
     queryKey: ["favorites"],
     queryFn: async () => {
-      // Try auth session first
+      const profileId = getInfluencerProfileId();
+      // Use edge function for LINE-auth users
+      if (profileId) {
+        const { data, error } = await supabase.functions.invoke("get-my-favorites", {
+          body: { influencerProfileId: profileId },
+        });
+        if (error) throw error;
+        if (data?.error) throw new Error(data.error);
+        return data.data || [];
+      }
+      // Fallback for Supabase-auth users
       const { data: { session } } = await supabase.auth.getSession();
-      const userId = session?.user.id || getInfluencerProfileId();
-      if (!userId) return [];
+      if (!session) return [];
       const { data, error } = await supabase
         .from("favorites")
         .select("*, campaigns(*, companies(id, name, logo_url))")
-        .eq("user_id", userId)
+        .eq("user_id", session.user.id)
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data;
@@ -31,13 +40,23 @@ export function useIsFavorite(campaignId: string | undefined) {
     queryKey: ["favorite-check", campaignId],
     queryFn: async () => {
       if (!campaignId) return false;
+      const profileId = getInfluencerProfileId();
+      // Use edge function for LINE-auth users
+      if (profileId) {
+        const { data, error } = await supabase.functions.invoke("get-my-favorites", {
+          body: { influencerProfileId: profileId, campaignId },
+        });
+        if (error) throw error;
+        if (data?.error) throw new Error(data.error);
+        return data.isFavorite || false;
+      }
+      // Fallback for Supabase-auth users
       const { data: { session } } = await supabase.auth.getSession();
-      const userId = session?.user.id || getInfluencerProfileId();
-      if (!userId) return false;
+      if (!session) return false;
       const { data } = await supabase
         .from("favorites")
         .select("id")
-        .eq("user_id", userId)
+        .eq("user_id", session.user.id)
         .eq("campaign_id", campaignId)
         .maybeSingle();
       return !!data;
