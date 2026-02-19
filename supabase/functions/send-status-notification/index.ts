@@ -80,7 +80,43 @@ serve(async (req) => {
       }
     }
 
-    // 4. Auto-create payment record when advancing to payment_pending
+    // 4. Auto-send bank account info when post is confirmed
+    if (newStatus === "post_confirmed" && influencer) {
+      const targetUserId = influencer.user_id || influencer.id;
+      try {
+        const { data: bankAccount } = await supabaseAdmin
+          .from("bank_accounts")
+          .select("*")
+          .eq("user_id", targetUserId)
+          .single();
+
+        if (bankAccount) {
+          const bankContent = `🏦 振込先情報\n\n銀行名: ${bankAccount.bank_name}\n支店名: ${bankAccount.branch_name}\n口座種別: ${bankAccount.account_type === "ordinary" ? "普通" : bankAccount.account_type === "current" ? "当座" : bankAccount.account_type}\n口座番号: ${bankAccount.account_number}\n口座名義: ${bankAccount.account_holder}`;
+          
+          // Get company user_id for receiver
+          const { data: companyData } = await supabaseAdmin
+            .from("companies")
+            .select("user_id")
+            .eq("id", updatedApp.company_id)
+            .single();
+
+          const { error: bankMsgError } = await supabaseAdmin.from("messages").insert({
+            sender_id: targetUserId,
+            receiver_id: companyData?.user_id || updatedApp.company_id,
+            content: bankContent,
+            application_id: applicationId,
+            message_type: "bank_info",
+          });
+          if (bankMsgError) console.error("Bank info message error:", bankMsgError);
+        } else {
+          console.log("No bank account found for influencer:", targetUserId);
+        }
+      } catch (e) {
+        console.error("Failed to send bank info:", e);
+      }
+    }
+
+    // 5. Auto-create payment record when advancing to payment_pending
     if (newStatus === "payment_pending" && influencer) {
       const amount = updatedApp.campaigns?.budget_max || updatedApp.campaigns?.budget_min || 0;
       const targetUserId = influencer.user_id || influencer.id;
