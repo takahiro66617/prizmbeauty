@@ -51,14 +51,12 @@ export function useUpdateInfluencerStatus() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, status }: { id: string; status: string }) => {
-      const { data, error } = await supabase
-        .from("influencer_profiles")
-        .update({ status })
-        .eq("id", id)
-        .select()
-        .single();
+      const { data, error } = await supabase.functions.invoke("admin-update-influencer", {
+        body: { id, updates: { status } },
+      });
       if (error) throw error;
-      return data;
+      if (data?.error) throw new Error(data.error);
+      return data.data;
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["ext-influencers"] });

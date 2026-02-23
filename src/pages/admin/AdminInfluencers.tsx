@@ -83,14 +83,18 @@ export default function AdminInfluencersPage() {
       youtube_url: rest.youtube_url || null,
       twitter_url: rest.twitter_url || null,
     };
-    const { error } = await supabase.from("influencer_profiles").update(updates).eq("id", selectedInf.id);
-    if (error) { toast.error("保存に失敗しました"); } else { toast.success("保存しました"); refetch(); setSelectedInf(null); }
+    const { data, error } = await supabase.functions.invoke("admin-update-influencer", {
+      body: { id: selectedInf.id, updates },
+    });
+    if (error || data?.error) { toast.error("保存に失敗しました"); } else { toast.success("保存しました"); refetch(); setSelectedInf(null); }
   };
 
   const handleReject = async (id: string) => {
     if (!window.confirm("このインフルエンサーを却下し退会させますか？")) return;
-    const { error } = await supabase.from("influencer_profiles").update({ status: "rejected" }).eq("id", id);
-    if (error) { toast.error("処理に失敗しました"); } else { toast.success("却下・退会処理を行いました"); refetch(); setSelectedInf(null); }
+    const { data, error } = await supabase.functions.invoke("admin-update-influencer", {
+      body: { id, updates: { status: "rejected" } },
+    });
+    if (error || data?.error) { toast.error("処理に失敗しました"); } else { toast.success("却下・退会処理を行いました"); refetch(); setSelectedInf(null); }
   };
 
   const clearFilters = () => {
