@@ -4,8 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
-
-
+import { GENRES } from "@/lib/constants";
 
 const PREFECTURES = [
   "北海道","青森県","岩手県","宮城県","秋田県","山形県","福島県",
@@ -15,13 +14,6 @@ const PREFECTURES = [
   "奈良県","和歌山県","鳥取県","島根県","岡山県","広島県","山口県",
   "徳島県","香川県","愛媛県","高知県","福岡県","佐賀県","長崎県",
   "熊本県","大分県","宮崎県","鹿児島県","沖縄県",
-];
-
-const GENRES = [
-  "ダンス","Vlog","美容・コスメ","動物","赤ちゃん・子ども",
-  "カップル・夫婦","お笑い","アニメ・漫画","芸能・エンタメ",
-  "映画・ドラマ","フィットネス・健康","音楽","お金・投資",
-  "スポーツ","ゲーム","アート",
 ];
 
 interface LineProfile {
@@ -101,7 +93,6 @@ export default function RegisterProfile() {
 
       const data = result.data;
 
-      // Store session
       const mockUser = {
         id: data.id,
         lastName,
@@ -135,7 +126,6 @@ export default function RegisterProfile() {
         </div>
 
         <Card className="p-6 shadow-xl border-0 bg-card/90 backdrop-blur-sm rounded-2xl space-y-5">
-          {/* Avatar */}
           {lineProfile.pictureUrl && (
             <div className="flex justify-center">
               <img
@@ -146,7 +136,6 @@ export default function RegisterProfile() {
             </div>
           )}
 
-          {/* 姓名 */}
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label className="text-xs font-semibold">姓 <span className="text-destructive">*</span></Label>
@@ -158,13 +147,11 @@ export default function RegisterProfile() {
             </div>
           </div>
 
-          {/* ニックネーム */}
           <div className="space-y-1.5">
             <Label className="text-xs font-semibold">ニックネーム <span className="text-destructive">*</span></Label>
             <Input value={nickname} onChange={(e) => setNickname(e.target.value)} placeholder="はなちゃん" />
           </div>
 
-          {/* 性別 */}
           <div className="space-y-1.5">
             <Label className="text-xs font-semibold">性別 <span className="text-destructive">*</span></Label>
             <div className="flex gap-3">
@@ -185,13 +172,11 @@ export default function RegisterProfile() {
             </div>
           </div>
 
-          {/* 生年月日 */}
           <div className="space-y-1.5">
             <Label className="text-xs font-semibold">生年月日 <span className="text-destructive">*</span></Label>
             <Input type="date" value={birthDate} onChange={(e) => setBirthDate(e.target.value)} />
           </div>
 
-          {/* 居住地 */}
           <div className="space-y-1.5">
             <Label className="text-xs font-semibold">居住地 <span className="text-destructive">*</span></Label>
             <select
@@ -206,7 +191,6 @@ export default function RegisterProfile() {
             </select>
           </div>
 
-          {/* ジャンル */}
           <div className="space-y-1.5">
             <Label className="text-xs font-semibold">
               主な投稿ジャンル <span className="text-destructive">*</span>

@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Send, ArrowLeft, FileText, Building2, Clock, CheckCircle, Image, X, Link as LinkIcon } from "lucide-react";
+import { ArrowLeft, FileText, Building2, Clock, CheckCircle, Image, X, Link as LinkIcon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { APPLICATION_STATUSES } from "@/lib/constants";
 import { toast } from "sonner";
@@ -32,19 +32,17 @@ const STATUS_ACTION_LABELS: Record<string, string> = {
 export default function ThreadConversation({ applicationId, userType, senderId, onBack }: ThreadConversationProps) {
   const [app, setApp] = useState<any>(null);
   const [messages, setMessages] = useState<any[]>([]);
-  const [newMsg, setNewMsg] = useState("");
   const [loading, setLoading] = useState(true);
-  const [sending, setSending] = useState(false);
-  const [showCampaignDetail, setShowCampaignDetail] = useState(false);
   const [updatingStatus, setUpdatingStatus] = useState(false);
   const [showPostSubmit, setShowPostSubmit] = useState(false);
   const [postUrl, setPostUrl] = useState("");
   const [postCaption, setPostCaption] = useState("");
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [sending, setSending] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [showCampaignDetail, setShowCampaignDetail] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const postImageInputRef = useRef<HTMLInputElement>(null);
 
   const fetchThread = async () => {
@@ -82,27 +80,14 @@ export default function ThreadConversation({ applicationId, userType, senderId, 
     return data.publicUrl;
   };
 
-  const handleSend = async (overrideContent?: string, overrideImageUrl?: string, overrideType?: string) => {
-    const content = overrideContent ?? newMsg;
-    if (!content.trim() && !overrideImageUrl && !selectedImage) return;
+  const handleSendAutoMessage = async (content: string, imageUrl?: string, messageType?: string) => {
     setSending(true);
     try {
-      let imageUrl = overrideImageUrl || null;
-      if (selectedImage && !imageUrl) {
-        setUploadingImage(true);
-        imageUrl = await uploadImage(selectedImage);
-        setUploadingImage(false);
-        if (!imageUrl) { setSending(false); return; }
-      }
-
-      const body: any = { applicationId, content: content || "", imageUrl, messageType: overrideType || (imageUrl ? "image" : "text") };
+      const body: any = { applicationId, content, imageUrl: imageUrl || null, messageType: messageType || "text" };
       if (userType === "influencer") body.senderProfileId = senderId;
       const { data, error } = await supabase.functions.invoke("send-thread-message", { body });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
-      setNewMsg("");
-      setSelectedImage(null);
-      setImagePreview(null);
       fetchThread();
     } catch (e: any) {
       toast.error(e.message || "送信に失敗しました");
@@ -122,7 +107,7 @@ export default function ThreadConversation({ applicationId, userType, senderId, 
         setUploadingImage(false);
       }
       const content = `📱 投稿報告\n\n${postUrl ? `投稿URL: ${postUrl}\n` : ""}${postCaption ? `説明: ${postCaption}` : ""}`;
-      await handleSend(content, imageUrl || undefined, "post_report");
+      await handleSendAutoMessage(content, imageUrl || undefined, "post_report");
       setShowPostSubmit(false);
       setPostUrl("");
       setPostCaption("");
@@ -136,7 +121,7 @@ export default function ThreadConversation({ applicationId, userType, senderId, 
     }
   };
 
-  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>, forPost = false) => {
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     if (file.size > 10 * 1024 * 1024) { toast.error("10MB以下の画像を選択してください"); return; }
@@ -266,7 +251,7 @@ export default function ThreadConversation({ applicationId, userType, senderId, 
 
       {isCompleted && (
         <div className="bg-gray-50 border-b px-4 py-2 text-center text-sm text-gray-500 shrink-0">
-          ✅ この案件は完了しました。メッセージの送信はできません。
+          ✅ この案件は完了しました。
         </div>
       )}
 
@@ -305,7 +290,7 @@ export default function ThreadConversation({ applicationId, userType, senderId, 
                   <Image className="w-5 h-5 mx-auto mb-1" />画像を選択
                 </button>
               )}
-              <input ref={postImageInputRef} type="file" accept="image/*" className="hidden" onChange={e => handleImageSelect(e, true)} />
+              <input ref={postImageInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageSelect} />
             </div>
           </div>
           <Button size="sm" className="w-full bg-blue-600 hover:bg-blue-700 text-white" onClick={handlePostSubmit} disabled={sending}>
@@ -314,7 +299,7 @@ export default function ThreadConversation({ applicationId, userType, senderId, 
         </div>
       )}
 
-      {/* Messages */}
+      {/* Messages (read-only for company/influencer) */}
       <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-gray-50/50">
         {messages.length === 0 ? (
           <div className="text-center py-12 text-gray-400 text-sm">メッセージはまだありません</div>
@@ -363,30 +348,10 @@ export default function ThreadConversation({ applicationId, userType, senderId, 
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input */}
+      {/* No direct messaging - status management only */}
       {!isCompleted && (
-        <div className="bg-white border-t p-3 shrink-0">
-          {imagePreview && !showPostSubmit && (
-            <div className="relative inline-block mb-2">
-              <img src={imagePreview} alt="" className="w-20 h-20 object-cover rounded-lg border" />
-              <button onClick={() => { setSelectedImage(null); setImagePreview(null); }} className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs">×</button>
-            </div>
-          )}
-          <div className="flex gap-2">
-            <button onClick={() => fileInputRef.current?.click()} className="shrink-0 w-9 h-9 flex items-center justify-center rounded-full border border-gray-200 text-gray-400 hover:text-purple-600 hover:border-purple-300 transition-colors">
-              <Image className="w-4 h-4" />
-            </button>
-            <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={e => handleImageSelect(e)} />
-            <input
-              type="text" value={newMsg} onChange={e => setNewMsg(e.target.value)}
-              onKeyDown={e => e.key === "Enter" && !e.shiftKey && handleSend()}
-              placeholder="メッセージを入力..."
-              className="flex-1 px-4 py-2 border border-gray-200 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
-            />
-            <Button size="sm" className="rounded-full bg-purple-600 hover:bg-purple-700 px-4" onClick={() => handleSend()} disabled={sending || uploadingImage || (!newMsg.trim() && !selectedImage)}>
-              <Send className="w-4 h-4" />
-            </Button>
-          </div>
+        <div className="bg-gray-100 border-t px-4 py-3 text-center text-sm text-gray-500 shrink-0">
+          💬 直接メッセージは事務局が管理しています。ステータス操作のみ可能です。
         </div>
       )}
     </div>

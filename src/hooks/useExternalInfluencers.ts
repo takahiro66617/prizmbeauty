@@ -15,6 +15,10 @@ export interface ExternalInfluencer {
   tiktok_followers: number | null;
   youtube_followers: number | null;
   twitter_followers: number | null;
+  instagram_url: string | null;
+  tiktok_url: string | null;
+  youtube_url: string | null;
+  twitter_url: string | null;
   created_at: string;
   updated_at: string;
 }
