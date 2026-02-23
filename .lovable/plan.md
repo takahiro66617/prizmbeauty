@@ -1,169 +1,178 @@
 
-# 9項目の機能改善・追加プラン
+# 案件管理・スレッド機能の大幅改修プラン
 
 ## 概要
-インフルエンサー管理画面、事務局管理画面、企業管理画面にわたる9つの改善要件を実装します。
+
+案件スレッドのコミュニケーション構造を、メッセージの可視性制御・複数投稿報告・企業からの修正指示・事務局仲介を含む本格的な案件管理システムに改修します。
 
 ---
 
-## 1. インフルエンサー管理画面：ジャンルを登録フォームと統一
+## 1. 「メッセージ」から「案件管理」への名称変更 + フィルター追加
 
-**現状**: 事務局のインフルエンサー編集画面のカテゴリは `constants.ts` の `CATEGORIES`（スキンケア、メイクなど美容系中心）を使用。一方、登録フォーム（`RegisterProfile.tsx`）では「ダンス、Vlog、美容・コスメ、動物」など別のジャンルリストを使用。
+**変更対象**: `ClientMessages.tsx`, `MyPageMessages.tsx`, サイドバー
 
-**対応内容**:
-- `constants.ts` に `GENRES` 定数を追加（登録フォームと同じリスト）
-- `RegisterProfile.tsx` をこの共通定数に切り替え
-- 事務局のインフルエンサー編集モーダル（`AdminInfluencers.tsx`）のカテゴリ選択を、単一ドロップダウンから複数選択チップ形式に変更（登録時と同じUI）
-- インフルエンサー設定画面（`MyPageSettings.tsx`）の活動情報タブも同じジャンルリストに更新
-
----
-
-## 2. SNS URLフィールドの追加（X含む）
-
-**現状**: `influencer_profiles` テーブルにはフォロワー数カラムのみ。URLフィールドが存在しない。
-
-**対応内容**:
-- **DB変更**: `influencer_profiles` に以下のカラムを追加
-  - `instagram_url` (text)
-  - `tiktok_url` (text)
-  - `youtube_url` (text)
-  - `twitter_url` (text) ※ X用
-- 事務局のインフルエンサー編集モーダルにURL入力フィールドを追加
-- インフルエンサー設定画面のSNSタブにURL入力フィールドを追加
-- 登録フォームにもSNS URLの任意入力欄を追加
+- ページタイトルを「メッセージ」→「案件管理」に変更
+- フィルター機能を追加:
+  - ステータス絞り込み（進行中、投稿済み、完了など）
+  - カテゴリ絞り込み
+  - 日付範囲絞り込み
+  - テキスト検索（案件名）
+- サイドバーのメニュー名も「案件管理」に変更
 
 ---
 
-## 3. 事務局からのインフルエンサー承認 + 未承認時の制限画面
+## 2. 画像アップロードの修正
 
-**現状**: 承認ボタンは `AdminInfluencers.tsx` に存在するが、インフルエンサー側には承認待ち状態の制限がない。
+**変更対象**: `ThreadConversation.tsx`, `send-thread-message/index.ts`
 
-**対応内容**:
-- インフルエンサーのマイページ（`MyPageLayout`）にステータスチェックを追加
-- ステータスが `pending` の場合、案件一覧・応募・メッセージなどの機能ページの代わりに「承認待ち画面」を表示
-  - 「現在事務局にて審査中です。承認されるまで少々お待ちください。」というメッセージ
-  - ダッシュボードとプロフィール設定のみアクセス可能に
-- 事務局の承認処理が正常に動作するよう確認（既存コードで問題なし）
+- インフルエンサー側の画像アップロードが失敗する原因を修正
+- `send-thread-message` エッジファンクションで `senderProfileId` 使用時に正しく `senderId` / `receiverId` を設定
+- ストレージバケット `thread-attachments` のアップロードパスを修正
 
 ---
 
-## 4. ダッシュボードのKPIカードからリンク設定
+## 3. 複数投稿報告 + 任意メッセージ対応
 
-**現状**: 事務局ダッシュボードでは「稼働中案件」「登録企業」「登録IF」はリンクあり。企業・IFダッシュボードではリンクなし。
+**変更対象**: `ThreadConversation.tsx`
 
-**対応内容**:
-- **事務局ダッシュボード** (`AdminDashboard.tsx`): 「総応募数」カードを `/admin/applications` にリンク（項目6と統合）
-- **企業ダッシュボード** (`ClientDashboard.tsx`): 各KPIカードにリンクを追加
-  - 稼働中案件 → `/client/campaigns`
-  - 選考中の応募 → `/client/applicants`
-  - 採用済み → `/client/applicants`
-  - 未読メッセージ → `/client/messages`
-- **インフルエンサーダッシュボード** (`MyPageDashboard.tsx`): 各KPIカードにリンクを追加
-  - 選考中の案件 → `/mypage/applications`
-  - 採用済み → `/mypage/applications`
-  - 完了案件 → `/mypage/applications`
-  - 未読メッセージ → `/mypage/messages`
+- 投稿報告を1回限りではなく、`in_progress` ステータスの間は何回でも送信可能に
+- 各投稿報告に任意のテキストメッセージを添付可能に
+- 複数画像（スクリーンショット）のアップロード対応
+- UIを「投稿報告#1」「投稿報告#2」のように識別表示
 
 ---
 
-## 5. 企業ロゴ画像の登録 + 案件画面でのアイコン表示
+## 4. 企業からの修正指示（テキスト + 複数画像）
 
-**現状**: `companies` テーブルに `logo_url` カラムは存在するが、企業設定画面に画像アップロード機能がない。
+**変更対象**: `ThreadConversation.tsx`
 
-**対応内容**:
-- `ClientSettings.tsx` にロゴ画像アップロード機能を追加
-  - `campaign-images` バケットを共用（または専用バケット作成）
-  - アップロード後、`companies.logo_url` に保存
-- 案件一覧画面（`MyPageCampaigns.tsx`、`Campaigns.tsx`）の企業名横に企業ロゴアイコンを表示
-- スレッドの企業名表示部分にもロゴアイコンを反映
+- 企業側に「投稿を承認」だけでなく「修正依頼」ボタンを追加
+- 修正依頼にはテキストメッセージ + 複数画像添付が可能
+- ステータスを `revision_requested`（修正中）に変更可能に
 
 ---
 
-## 6. 事務局ダッシュボード「総応募数」のリンク化
+## 5. 「修正中」ステータスの追加
 
-項目4に統合。「総応募数」カードをクリックで `/admin/applications` に遷移するよう `Link` で囲む。
+**変更対象**: `constants.ts`, DB関連、`ThreadConversation.tsx`, `ClientApplicants.tsx`
 
----
+- `APPLICATION_STATUSES` に `revision_requested`（修正中）を追加
+- ステータスフロー: `post_submitted` → 企業が修正依頼 → `revision_requested` → IF が再投稿 → `post_submitted`
+- 既存の `STATUS_FLOW` マッピングを更新
 
-## 7. 事務局ダッシュボードの統計グラフ・フィルター強化
-
-**現状**: 月間マッチング数、選考中案件、完了案件がシンプルなカード表示のみ。
-
-**対応内容**:
-- `recharts` ライブラリ（既にインストール済み）を使用してグラフを追加
-  - 月別応募数・マッチング数の棒グラフ
-  - ステータス別の円グラフ
-- フィルター機能の追加
-  - 期間フィルター（日付範囲）
-  - ステータスフィルター
-  - カテゴリフィルター
-- KPIカード下部にグラフセクションを新設
-
----
-
-## 8. 全ページのレスポンシブ対応
-
-**対応内容**:
-- 事務局のテーブル表示をモバイルではカード形式に切り替え
-- モーダルのモバイル対応（フルスクリーン化）
-- ダッシュボードのグリッドレイアウト調整
-- サイドバーのモバイル対応確認
-- フィルターセクションのモバイル対応（折りたたみ式）
-
----
-
-## 9. コミュニケーション構造の変更：事務局仲介型
-
-**現状**: 企業とインフルエンサーが直接スレッドでやり取り可能。
-
-**対応内容**:
-- **メッセージフロー変更**: 企業 ↔ 事務局 ↔ インフルエンサーの三者構造に
-  - 企業がメッセージを送る → 事務局に届く → 事務局がインフルエンサーに転送/連絡
-  - インフルエンサーがメッセージを送る → 事務局に届く → 事務局が企業に転送/連絡
-- **スレッド変更**: `ThreadConversation` を修正
-  - 企業・IFからの直接メッセージ送信を無効化
-  - ステータスの進行のみ操作可能に（ステータス管理UIに変更）
-  - 投稿報告・振込先情報などの自動メッセージは維持
-- **事務局メッセージ管理画面** (`AdminMessages.tsx`) を強化
-  - 全スレッドの監視機能（既存）
-  - 各スレッドに対して企業・IF双方にメッセージを送信できるUI
-  - application_id ベースでスレッドを表示
-
----
-
-## 技術的な実装順序
-
-1. DB変更（SNS URLカラム追加）
-2. 定数ファイル更新（ジャンル統一）
-3. インフルエンサー承認制限の実装
-4. ダッシュボードのリンク化 + グラフ追加
-5. 企業ロゴアップロード機能
-6. コミュニケーション構造の変更
-7. レスポンシブ対応（全体に適用）
-
-## DB変更が必要な箇所
-
-```sql
-ALTER TABLE influencer_profiles
-  ADD COLUMN instagram_url text,
-  ADD COLUMN tiktok_url text,
-  ADD COLUMN youtube_url text,
-  ADD COLUMN twitter_url text;
+更新後のステータスフロー:
+```
+approved → in_progress → post_submitted → (post_confirmed or revision_requested)
+revision_requested → post_submitted（再投稿）
+post_confirmed → payment_pending → completed
 ```
 
-## 影響ファイル一覧
+---
 
-- `src/lib/constants.ts` - ジャンル定数追加
-- `src/pages/auth/RegisterProfile.tsx` - ジャンル統一
-- `src/pages/admin/AdminInfluencers.tsx` - ジャンル・URL・承認
-- `src/pages/admin/AdminDashboard.tsx` - リンク・グラフ追加
-- `src/pages/admin/AdminMessages.tsx` - 仲介型メッセージUI
-- `src/pages/client/ClientDashboard.tsx` - リンク追加
-- `src/pages/client/ClientSettings.tsx` - ロゴアップロード
-- `src/pages/mypage/MyPageDashboard.tsx` - リンク追加
-- `src/pages/mypage/MyPageSettings.tsx` - ジャンル・URL統一
-- `src/pages/mypage/MyPageCampaigns.tsx` - 企業ロゴ表示
-- `src/components/ThreadConversation.tsx` - ステータス管理型に変更
-- `src/components/layout/MyPageLayout.tsx` - 承認チェック追加
-- `src/hooks/useExternalInfluencers.ts` - URLフィールド追加
-- 新規: 統計グラフコンポーネント
+## 6. 事務局の同一スレッド閲覧 + メッセージ可視性制御
+
+**変更対象**: DB（messages テーブル）、`AdminMessages.tsx`、`send-thread-message/index.ts`、`get-thread-messages/index.ts`、`ThreadConversation.tsx`
+
+### DB変更
+`messages` テーブルに `visibility` カラムを追加:
+- `all`: 全員に見える（デフォルト）
+- `admin_company`: 事務局と企業のみ見える
+- `admin_influencer`: 事務局とインフルエンサーのみ見える
+
+```sql
+ALTER TABLE messages ADD COLUMN IF NOT EXISTS visibility text NOT NULL DEFAULT 'all';
+```
+
+### メッセージ可視性ルール
+- 事務局 → 全スレッドの全メッセージが見える
+- 企業がメッセージ送信 → 事務局宛で `visibility = 'admin_company'`（IFには見えない）
+- IF がメッセージ送信 → 事務局宛で `visibility = 'admin_influencer'`（企業には見えない）
+- 事務局が送信 → 宛先（企業 or IF）に応じて適切な `visibility` を設定
+- ステータス更新メッセージ・投稿報告 → `visibility = 'all'`
+
+### AdminMessages の改修
+- 現在の旧メッセージ管理画面を、application_id ベースのスレッド一覧に変更
+- 各スレッドを開くと `ThreadConversation` と同じUIを表示（ただし `userType = 'admin'`）
+- 事務局は企業宛・IF宛を選んでメッセージ送信可能
+
+### ThreadConversation の改修
+- `userType` に `'admin'` を追加
+- 表示時に `visibility` フィルタリング:
+  - company: `all` と `admin_company` のみ表示
+  - influencer: `all` と `admin_influencer` のみ表示
+  - admin: 全て表示
+- 企業・IF のメッセージ送信先を事務局のみに制限
+- 事務局は送信先（企業 or IF）を選択して送信
+
+---
+
+## 7. 応募者詳細でインフルエンサーのSNS URL表示
+
+**変更対象**: `ClientApplicants.tsx`, `useExternalApplications.ts`
+
+- `useExternalApplications` の select クエリに SNS URL フィールドを追加
+- 応募者詳細モーダルおよび応募者カードにSNS URLリンクを表示
+- Instagram, TikTok, YouTube, X のアイコン付きリンクとして表示
+
+---
+
+## 技術的な実装詳細
+
+### DB マイグレーション
+
+```sql
+ALTER TABLE messages ADD COLUMN IF NOT EXISTS visibility text NOT NULL DEFAULT 'all';
+```
+
+### ステータス定数の更新
+
+```typescript
+// constants.ts に追加
+{ id: "revision_requested", label: "修正中", color: "bg-amber-100 text-amber-700" }
+```
+
+### ステータスフロー更新
+
+```typescript
+const STATUS_FLOW = {
+  approved: "in_progress",
+  in_progress: "post_submitted",
+  post_submitted: "post_confirmed",      // 企業承認
+  // post_submitted → revision_requested は別アクション
+  revision_requested: "post_submitted",   // IF再投稿
+  post_confirmed: "payment_pending",
+  payment_pending: "completed",
+};
+```
+
+### エッジファンクション変更
+
+- `send-thread-message`: `visibility` パラメータ対応、`targetType`（admin宛先選択）対応
+- `get-thread-messages`: レスポンスに `visibility` を含める（フィルタはフロントで実施）
+
+### 影響ファイル一覧
+
+| ファイル | 変更内容 |
+|---------|---------|
+| `src/lib/constants.ts` | `revision_requested` ステータス追加 |
+| `src/components/ThreadConversation.tsx` | 全面改修：可視性制御、複数投稿報告、修正依頼、admin対応、複数画像 |
+| `src/pages/client/ClientMessages.tsx` | 案件管理に改名、フィルター追加 |
+| `src/pages/mypage/MyPageMessages.tsx` | 案件管理に改名、フィルター追加 |
+| `src/pages/admin/AdminMessages.tsx` | application_idベースのスレッド一覧に全面改修 |
+| `src/hooks/useExternalApplications.ts` | SNS URL フィールド追加 |
+| `src/pages/client/ClientApplicants.tsx` | SNS URL 表示追加 |
+| `src/components/client/ClientSidebar.tsx` | メニュー名変更 |
+| `src/components/layout/InfluencerSidebar.tsx` | メニュー名変更 |
+| `supabase/functions/send-thread-message/index.ts` | visibility 対応 |
+| `supabase/functions/get-thread-messages/index.ts` | visibility 含めて返却 |
+| DB マイグレーション | messages に visibility カラム追加 |
+
+### 実装順序
+
+1. DB マイグレーション（visibility カラム追加）
+2. constants.ts 更新（revision_requested 追加）
+3. エッジファンクション更新（send-thread-message, get-thread-messages）
+4. ThreadConversation 全面改修
+5. ClientMessages / MyPageMessages の案件管理化
+6. AdminMessages の改修
+7. ClientApplicants への SNS URL 表示追加
