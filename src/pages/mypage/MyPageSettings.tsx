@@ -3,13 +3,11 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Checkbox } from "@/components/ui/checkbox";
 import { User, Instagram, Youtube, Wallet, Save, Camera, Lock, AlertTriangle, Building2, Search } from "lucide-react";
 import { useBankAccount, useUpsertBankAccount, usePayments } from "@/hooks/usePayments";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-
-const CATEGORIES = ["スキンケア", "メイク", "ヘアケア", "ボディケア", "ネイル", "フレグランス"];
+import { GENRES } from "@/lib/constants";
 
 type TabType = "basic" | "sns" | "activity" | "account" | "reward";
 
@@ -25,12 +23,12 @@ export default function MyPageSettings() {
     name: "", username: "", bio: "", category: "",
     image_url: "",
     instagram_followers: 0, tiktok_followers: 0, youtube_followers: 0, twitter_followers: 0,
+    instagram_url: "", tiktok_url: "", youtube_url: "", twitter_url: "",
     categories: [] as string[],
   });
 
   useEffect(() => {
     const loadProfile = async () => {
-      // Try Supabase auth first
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
         setAuthUserId(session.user.id);
@@ -38,35 +36,28 @@ export default function MyPageSettings() {
         if (data) {
           setProfile(data);
           setFormData({
-            name: data.name || "",
-            username: data.username || "",
-            bio: data.bio || "",
-            category: data.category || "",
-            image_url: data.image_url || "",
-            instagram_followers: data.instagram_followers || 0,
-            tiktok_followers: data.tiktok_followers || 0,
-            youtube_followers: data.youtube_followers || 0,
-            twitter_followers: data.twitter_followers || 0,
+            name: data.name || "", username: data.username || "", bio: data.bio || "",
+            category: data.category || "", image_url: data.image_url || "",
+            instagram_followers: data.instagram_followers || 0, tiktok_followers: data.tiktok_followers || 0,
+            youtube_followers: data.youtube_followers || 0, twitter_followers: data.twitter_followers || 0,
+            instagram_url: (data as any).instagram_url || "", tiktok_url: (data as any).tiktok_url || "",
+            youtube_url: (data as any).youtube_url || "", twitter_url: (data as any).twitter_url || "",
             categories: data.category ? data.category.split(",").map((c: string) => c.trim()) : [],
           });
           return;
         }
       }
-      // Fallback to sessionStorage
       const u = sessionStorage.getItem("currentUser");
       if (u) {
         const parsed = JSON.parse(u);
         setProfile(parsed);
         setFormData({
-          name: parsed.name || "",
-          username: parsed.username || "",
-          bio: parsed.bio || "",
-          category: parsed.category || "",
-          image_url: parsed.image_url || parsed.profileImagePreview || "",
-          instagram_followers: parsed.instagram_followers || 0,
-          tiktok_followers: parsed.tiktok_followers || 0,
-          youtube_followers: parsed.youtube_followers || 0,
-          twitter_followers: parsed.twitter_followers || 0,
+          name: parsed.name || "", username: parsed.username || "", bio: parsed.bio || "",
+          category: parsed.category || "", image_url: parsed.image_url || parsed.profileImagePreview || "",
+          instagram_followers: parsed.instagram_followers || 0, tiktok_followers: parsed.tiktok_followers || 0,
+          youtube_followers: parsed.youtube_followers || 0, twitter_followers: parsed.twitter_followers || 0,
+          instagram_url: parsed.instagram_url || "", tiktok_url: parsed.tiktok_url || "",
+          youtube_url: parsed.youtube_url || "", twitter_url: parsed.twitter_url || "",
           categories: parsed.category ? parsed.category.split(",").map((c: string) => c.trim()) : [],
         });
       } else {
@@ -89,7 +80,6 @@ export default function MyPageSettings() {
     setIsLoading(true);
     try {
       if (profile?.id) {
-        // Use edge function to bypass RLS for LINE-auth influencers without user_id
         const { data: fnData, error: fnError } = await supabase.functions.invoke("update-influencer-profile", {
           body: { profileId: profile.id, updates },
         });
@@ -119,6 +109,10 @@ export default function MyPageSettings() {
       tiktok_followers: Number(formData.tiktok_followers) || 0,
       youtube_followers: Number(formData.youtube_followers) || 0,
       twitter_followers: Number(formData.twitter_followers) || 0,
+      instagram_url: formData.instagram_url || null,
+      tiktok_url: formData.tiktok_url || null,
+      youtube_url: formData.youtube_url || null,
+      twitter_url: formData.twitter_url || null,
     });
   };
 
@@ -171,7 +165,7 @@ export default function MyPageSettings() {
                 </div>
               </div>
               <div className="flex-1 space-y-4 w-full">
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div><label className="block text-sm font-medium text-gray-700 mb-1">名前</label><Input value={formData.name} onChange={e => handleChange("name", e.target.value)} /></div>
                   <div><label className="block text-sm font-medium text-gray-700 mb-1">ユーザーネーム</label><Input value={formData.username} onChange={e => handleChange("username", e.target.value)} /></div>
                 </div>
@@ -183,34 +177,39 @@ export default function MyPageSettings() {
 
         {activeTab === "sns" && (
           <form onSubmit={handleSaveSNS} className="space-y-8">
-            <div className="space-y-4">
-              <h3 className="flex items-center gap-2 font-bold text-gray-800 border-b pb-2"><Instagram className="w-5 h-5 text-pink-500" /> Instagram</h3>
-              <div><label className="block text-sm font-medium text-gray-700 mb-1">フォロワー数</label>
-                <Input type="number" value={formData.instagram_followers} onChange={e => handleChange("instagram_followers", e.target.value)} /></div>
-            </div>
-            <div className="space-y-4">
-              <h3 className="font-bold text-gray-800 border-b pb-2">TikTok</h3>
-              <div><label className="block text-sm font-medium text-gray-700 mb-1">フォロワー数</label>
-                <Input type="number" value={formData.tiktok_followers} onChange={e => handleChange("tiktok_followers", e.target.value)} /></div>
-            </div>
-            <div className="space-y-4">
-              <h3 className="flex items-center gap-2 font-bold text-gray-800 border-b pb-2"><Youtube className="w-5 h-5 text-red-600" /> YouTube</h3>
-              <div><label className="block text-sm font-medium text-gray-700 mb-1">登録者数</label>
-                <Input type="number" value={formData.youtube_followers} onChange={e => handleChange("youtube_followers", e.target.value)} /></div>
-            </div>
+            {[
+              { label: "Instagram", icon: Instagram, iconColor: "text-pink-500", followersKey: "instagram_followers", urlKey: "instagram_url", urlPlaceholder: "https://instagram.com/username" },
+              { label: "TikTok", icon: null, iconColor: "", followersKey: "tiktok_followers", urlKey: "tiktok_url", urlPlaceholder: "https://tiktok.com/@username" },
+              { label: "YouTube", icon: Youtube, iconColor: "text-red-600", followersKey: "youtube_followers", urlKey: "youtube_url", urlPlaceholder: "https://youtube.com/@channel" },
+              { label: "X (Twitter)", icon: null, iconColor: "", followersKey: "twitter_followers", urlKey: "twitter_url", urlPlaceholder: "https://x.com/username" },
+            ].map(sns => (
+              <div key={sns.label} className="space-y-4">
+                <h3 className={`flex items-center gap-2 font-bold text-gray-800 border-b pb-2 ${sns.iconColor}`}>
+                  {sns.icon && <sns.icon className={`w-5 h-5 ${sns.iconColor}`} />} {sns.label}
+                </h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div><label className="block text-sm font-medium text-gray-700 mb-1">フォロワー数</label>
+                    <Input type="number" value={formData[sns.followersKey as keyof typeof formData] as number} onChange={e => handleChange(sns.followersKey, e.target.value)} /></div>
+                  <div><label className="block text-sm font-medium text-gray-700 mb-1">プロフィールURL</label>
+                    <Input value={formData[sns.urlKey as keyof typeof formData] as string} onChange={e => handleChange(sns.urlKey, e.target.value)} placeholder={sns.urlPlaceholder} /></div>
+                </div>
+              </div>
+            ))}
             <SaveButton />
           </form>
         )}
 
         {activeTab === "activity" && (
           <form onSubmit={handleSaveActivity} className="space-y-6">
-            <div><label className="block text-sm font-medium text-gray-700 mb-3">得意なカテゴリ <span className="text-xs text-gray-500">(複数選択可)</span></label>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                {CATEGORIES.map(cat => (
-                  <div key={cat} className="flex items-center space-x-2 border rounded-md p-3 hover:bg-gray-50 transition-colors">
-                    <Checkbox id={`cat-${cat}`} checked={formData.categories.includes(cat)} onCheckedChange={() => handleCategoryToggle(cat)} />
-                    <label htmlFor={`cat-${cat}`} className="text-sm cursor-pointer w-full">{cat}</label>
-                  </div>
+            <div><label className="block text-sm font-medium text-gray-700 mb-3">投稿ジャンル <span className="text-xs text-gray-500">(複数選択可)</span></label>
+              <div className="flex flex-wrap gap-2">
+                {GENRES.map(cat => (
+                  <button key={cat} type="button" onClick={() => handleCategoryToggle(cat)}
+                    className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-all ${
+                      formData.categories.includes(cat)
+                        ? "bg-pink-500 text-white border-pink-500"
+                        : "bg-white border-gray-200 text-gray-600 hover:border-pink-400"
+                    }`}>{cat}</button>
                 ))}
               </div>
             </div>
@@ -253,10 +252,8 @@ function RewardTab() {
   useEffect(() => {
     if (bankAccount) {
       setBankForm({
-        bank_name: bankAccount.bank_name,
-        branch_name: bankAccount.branch_name,
-        account_type: bankAccount.account_type,
-        account_number: bankAccount.account_number,
+        bank_name: bankAccount.bank_name, branch_name: bankAccount.branch_name,
+        account_type: bankAccount.account_type, account_number: bankAccount.account_number,
         account_holder: bankAccount.account_holder,
       });
     }
@@ -264,8 +261,7 @@ function RewardTab() {
 
   const handleSaveBank = () => {
     if (!bankForm.bank_name || !bankForm.branch_name || !bankForm.account_number || !bankForm.account_holder) {
-      toast.error("すべての項目を入力してください");
-      return;
+      toast.error("すべての項目を入力してください"); return;
     }
     upsertBank.mutate(bankForm, {
       onSuccess: () => { toast.success("振込先情報を保存しました"); setShowBankForm(false); },
@@ -315,13 +311,13 @@ function RewardTab() {
           </div>
         ) : showBankForm || !bankAccount ? (
           <div className="bg-gray-50 rounded-lg p-4 space-y-4">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div><label className="block text-sm font-medium text-gray-700 mb-1">銀行名</label>
                 <Input value={bankForm.bank_name} onChange={e => setBankForm(p => ({ ...p, bank_name: e.target.value }))} placeholder="例: 三菱UFJ銀行" /></div>
               <div><label className="block text-sm font-medium text-gray-700 mb-1">支店名</label>
                 <Input value={bankForm.branch_name} onChange={e => setBankForm(p => ({ ...p, branch_name: e.target.value }))} placeholder="例: 渋谷支店" /></div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div><label className="block text-sm font-medium text-gray-700 mb-1">口座種別</label>
                 <select value={bankForm.account_type} onChange={e => setBankForm(p => ({ ...p, account_type: e.target.value }))} className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm">
                   <option value="ordinary">普通</option><option value="current">当座</option>

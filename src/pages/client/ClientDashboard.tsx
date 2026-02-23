@@ -19,6 +19,13 @@ export default function ClientDashboard() {
   const approvedApps = applications.filter(a => a.status === "approved").length;
   const unreadMessages = messages.filter(m => !m.read && m.receiver_id === companyId).length;
 
+  const kpiCards = [
+    { label: "稼働中案件", value: activeCampaigns, unit: "件", icon: FileText, iconBg: "bg-blue-100", iconColor: "text-blue-500", link: "/client/campaigns" },
+    { label: "選考中の応募", value: pendingApps, unit: "件", icon: TrendingUp, iconBg: "bg-yellow-100", iconColor: "text-yellow-500", link: "/client/applicants" },
+    { label: "採用済み", value: approvedApps, unit: "名", icon: Users, iconBg: "bg-green-100", iconColor: "text-green-500", link: "/client/applicants" },
+    { label: "未読メッセージ", value: unreadMessages, unit: "件", icon: MessageCircle, iconBg: "bg-pink-100", iconColor: "text-pink-500", link: "/client/messages" },
+  ];
+
   return (
     <div className="space-y-8">
       <div>
@@ -26,43 +33,20 @@ export default function ClientDashboard() {
         <p className="text-gray-500 mt-1">{company?.name || "企業"} の管理画面です。</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <Card className="p-6 border-0 shadow-lg bg-white">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-500">稼働中案件</p>
-              <h3 className="text-3xl font-bold text-gray-800 mt-2">{activeCampaigns}<span className="text-sm font-normal text-gray-400 ml-1">件</span></h3>
-            </div>
-            <div className="p-3 bg-blue-100 rounded-full text-blue-500"><FileText className="w-6 h-6" /></div>
-          </div>
-        </Card>
-        <Card className="p-6 border-0 shadow-lg bg-white">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-500">選考中の応募</p>
-              <h3 className="text-3xl font-bold text-gray-800 mt-2">{pendingApps}<span className="text-sm font-normal text-gray-400 ml-1">件</span></h3>
-            </div>
-            <div className="p-3 bg-yellow-100 rounded-full text-yellow-500"><TrendingUp className="w-6 h-6" /></div>
-          </div>
-        </Card>
-        <Card className="p-6 border-0 shadow-lg bg-white">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-500">採用済み</p>
-              <h3 className="text-3xl font-bold text-gray-800 mt-2">{approvedApps}<span className="text-sm font-normal text-gray-400 ml-1">名</span></h3>
-            </div>
-            <div className="p-3 bg-green-100 rounded-full text-green-500"><Users className="w-6 h-6" /></div>
-          </div>
-        </Card>
-        <Card className="p-6 border-0 shadow-lg bg-white">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-500">未読メッセージ</p>
-              <h3 className="text-3xl font-bold text-gray-800 mt-2">{unreadMessages}<span className="text-sm font-normal text-gray-400 ml-1">件</span></h3>
-            </div>
-            <div className="p-3 bg-pink-100 rounded-full text-pink-500"><MessageCircle className="w-6 h-6" /></div>
-          </div>
-        </Card>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        {kpiCards.map(kpi => (
+          <Link key={kpi.label} to={kpi.link} className="block hover:opacity-95 transition-opacity">
+            <Card className="p-6 border-0 shadow-lg bg-white h-full">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-500">{kpi.label}</p>
+                  <h3 className="text-3xl font-bold text-gray-800 mt-2">{kpi.value}<span className="text-sm font-normal text-gray-400 ml-1">{kpi.unit}</span></h3>
+                </div>
+                <div className={`p-3 ${kpi.iconBg} rounded-full ${kpi.iconColor}`}><kpi.icon className="w-6 h-6" /></div>
+              </div>
+            </Card>
+          </Link>
+        ))}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">

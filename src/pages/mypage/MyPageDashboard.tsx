@@ -32,6 +32,13 @@ export default function MyPageDashboard() {
     messages: unreadMessages,
   };
 
+  const kpiCards = [
+    { label: "選考中の案件", value: `${stats.applications}件`, icon: FileText, color: "text-blue-500", link: "/mypage/applications" },
+    { label: "採用済み", value: `${stats.approved}件`, icon: CheckCircle, color: "text-green-500", link: "/mypage/applications" },
+    { label: "完了案件", value: `${stats.completed}件`, icon: Clock, color: "text-yellow-500", link: "/mypage/applications" },
+    { label: "未読メッセージ", value: `${stats.messages}件`, icon: MessageCircle, color: "text-pink-500", link: "/mypage/messages" },
+  ];
+
   const todos: any[] = [];
   applications.filter(a => a.status === "approved").forEach(a => {
     if (a.campaigns) todos.push({ id: `todo-${a.id}`, text: `「${a.campaigns.title}」の投稿準備をしましょう`, link: "/mypage/posts", type: "urgent" });
@@ -49,21 +56,18 @@ export default function MyPageDashboard() {
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {[
-          { label: "選考中の案件", value: `${stats.applications}件`, icon: FileText, color: "text-blue-500" },
-          { label: "採用済み", value: `${stats.approved}件`, icon: CheckCircle, color: "text-green-500" },
-          { label: "完了案件", value: `${stats.completed}件`, icon: Clock, color: "text-yellow-500" },
-          { label: "未読メッセージ", value: `${stats.messages}件`, icon: MessageCircle, color: "text-pink-500" },
-        ].map(s => (
-          <Card key={s.label} className="border-0 shadow-sm hover:shadow-md transition-shadow">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between mb-2">
-                <p className="text-sm font-medium text-gray-500">{s.label}</p>
-                <s.icon className={`w-4 h-4 ${s.color}`} />
-              </div>
-              <div className="text-2xl font-bold">{s.value}</div>
-            </CardContent>
-          </Card>
+        {kpiCards.map(s => (
+          <Link key={s.label} to={s.link} className="block hover:opacity-95 transition-opacity">
+            <Card className="border-0 shadow-sm hover:shadow-md transition-shadow h-full">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-sm font-medium text-gray-500">{s.label}</p>
+                  <s.icon className={`w-4 h-4 ${s.color}`} />
+                </div>
+                <div className="text-2xl font-bold">{s.value}</div>
+              </CardContent>
+            </Card>
+          </Link>
         ))}
       </div>
 

@@ -4,6 +4,13 @@ export const CATEGORIES = [
   "ダンス", "グルメ", "旅行", "フィットネス", "ペット", "テクノロジー",
 ];
 
+export const GENRES = [
+  "ダンス", "Vlog", "美容・コスメ", "動物", "赤ちゃん・子ども",
+  "カップル・夫婦", "お笑い", "アニメ・漫画", "芸能・エンタメ",
+  "映画・ドラマ", "フィットネス・健康", "音楽", "お金・投資",
+  "スポーツ", "ゲーム", "アート",
+];
+
 export const PLATFORMS = [
   "Instagram", "TikTok", "YouTube", "Twitter/X", "Facebook",
   "LINE VOOM", "Pinterest", "Threads", "note", "Ameba",

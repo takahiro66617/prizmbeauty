@@ -6,8 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useExternalCampaigns } from "@/hooks/useExternalCampaigns";
-
-const CATEGORIES = ["スキンケア", "メイク", "ヘアケア", "ボディケア", "ネイル", "フレグランス", "ダイエット", "ファッション", "ライフスタイル", "ダンス"];
+import { GENRES } from "@/lib/constants";
 
 export default function MyPageCampaigns() {
   const { data: campaigns = [], isLoading } = useExternalCampaigns();
@@ -39,7 +38,7 @@ export default function MyPageCampaigns() {
         <select value={categoryFilter} onChange={e => setCategoryFilter(e.target.value)}
           className="px-4 py-2 rounded-lg border border-gray-200 text-sm bg-white">
           <option value="all">カテゴリ: すべて</option>
-          {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+          {GENRES.map(c => <option key={c} value={c}>{c}</option>)}
         </select>
         <select value={platformFilter} onChange={e => setPlatformFilter(e.target.value)}
           className="px-4 py-2 rounded-lg border border-gray-200 text-sm bg-white">
@@ -73,7 +72,14 @@ export default function MyPageCampaigns() {
                       {campaign.platform && <Badge variant="secondary" className="text-xs">{campaign.platform}</Badge>}
                     </div>
                     <h3 className="font-bold text-gray-900 line-clamp-2">{campaign.title}</h3>
-                    <div className="flex items-center text-sm text-gray-500"><Building2 className="w-3.5 h-3.5 mr-1" />{campaign.companies?.name || "不明"}</div>
+                    <div className="flex items-center text-sm text-gray-500">
+                      {campaign.companies?.logo_url ? (
+                        <img src={campaign.companies.logo_url} alt="" className="w-5 h-5 rounded-full object-cover mr-1.5" />
+                      ) : (
+                        <Building2 className="w-3.5 h-3.5 mr-1" />
+                      )}
+                      {campaign.companies?.name || "不明"}
+                    </div>
                     <div className="flex items-center justify-between text-sm">
                       <div className="flex items-center text-gray-700"><span className="text-pink-500 font-bold mr-1">¥</span><span className="font-bold">{(campaign.budget_max || campaign.budget_min || 0).toLocaleString()}</span></div>
                       <div className="flex items-center text-gray-500"><Clock className="w-3.5 h-3.5 mr-1" />{campaign.deadline ? new Date(campaign.deadline).toLocaleDateString("ja-JP") : "-"}</div>

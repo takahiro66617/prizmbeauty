@@ -258,15 +258,19 @@ export type Database = {
           id: string
           image_url: string | null
           instagram_followers: number | null
+          instagram_url: string | null
           line_user_id: string | null
           name: string
           status: string
           tiktok_followers: number | null
+          tiktok_url: string | null
           twitter_followers: number | null
+          twitter_url: string | null
           updated_at: string
           user_id: string | null
           username: string
           youtube_followers: number | null
+          youtube_url: string | null
         }
         Insert: {
           bio?: string | null
@@ -275,15 +279,19 @@ export type Database = {
           id?: string
           image_url?: string | null
           instagram_followers?: number | null
+          instagram_url?: string | null
           line_user_id?: string | null
           name: string
           status?: string
           tiktok_followers?: number | null
+          tiktok_url?: string | null
           twitter_followers?: number | null
+          twitter_url?: string | null
           updated_at?: string
           user_id?: string | null
           username: string
           youtube_followers?: number | null
+          youtube_url?: string | null
         }
         Update: {
           bio?: string | null
@@ -292,15 +300,19 @@ export type Database = {
           id?: string
           image_url?: string | null
           instagram_followers?: number | null
+          instagram_url?: string | null
           line_user_id?: string | null
           name?: string
           status?: string
           tiktok_followers?: number | null
+          tiktok_url?: string | null
           twitter_followers?: number | null
+          twitter_url?: string | null
           updated_at?: string
           user_id?: string | null
           username?: string
           youtube_followers?: number | null
+          youtube_url?: string | null
         }
         Relationships: []
       }

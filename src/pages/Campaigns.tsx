@@ -102,7 +102,10 @@ export default function CampaignsPage() {
                     {campaign.category && (
                       <span className="inline-block px-2.5 py-0.5 bg-pastel-pink/30 text-primary text-xs font-bold rounded-full mb-2 w-fit">{campaign.category}</span>
                     )}
-                    <p className="text-xs text-muted-foreground mb-1">{campaign.companies?.name || ""}</p>
+                    <p className="text-xs text-muted-foreground mb-1 flex items-center gap-1">
+                      {campaign.companies?.logo_url && <img src={campaign.companies.logo_url} alt="" className="w-4 h-4 rounded-full object-cover" />}
+                      {campaign.companies?.name || ""}
+                    </p>
                     <h3 className="font-bold line-clamp-2 mb-3 min-h-[3rem]">{campaign.title}</h3>
                     <div className="text-xl font-bold text-primary mb-2">¥{(campaign.budget_max || campaign.budget_min || 0).toLocaleString()}</div>
                     <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground mb-3">
