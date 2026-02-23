@@ -1,15 +1,20 @@
 import { useState, useEffect } from "react";
-import { MessageCircle, FileText, Clock, User } from "lucide-react";
+import { MessageCircle, FileText, Clock, User, Search } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useExternalApplications } from "@/hooks/useExternalApplications";
+import { APPLICATION_STATUSES, CATEGORIES } from "@/lib/constants";
 import ThreadConversation from "@/components/ThreadConversation";
 
 export default function ClientMessages() {
   const [companyId, setCompanyId] = useState<string>("");
   const [companyUserId, setCompanyUserId] = useState<string>("");
   const [threadAppId, setThreadAppId] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [categoryFilter, setCategoryFilter] = useState("all");
+  const [search, setSearch] = useState("");
 
   useEffect(() => {
     const fetchCompany = async () => {
@@ -24,9 +29,19 @@ export default function ClientMessages() {
 
   const { data: applications = [], isLoading } = useExternalApplications(companyId ? { companyId } : undefined);
 
-  // Only show applications with active threads
   const threadApps = applications.filter(app =>
-    ["approved", "in_progress", "post_submitted", "post_confirmed", "payment_pending", "completed"].includes(app.status)
+    ["approved", "in_progress", "post_submitted", "revision_requested", "post_confirmed", "payment_pending", "completed"].includes(app.status)
+  );
+
+  const filtered = threadApps.filter(app => {
+    const matchesStatus = statusFilter === "all" || app.status === statusFilter;
+    const matchesCategory = categoryFilter === "all" || app.campaigns?.category === categoryFilter;
+    const matchesSearch = !search || (app.campaigns?.title || "").toLowerCase().includes(search.toLowerCase());
+    return matchesStatus && matchesCategory && matchesSearch;
+  });
+
+  const activeStatuses = APPLICATION_STATUSES.filter(s =>
+    ["approved", "in_progress", "post_submitted", "revision_requested", "post_confirmed", "payment_pending", "completed"].includes(s.id)
   );
 
   if (threadAppId) {
@@ -45,18 +60,38 @@ export default function ClientMessages() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-800">メッセージ</h1>
-        <p className="text-gray-500 mt-1">採用したインフルエンサーとのやり取りを管理します。</p>
+        <h1 className="text-2xl font-bold text-gray-800">案件進行管理</h1>
+        <p className="text-gray-500 mt-1">採用したインフルエンサーとの案件進行を管理します。</p>
+      </div>
+
+      {/* Filters */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 space-y-3">
+        <div className="flex gap-3 flex-wrap">
+          <div className="relative flex-1 min-w-[200px] max-w-md">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder="案件名で検索..."
+              className="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+          </div>
+          <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="px-3 py-2 rounded-lg border border-gray-200 text-sm">
+            <option value="all">ステータス: すべて</option>
+            {activeStatuses.map(s => <option key={s.id} value={s.id}>{s.label}</option>)}
+          </select>
+          <select value={categoryFilter} onChange={e => setCategoryFilter(e.target.value)} className="px-3 py-2 rounded-lg border border-gray-200 text-sm">
+            <option value="all">カテゴリ: すべて</option>
+            {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+          </select>
+          <Button variant="ghost" size="sm" onClick={() => { setSearch(""); setStatusFilter("all"); setCategoryFilter("all"); }} className="text-gray-500">クリア</Button>
+        </div>
       </div>
 
       {isLoading || !companyId ? (
         <div className="text-center py-12 text-gray-500">読み込み中...</div>
-      ) : threadApps.length > 0 ? (
+      ) : filtered.length > 0 ? (
         <div className="grid gap-4">
-          {threadApps.map(app => {
+          {filtered.map(app => {
             const campaign = app.campaigns;
             const influencer = app.influencer_profiles;
-            const isCompleted = app.status === "completed";
+            const statusObj = APPLICATION_STATUSES.find(s => s.id === app.status);
             return (
               <Card
                 key={app.id}
@@ -78,11 +113,7 @@ export default function ClientMessages() {
                       <h3 className="font-bold text-gray-900 truncate text-sm">
                         {campaign?.title || "不明な案件"}
                       </h3>
-                      {isCompleted ? (
-                        <Badge variant="secondary" className="bg-gray-100 text-gray-500 text-[10px] shrink-0">完了</Badge>
-                      ) : (
-                        <Badge className="bg-green-100 text-green-700 text-[10px] shrink-0">進行中</Badge>
-                      )}
+                      <Badge className={statusObj?.color || ""}>{statusObj?.label || app.status}</Badge>
                     </div>
                     <div className="flex items-center text-xs text-gray-500 mb-1">
                       <User className="w-3 h-3 mr-1" />
@@ -110,7 +141,7 @@ export default function ClientMessages() {
           <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center">
             <MessageCircle className="w-8 h-8 text-blue-500" />
           </div>
-          <p className="text-gray-500">現在、メッセージスレッドはありません。<br />インフルエンサーを採用するとスレッドが開設されます。</p>
+          <p className="text-gray-500">現在、進行中の案件はありません。<br />インフルエンサーを採用するとスレッドが開設されます。</p>
         </div>
       )}
     </div>

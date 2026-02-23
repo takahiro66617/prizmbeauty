@@ -8,7 +8,7 @@ const navItems = [
   { title: "ダッシュボード", href: "/client/dashboard", icon: LayoutDashboard },
   { title: "案件管理", href: "/client/campaigns", icon: FileEdit },
   { title: "応募者管理", href: "/client/applicants", icon: Users },
-  { title: "メッセージ", href: "/client/messages", icon: MessageCircle },
+  { title: "案件進行管理", href: "/client/messages", icon: MessageCircle },
 ];
 
 export function ClientSidebar() {

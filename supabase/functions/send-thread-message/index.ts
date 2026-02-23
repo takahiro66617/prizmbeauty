@@ -12,8 +12,8 @@ serve(async (req) => {
   }
 
   try {
-    const { applicationId, senderProfileId, content, imageUrl, messageType } = await req.json();
-    if (!applicationId || (!content && !imageUrl)) {
+    const { applicationId, senderProfileId, content, imageUrl, imageUrls, messageType, visibility, targetType } = await req.json();
+    if (!applicationId || (!content && !imageUrl && (!imageUrls || imageUrls.length === 0))) {
       return new Response(JSON.stringify({ error: "Missing applicationId or content/imageUrl" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -44,6 +44,7 @@ serve(async (req) => {
 
     let senderId: string;
     let receiverId: string;
+    let msgVisibility = visibility || "all";
 
     const companyUserId = app.campaigns?.companies?.user_id;
     const influencerUserId = app.influencer_profiles?.user_id || app.influencer_profiles?.id;
@@ -52,6 +53,10 @@ serve(async (req) => {
       // LINE-auth influencer sending
       senderId = senderProfileId;
       receiverId = companyUserId;
+      // Influencer messages to admin are private
+      if (msgVisibility === "admin_influencer") {
+        receiverId = "admin";
+      }
     } else {
       const authHeader = req.headers.get("authorization");
       if (authHeader) {
@@ -59,10 +64,41 @@ serve(async (req) => {
         const { data: { user } } = await supabaseAdmin.auth.getUser(token);
         if (user) {
           senderId = user.id;
-          if (senderId === companyUserId) {
+          
+          // Check if sender is admin
+          const { data: roleData } = await supabaseAdmin
+            .from("user_roles")
+            .select("role")
+            .eq("user_id", user.id)
+            .eq("role", "admin")
+            .maybeSingle();
+          
+          const isAdmin = !!roleData;
+          
+          if (isAdmin) {
+            // Admin sending - targetType determines recipient and visibility
+            if (targetType === "company") {
+              receiverId = companyUserId;
+              msgVisibility = "admin_company";
+            } else if (targetType === "influencer") {
+              receiverId = influencerUserId;
+              msgVisibility = "admin_influencer";
+            } else {
+              receiverId = companyUserId;
+              msgVisibility = "all";
+            }
+          } else if (senderId === companyUserId) {
+            // Company sending - always to admin (private)
             receiverId = influencerUserId;
+            if (msgVisibility !== "all") {
+              msgVisibility = "admin_company";
+            }
           } else {
+            // Influencer sending via supabase auth
             receiverId = companyUserId;
+            if (msgVisibility !== "all") {
+              msgVisibility = "admin_influencer";
+            }
           }
         } else {
           throw new Error("Unauthorized");
@@ -72,16 +108,34 @@ serve(async (req) => {
       }
     }
 
+    // Handle multiple images - create one message per image, or one message with first image
+    const finalImageUrl = imageUrl || (imageUrls && imageUrls.length > 0 ? imageUrls[0] : null);
+    
     const { data, error } = await supabaseAdmin.from("messages").insert({
       sender_id: senderId!,
       receiver_id: receiverId!,
       content: content || "",
       application_id: applicationId,
-      image_url: imageUrl || null,
+      image_url: finalImageUrl || null,
       message_type: messageType || "text",
+      visibility: msgVisibility,
     }).select().single();
 
     if (error) throw error;
+
+    // If there are additional images, create separate messages for them
+    if (imageUrls && imageUrls.length > 1) {
+      const additionalMessages = imageUrls.slice(1).map((url: string) => ({
+        sender_id: senderId!,
+        receiver_id: receiverId!,
+        content: "",
+        application_id: applicationId,
+        image_url: url,
+        message_type: messageType || "text",
+        visibility: msgVisibility,
+      }));
+      await supabaseAdmin.from("messages").insert(additionalMessages);
+    }
 
     return new Response(JSON.stringify({ data }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
