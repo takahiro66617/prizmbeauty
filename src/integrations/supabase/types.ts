@@ -327,6 +327,7 @@ export type Database = {
           read: boolean
           receiver_id: string
           sender_id: string
+          visibility: string
         }
         Insert: {
           application_id?: string | null
@@ -338,6 +339,7 @@ export type Database = {
           read?: boolean
           receiver_id: string
           sender_id: string
+          visibility?: string
         }
         Update: {
           application_id?: string | null
@@ -349,6 +351,7 @@ export type Database = {
           read?: boolean
           receiver_id?: string
           sender_id?: string
+          visibility?: string
         }
         Relationships: [
           {

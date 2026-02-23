@@ -16,6 +16,7 @@ const STATUS_FLOW: Record<string, string> = {
   approved: "in_progress",
   in_progress: "post_submitted",
   post_submitted: "post_confirmed",
+  revision_requested: "post_submitted",
   post_confirmed: "payment_pending",
   payment_pending: "completed",
 };
@@ -288,6 +289,31 @@ export default function ClientApplicants() {
                 </div>
               )}
               {selectedApp.influencer_profiles?.bio && <p className="text-sm text-gray-600 bg-gray-50 p-3 rounded-lg">{selectedApp.influencer_profiles.bio}</p>}
+              {/* SNS URLs */}
+              {selectedApp.influencer_profiles && (
+                <div className="flex flex-wrap gap-2">
+                  {selectedApp.influencer_profiles.instagram_url && (
+                    <a href={selectedApp.influencer_profiles.instagram_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 px-3 py-1.5 bg-pink-50 text-pink-600 rounded-lg text-xs hover:bg-pink-100 transition-colors">
+                      📷 Instagram
+                    </a>
+                  )}
+                  {selectedApp.influencer_profiles.tiktok_url && (
+                    <a href={selectedApp.influencer_profiles.tiktok_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 px-3 py-1.5 bg-gray-50 text-gray-700 rounded-lg text-xs hover:bg-gray-100 transition-colors">
+                      🎵 TikTok
+                    </a>
+                  )}
+                  {selectedApp.influencer_profiles.youtube_url && (
+                    <a href={selectedApp.influencer_profiles.youtube_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 px-3 py-1.5 bg-red-50 text-red-600 rounded-lg text-xs hover:bg-red-100 transition-colors">
+                      ▶️ YouTube
+                    </a>
+                  )}
+                  {selectedApp.influencer_profiles.twitter_url && (
+                    <a href={selectedApp.influencer_profiles.twitter_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 px-3 py-1.5 bg-blue-50 text-blue-600 rounded-lg text-xs hover:bg-blue-100 transition-colors">
+                      𝕏 Twitter/X
+                    </a>
+                  )}
+                </div>
+              )}
               <div className="grid grid-cols-3 gap-3">
                 {[
                   { label: "Instagram", val: selectedApp.influencer_profiles?.instagram_followers, color: "bg-pink-50", textColor: "text-pink-600" },

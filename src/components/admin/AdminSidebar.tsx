@@ -9,7 +9,7 @@ const navItems = [
   { title: "企業管理", href: "/admin/clients", icon: Building2 },
   { title: "インフルエンサー管理", href: "/admin/influencers", icon: Users },
   { title: "応募管理", href: "/admin/applications", icon: ClipboardList },
-  { title: "メッセージ", href: "/admin/messages", icon: MessageCircle },
+  { title: "案件進行管理", href: "/admin/messages", icon: MessageCircle },
 ];
 
 export function AdminSidebar() {

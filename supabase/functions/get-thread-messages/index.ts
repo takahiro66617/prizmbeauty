@@ -28,16 +28,16 @@ serve(async (req) => {
     // Get application with full details
     const { data: app, error: appError } = await supabaseAdmin
       .from("applications")
-      .select("*, campaigns(id, title, image_url, budget_min, budget_max, deadline, category, platform, description, deliverables, requirements, companies(id, name, logo_url)), influencer_profiles(id, name, username, image_url, user_id)")
+      .select("*, campaigns(id, title, image_url, budget_min, budget_max, deadline, category, platform, description, deliverables, requirements, companies(id, name, logo_url, user_id)), influencer_profiles(id, name, username, image_url, user_id, instagram_url, tiktok_url, youtube_url, twitter_url)")
       .eq("id", applicationId)
       .single();
 
     if (appError) throw appError;
 
-    // Get messages for this thread including image_url and message_type
+    // Get messages for this thread including visibility
     const { data: messages, error: msgError } = await supabaseAdmin
       .from("messages")
-      .select("id, sender_id, receiver_id, content, read, created_at, application_id, image_url, message_type")
+      .select("id, sender_id, receiver_id, content, read, created_at, application_id, image_url, message_type, visibility")
       .eq("application_id", applicationId)
       .order("created_at", { ascending: true });
 
