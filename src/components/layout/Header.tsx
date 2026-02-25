@@ -19,7 +19,7 @@ export function Header() {
       <div className="container mx-auto px-4 h-16 flex items-center justify-between">
         {/* Logo */}
         <Link to="/" className="flex items-center gap-1">
-          <img src={logoImg} alt="PRizm" className="h-8" />
+          <img src={logoImg} alt="PRizm" className="h-10" />
         </Link>
 
         {/* Desktop Nav */}
