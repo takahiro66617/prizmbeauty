@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import logoImg from "@/assets/logo.png";
 
 export default function RegisterPage() {
   return (
@@ -11,7 +12,7 @@ export default function RegisterPage() {
         </Link>
 
         <div className="text-center">
-          <h1 className="text-3xl font-bold gradient-text mb-2">PRizm Beauty</h1>
+          <img src={logoImg} alt="PRizm" className="h-10 mx-auto mb-2" />
           <p className="text-muted-foreground">インフルエンサー新規登録</p>
         </div>
 

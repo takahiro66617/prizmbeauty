@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import lineIcon from "@/assets/line.png";
+import logoImg from "@/assets/logo.png";
 
 const navItems = [
   { label: "案件を探す", href: "/campaigns" },
@@ -18,7 +19,7 @@ export function Header() {
       <div className="container mx-auto px-4 h-16 flex items-center justify-between">
         {/* Logo */}
         <Link to="/" className="flex items-center gap-1">
-          <h1 className="text-xl font-bold gradient-text">PRizm Beauty</h1>
+          <img src={logoImg} alt="PRizm" className="h-8" />
         </Link>
 
         {/* Desktop Nav */}

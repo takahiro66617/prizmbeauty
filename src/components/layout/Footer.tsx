@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import logoImg from "@/assets/logo.png";
 
 export function Footer() {
   return (
@@ -7,8 +8,8 @@ export function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           {/* Brand */}
           <div className="md:col-span-1">
-            <Link to="/" className="text-lg font-bold gradient-text">
-              PRizm Beauty
+            <Link to="/" className="inline-block">
+              <img src={logoImg} alt="PRizm" className="h-8" />
             </Link>
             <p className="mt-3 text-sm text-muted-foreground leading-relaxed">
               美容インフルエンサーと企業をつなぐ<br />マッチングプラットフォーム
@@ -50,7 +51,7 @@ export function Footer() {
         </div>
 
         <div className="mt-10 pt-6 border-t border-border text-center text-xs text-muted-foreground">
-          © {new Date().getFullYear()} PRizm Beauty. All rights reserved.
+          © {new Date().getFullYear()} PRizm. All rights reserved.
         </div>
       </div>
     </footer>

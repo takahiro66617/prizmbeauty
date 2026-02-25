@@ -3,6 +3,7 @@ import { useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
+import logoImg from "@/assets/logo.png";
 
 export default function ClientLogin() {
   const [email, setEmail] = useState("");
@@ -48,9 +49,7 @@ export default function ClientLogin() {
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">
-            PRizm Client
-          </h1>
+          <img src={logoImg} alt="PRizm" className="h-10 mx-auto mb-2" />
           <p className="text-slate-400 mt-2">企業管理画面ログイン</p>
         </div>
         <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-xl p-8 space-y-6">
