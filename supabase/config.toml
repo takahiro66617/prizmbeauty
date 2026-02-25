@@ -5,3 +5,39 @@ verify_jwt = false
 
 [functions.register-influencer]
 verify_jwt = false
+
+[functions.get-thread-messages]
+verify_jwt = false
+
+[functions.send-thread-message]
+verify_jwt = false
+
+[functions.get-my-applications]
+verify_jwt = false
+
+[functions.get-my-favorites]
+verify_jwt = false
+
+[functions.toggle-favorite]
+verify_jwt = false
+
+[functions.apply-to-campaign]
+verify_jwt = false
+
+[functions.update-influencer-profile]
+verify_jwt = false
+
+[functions.send-status-notification]
+verify_jwt = false
+
+[functions.admin-update-influencer]
+verify_jwt = false
+
+[functions.admin-get-user-email]
+verify_jwt = false
+
+[functions.admin-update-user-auth]
+verify_jwt = false
+
+[functions.register-client]
+verify_jwt = false
