@@ -128,7 +128,7 @@
   }
 
   .gradient-text {
-    background: linear-gradient(135deg, hsl(var(--pastel-pink)), hsl(var(--pastel-blue)));
+    background: linear-gradient(90deg, hsl(330 70% 65%), hsl(264 60% 65%), hsl(213 60% 65%));
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
