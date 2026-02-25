@@ -161,6 +161,7 @@ export default function AdminApplications() {
                       { label: "Instagram", val: selectedApp.influencer_profiles.instagram_followers, color: "text-pink-600" },
                       { label: "TikTok", val: selectedApp.influencer_profiles.tiktok_followers, color: "" },
                       { label: "YouTube", val: selectedApp.influencer_profiles.youtube_followers, color: "text-red-600" },
+                      { label: "X", val: selectedApp.influencer_profiles.twitter_followers, color: "" },
                     ].map(s => (
                       <div key={s.label} className="text-center p-2 bg-white rounded-lg">
                         <p className={`text-xs ${s.color}`}>{s.label}</p>
