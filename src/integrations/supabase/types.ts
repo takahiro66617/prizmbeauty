@@ -253,14 +253,19 @@ export type Database = {
       influencer_profiles: {
         Row: {
           bio: string | null
+          birth_date: string | null
           category: string | null
           created_at: string
+          email: string | null
+          gender: string | null
           id: string
           image_url: string | null
           instagram_followers: number | null
           instagram_url: string | null
           line_user_id: string | null
           name: string
+          phone: string | null
+          prefecture: string | null
           status: string
           tiktok_followers: number | null
           tiktok_url: string | null
@@ -274,14 +279,19 @@ export type Database = {
         }
         Insert: {
           bio?: string | null
+          birth_date?: string | null
           category?: string | null
           created_at?: string
+          email?: string | null
+          gender?: string | null
           id?: string
           image_url?: string | null
           instagram_followers?: number | null
           instagram_url?: string | null
           line_user_id?: string | null
           name: string
+          phone?: string | null
+          prefecture?: string | null
           status?: string
           tiktok_followers?: number | null
           tiktok_url?: string | null
@@ -295,14 +305,19 @@ export type Database = {
         }
         Update: {
           bio?: string | null
+          birth_date?: string | null
           category?: string | null
           created_at?: string
+          email?: string | null
+          gender?: string | null
           id?: string
           image_url?: string | null
           instagram_followers?: number | null
           instagram_url?: string | null
           line_user_id?: string | null
           name?: string
+          phone?: string | null
+          prefecture?: string | null
           status?: string
           tiktok_followers?: number | null
           tiktok_url?: string | null

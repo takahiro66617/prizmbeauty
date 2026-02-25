@@ -22,6 +22,7 @@ export default function MyPageSettings() {
   const [formData, setFormData] = useState({
     name: "", username: "", bio: "", category: "",
     image_url: "",
+    email: "", phone: "", birth_date: "", gender: "", prefecture: "",
     instagram_followers: 0, tiktok_followers: 0, youtube_followers: 0, twitter_followers: 0,
     instagram_url: "", tiktok_url: "", youtube_url: "", twitter_url: "",
     categories: [] as string[],
@@ -38,6 +39,9 @@ export default function MyPageSettings() {
           setFormData({
             name: data.name || "", username: data.username || "", bio: data.bio || "",
             category: data.category || "", image_url: data.image_url || "",
+            email: (data as any).email || "", phone: (data as any).phone || "",
+            birth_date: (data as any).birth_date || "", gender: (data as any).gender || "",
+            prefecture: (data as any).prefecture || "",
             instagram_followers: data.instagram_followers || 0, tiktok_followers: data.tiktok_followers || 0,
             youtube_followers: data.youtube_followers || 0, twitter_followers: data.twitter_followers || 0,
             instagram_url: (data as any).instagram_url || "", tiktok_url: (data as any).tiktok_url || "",
@@ -54,6 +58,9 @@ export default function MyPageSettings() {
         setFormData({
           name: parsed.name || "", username: parsed.username || "", bio: parsed.bio || "",
           category: parsed.category || "", image_url: parsed.image_url || parsed.profileImagePreview || "",
+          email: parsed.email || "", phone: parsed.phone || "",
+          birth_date: parsed.birth_date || "", gender: parsed.gender || "",
+          prefecture: parsed.prefecture || "",
           instagram_followers: parsed.instagram_followers || 0, tiktok_followers: parsed.tiktok_followers || 0,
           youtube_followers: parsed.youtube_followers || 0, twitter_followers: parsed.twitter_followers || 0,
           instagram_url: parsed.instagram_url || "", tiktok_url: parsed.tiktok_url || "",
@@ -99,7 +106,12 @@ export default function MyPageSettings() {
 
   const handleSaveBasic = (e: React.FormEvent) => {
     e.preventDefault();
-    handleSaveProfile({ name: formData.name, username: formData.username });
+    handleSaveProfile({
+      name: formData.name, username: formData.username,
+      email: formData.email || null, phone: formData.phone || null,
+      birth_date: formData.birth_date || null, gender: formData.gender || null,
+      prefecture: formData.prefecture || null,
+    });
   };
 
   const handleSaveSNS = (e: React.FormEvent) => {
@@ -168,6 +180,33 @@ export default function MyPageSettings() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div><label className="block text-sm font-medium text-gray-700 mb-1">名前</label><Input value={formData.name} onChange={e => handleChange("name", e.target.value)} /></div>
                   <div><label className="block text-sm font-medium text-gray-700 mb-1">ユーザーネーム</label><Input value={formData.username} onChange={e => handleChange("username", e.target.value)} /></div>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div><label className="block text-sm font-medium text-gray-700 mb-1">メールアドレス</label><Input type="email" value={formData.email} onChange={e => handleChange("email", e.target.value)} placeholder="example@email.com" /></div>
+                  <div><label className="block text-sm font-medium text-gray-700 mb-1">電話番号</label><Input type="tel" value={formData.phone} onChange={e => handleChange("phone", e.target.value)} placeholder="090-1234-5678" /></div>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div><label className="block text-sm font-medium text-gray-700 mb-1">生年月日</label><Input type="date" value={formData.birth_date} onChange={e => handleChange("birth_date", e.target.value)} /></div>
+                  <div><label className="block text-sm font-medium text-gray-700 mb-1">性別</label>
+                    <div className="flex gap-2">
+                      {["女性", "男性", "その他"].map(g => (
+                        <button key={g} type="button" onClick={() => handleChange("gender", g)}
+                          className={`flex-1 py-2 rounded-lg border text-sm font-medium transition-all ${formData.gender === g ? "bg-primary text-primary-foreground border-primary" : "bg-card border-border text-muted-foreground hover:border-primary/50"}`}>
+                          {g}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">現在お住まいの都道府県</label>
+                  <select value={formData.prefecture} onChange={e => handleChange("prefecture", e.target.value)}
+                    className="flex h-10 w-full items-center rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2">
+                    <option value="">都道府県を選択</option>
+                    {["北海道","青森県","岩手県","宮城県","秋田県","山形県","福島県","茨城県","栃木県","群馬県","埼玉県","千葉県","東京都","神奈川県","新潟県","富山県","石川県","福井県","山梨県","長野県","岐阜県","静岡県","愛知県","三重県","滋賀県","京都府","大阪府","兵庫県","奈良県","和歌山県","鳥取県","島根県","岡山県","広島県","山口県","徳島県","香川県","愛媛県","高知県","福岡県","佐賀県","長崎県","熊本県","大分県","宮崎県","鹿児島県","沖縄県"].map(p => (
+                      <option key={p} value={p}>{p}</option>
+                    ))}
+                  </select>
                 </div>
               </div>
             </div>
