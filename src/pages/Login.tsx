@@ -30,7 +30,7 @@ export default function LoginPage() {
         </Link>
 
         <div className="text-center space-y-2">
-          <img src={logoImg} alt="PRizm" className="h-10 mx-auto" />
+          <img src={logoImg} alt="PRizm" className="h-14 mx-auto" />
           <p className="text-muted-foreground text-sm">インフルエンサーログイン</p>
         </div>
 

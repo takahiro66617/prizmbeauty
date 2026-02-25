@@ -12,7 +12,7 @@ export default function RegisterPage() {
         </Link>
 
         <div className="text-center">
-          <img src={logoImg} alt="PRizm" className="h-10 mx-auto mb-2" />
+          <img src={logoImg} alt="PRizm" className="h-14 mx-auto mb-2" />
           <p className="text-muted-foreground">インフルエンサー新規登録</p>
         </div>
 

@@ -9,7 +9,7 @@ export function Footer() {
           {/* Brand */}
           <div className="md:col-span-1">
             <Link to="/" className="inline-block">
-              <img src={logoImg} alt="PRizm" className="h-8" />
+              <img src={logoImg} alt="PRizm" className="h-10" />
             </Link>
             <p className="mt-3 text-sm text-muted-foreground leading-relaxed">
               美容インフルエンサーと企業をつなぐ<br />マッチングプラットフォーム
