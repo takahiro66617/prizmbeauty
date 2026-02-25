@@ -106,7 +106,7 @@ export default function AdminLoginPage() {
       </Card>
 
       <p className="mt-8 text-white/60 text-xs">
-        © {new Date().getFullYear()} PRizm Beauty Admin System
+        © {new Date().getFullYear()} PRizm Admin System
       </p>
     </div>
   );

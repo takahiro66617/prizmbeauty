@@ -41,9 +41,9 @@ export default function LineAddFriend() {
       <div className="w-full max-w-md mx-auto space-y-6">
         <div className="text-center space-y-2">
           <h1 className="text-2xl font-bold gradient-text">友だち追加</h1>
-          <p className="text-muted-foreground text-sm">
-            PRizm Beautyの公式LINEアカウントを<br />友だち追加してください
-          </p>
+           <p className="text-muted-foreground text-sm">
+             PRizmの公式LINEアカウントを<br />友だち追加してください
+           </p>
         </div>
 
         <Card className="p-6 shadow-xl border-0 bg-card/90 backdrop-blur-sm rounded-2xl space-y-6">

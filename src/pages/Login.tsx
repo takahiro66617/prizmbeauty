@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ArrowLeft } from "lucide-react";
 import lineIcon from "@/assets/line.png";
+import logoImg from "@/assets/logo.png";
 
 const LINE_CHANNEL_ID = "2009141875";
 
@@ -29,7 +30,7 @@ export default function LoginPage() {
         </Link>
 
         <div className="text-center space-y-2">
-          <h1 className="text-3xl font-bold gradient-text">PRizm Beauty</h1>
+          <img src={logoImg} alt="PRizm" className="h-10 mx-auto" />
           <p className="text-muted-foreground text-sm">インフルエンサーログイン</p>
         </div>
 
