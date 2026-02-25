@@ -21,7 +21,7 @@ serve(async (req) => {
     }
 
     // Whitelist allowed fields
-    const allowed = ["name", "username", "bio", "category", "instagram_followers", "tiktok_followers", "youtube_followers", "twitter_followers"];
+    const allowed = ["name", "username", "bio", "category", "instagram_followers", "tiktok_followers", "youtube_followers", "twitter_followers", "instagram_url", "tiktok_url", "youtube_url", "twitter_url", "email", "phone", "birth_date", "gender", "prefecture"];
     const sanitized: Record<string, any> = {};
     for (const key of allowed) {
       if (key in updates) sanitized[key] = updates[key];

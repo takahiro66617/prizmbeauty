@@ -60,7 +60,7 @@ export default function RegisterProfile() {
     setIsSubmitting(true);
 
     try {
-      const bio = `${gender} / ${birthDate} / ${prefecture}`;
+      const bio = "";
       const category = selectedGenres.join(", ");
 
       const res = await fetch(
@@ -78,6 +78,9 @@ export default function RegisterProfile() {
             name: `${lastName} ${firstName}`,
             category,
             bio,
+            gender,
+            birthDate,
+            prefecture,
           }),
         }
       );

@@ -12,7 +12,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { lineProfile, nickname, name, category, bio } = await req.json();
+    const { lineProfile, nickname, name, category, bio, gender, birthDate, prefecture } = await req.json();
 
     if (!lineProfile?.userId || !nickname || !name) {
       return new Response(
@@ -56,6 +56,9 @@ Deno.serve(async (req) => {
         image_url: lineProfile.pictureUrl || null,
         category: category || null,
         bio: bio || null,
+        gender: gender || null,
+        birth_date: birthDate || null,
+        prefecture: prefecture || null,
         status: "pending",
       })
       .select()
