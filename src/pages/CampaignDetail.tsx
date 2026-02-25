@@ -40,8 +40,9 @@ export default function CampaignDetail() {
   }, []);
 
   const influencerId = currentUser?.id || influencerProfile?.id;
+  const isLoggedIn = !!(currentUser || influencerProfile);
   const { data: myApps = [] } = useExternalApplications(influencerId ? { influencerId } : undefined);
-  const alreadyApplied = myApps.some(a => a.campaign_id === id);
+  const alreadyApplied = isLoggedIn && myApps.some(a => a.campaign_id === id);
 
   const handleApplyClick = () => {
     if (!currentUser && !influencerProfile) {
