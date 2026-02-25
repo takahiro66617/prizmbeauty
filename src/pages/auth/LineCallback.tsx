@@ -12,7 +12,7 @@ export default function LineCallback() {
   useEffect(() => {
     const code = searchParams.get("code");
     const state = searchParams.get("state");
-    const savedState = sessionStorage.getItem("line_oauth_state");
+    const savedState = localStorage.getItem("line_oauth_state");
 
     if (!code) {
       setError("認証コードが見つかりません");
@@ -23,6 +23,7 @@ export default function LineCallback() {
       setError("認証状態が一致しません。もう一度お試しください。");
       return;
     }
+    localStorage.removeItem("line_oauth_state");
 
     const exchangeCode = async () => {
       try {
