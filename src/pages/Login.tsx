@@ -16,7 +16,7 @@ function generateState() {
 export default function LoginPage() {
   const handleLineLogin = () => {
     const state = generateState();
-    sessionStorage.setItem("line_oauth_state", state);
+    localStorage.setItem("line_oauth_state", state);
     const redirectUri = `${window.location.origin}/auth/line/callback`;
     const url = `https://access.line.me/oauth2/v2.1/authorize?response_type=code&client_id=${LINE_CHANNEL_ID}&redirect_uri=${encodeURIComponent(redirectUri)}&state=${state}&scope=profile%20openid`;
     window.location.href = url;
