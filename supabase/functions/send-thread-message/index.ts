@@ -53,10 +53,8 @@ serve(async (req) => {
       // LINE-auth influencer sending
       senderId = senderProfileId;
       receiverId = companyUserId;
-      // Influencer messages to admin are private
-      if (msgVisibility === "admin_influencer") {
-        receiverId = "admin";
-      }
+      // For admin_influencer visibility, keep companyUserId as receiver
+      // Visibility field controls who can see the message
     } else {
       const authHeader = req.headers.get("authorization");
       if (authHeader) {
