@@ -27,8 +27,12 @@ export function ClientSidebar() {
     <aside className="w-64 bg-white border-r border-gray-100 hidden md:flex flex-col h-screen sticky top-0">
       <div className="p-6">
         <div className="flex flex-col items-center mb-8">
-          <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-200 via-purple-200 to-pink-200 flex items-center justify-center text-blue-600 font-bold text-lg mb-3 shadow-md">
-            CL
+          <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-200 via-purple-200 to-pink-200 flex items-center justify-center text-blue-600 font-bold text-lg mb-3 shadow-md overflow-hidden">
+            {company?.logo_url ? (
+              <img src={company.logo_url} alt="企業ロゴ" className="w-full h-full object-cover" />
+            ) : (
+              "CL"
+            )}
           </div>
           <h2 className="font-bold text-gray-800">{company?.name || "企業管理画面"}</h2>
           <p className="text-xs text-gray-400 mt-0.5">PRizm Client</p>
