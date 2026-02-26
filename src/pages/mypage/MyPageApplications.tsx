@@ -1,12 +1,18 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Link } from "react-router-dom";
-import { Search, FileText, CheckCircle, Clock, Send, ChevronRight, X, Building2, ArrowRight, MessageCircle } from "lucide-react";
+import { Search, FileText, CheckCircle, Clock, Send, ChevronRight, X, Building2, ArrowRight, MessageCircle, Filter, CalendarIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useExternalApplications, type ExternalApplication } from "@/hooks/useExternalApplications";
 import ThreadConversation from "@/components/ThreadConversation";
+import { GENRES } from "@/lib/constants";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { format } from "date-fns";
+import { ja } from "date-fns/locale";
+import { cn } from "@/lib/utils";
 
 const TABS = [
   { id: "all", label: "すべて" },
@@ -24,16 +30,52 @@ export default function MyPageApplications() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedApp, setSelectedApp] = useState<ExternalApplication | null>(null);
   const [threadAppId, setThreadAppId] = useState<string | null>(null);
+  const [showFilters, setShowFilters] = useState(false);
+  const [categoryFilter, setCategoryFilter] = useState("all");
+  const [dateFrom, setDateFrom] = useState<Date | undefined>();
+  const [dateTo, setDateTo] = useState<Date | undefined>();
+  const [budgetMin, setBudgetMin] = useState("");
+  const [budgetMax, setBudgetMax] = useState("");
 
-  const filtered = applications.filter(app => {
-    if (activeTab === "reviewing" && !["applied", "reviewing"].includes(app.status)) return false;
-    else if (activeTab !== "all" && activeTab !== "reviewing" && app.status !== activeTab) return false;
-    if (searchQuery) {
-      const q = searchQuery.toLowerCase();
-      return (app.campaigns?.title || "").toLowerCase().includes(q) || (app.campaigns?.companies?.name || "").toLowerCase().includes(q);
-    }
-    return true;
-  });
+  const activeFilterCount = useMemo(() => {
+    let c = 0;
+    if (categoryFilter !== "all") c++;
+    if (dateFrom) c++;
+    if (dateTo) c++;
+    if (budgetMin) c++;
+    if (budgetMax) c++;
+    return c;
+  }, [categoryFilter, dateFrom, dateTo, budgetMin, budgetMax]);
+
+  const clearFilters = () => {
+    setCategoryFilter("all");
+    setDateFrom(undefined);
+    setDateTo(undefined);
+    setBudgetMin("");
+    setBudgetMax("");
+  };
+
+  const filtered = useMemo(() => {
+    return applications.filter(app => {
+      if (activeTab === "reviewing" && !["applied", "reviewing"].includes(app.status)) return false;
+      else if (activeTab !== "all" && activeTab !== "reviewing" && app.status !== activeTab) return false;
+      if (searchQuery) {
+        const q = searchQuery.toLowerCase();
+        if (!(app.campaigns?.title || "").toLowerCase().includes(q) && !(app.campaigns?.companies?.name || "").toLowerCase().includes(q)) return false;
+      }
+      if (categoryFilter !== "all" && app.campaigns?.category !== categoryFilter) return false;
+      if (dateFrom && new Date(app.applied_at) < dateFrom) return false;
+      if (dateTo) {
+        const end = new Date(dateTo);
+        end.setHours(23, 59, 59, 999);
+        if (new Date(app.applied_at) > end) return false;
+      }
+      const budget = app.campaigns?.budget_max || app.campaigns?.budget_min || 0;
+      if (budgetMin && budget < Number(budgetMin)) return false;
+      if (budgetMax && budget > Number(budgetMax)) return false;
+      return true;
+    });
+  }, [applications, activeTab, searchQuery, categoryFilter, dateFrom, dateTo, budgetMin, budgetMax]);
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -49,16 +91,10 @@ export default function MyPageApplications() {
     }
   };
 
-  // Show thread view
   if (threadAppId) {
     return (
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden h-[calc(100vh-120px)]">
-        <ThreadConversation
-          applicationId={threadAppId}
-          userType="influencer"
-          senderId={userId}
-          onBack={() => setThreadAppId(null)}
-        />
+        <ThreadConversation applicationId={threadAppId} userType="influencer" senderId={userId} onBack={() => setThreadAppId(null)} />
       </div>
     );
   }
@@ -67,11 +103,77 @@ export default function MyPageApplications() {
     <div className="space-y-6 pb-20">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <h1 className="text-2xl font-bold text-gray-900">応募履歴</h1>
-        <div className="relative w-full md:w-64">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-          <Input placeholder="案件名・会社名で検索" className="pl-9 bg-white" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
+        <div className="flex gap-2 w-full md:w-auto">
+          <div className="relative flex-1 md:w-64">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <Input placeholder="案件名・会社名で検索" className="pl-9 bg-white" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
+          </div>
+          <Button variant="outline" size="icon" onClick={() => setShowFilters(!showFilters)} className={cn("relative shrink-0", showFilters && "bg-pink-50 border-pink-300")}>
+            <Filter className="w-4 h-4" />
+            {activeFilterCount > 0 && (
+              <span className="absolute -top-1 -right-1 w-4 h-4 bg-pink-500 text-white text-[10px] rounded-full flex items-center justify-center">{activeFilterCount}</span>
+            )}
+          </Button>
         </div>
       </div>
+
+      {showFilters && (
+        <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-bold text-gray-700">詳細フィルター</h3>
+            {activeFilterCount > 0 && (
+              <button onClick={clearFilters} className="text-xs text-pink-500 hover:underline">すべてクリア</button>
+            )}
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">カテゴリ</label>
+              <select value={categoryFilter} onChange={e => setCategoryFilter(e.target.value)} className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm bg-white">
+                <option value="all">すべて</option>
+                {GENRES.map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">応募日（開始）</label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className={cn("w-full justify-start text-left font-normal text-sm", !dateFrom && "text-muted-foreground")}>
+                    <CalendarIcon className="mr-2 h-3.5 w-3.5" />
+                    {dateFrom ? format(dateFrom, "yyyy/MM/dd", { locale: ja }) : "指定なし"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar mode="single" selected={dateFrom} onSelect={setDateFrom} initialFocus className="p-3 pointer-events-auto" />
+                </PopoverContent>
+              </Popover>
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">応募日（終了）</label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className={cn("w-full justify-start text-left font-normal text-sm", !dateTo && "text-muted-foreground")}>
+                    <CalendarIcon className="mr-2 h-3.5 w-3.5" />
+                    {dateTo ? format(dateTo, "yyyy/MM/dd", { locale: ja }) : "指定なし"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar mode="single" selected={dateTo} onSelect={setDateTo} initialFocus className="p-3 pointer-events-auto" />
+                </PopoverContent>
+              </Popover>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">報酬（最小）</label>
+              <Input type="number" placeholder="例: 5000" value={budgetMin} onChange={e => setBudgetMin(e.target.value)} className="bg-white" />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">報酬（最大）</label>
+              <Input type="number" placeholder="例: 100000" value={budgetMax} onChange={e => setBudgetMax(e.target.value)} className="bg-white" />
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="border-b border-gray-200 overflow-x-auto">
         <nav className="flex space-x-8 px-1 min-w-max">
@@ -84,6 +186,8 @@ export default function MyPageApplications() {
           ))}
         </nav>
       </div>
+
+      <p className="text-sm text-gray-500">{filtered.length}件の応募</p>
 
       {isLoading ? (
         <div className="text-center py-12 text-gray-500">読み込み中...</div>
@@ -134,7 +238,6 @@ export default function MyPageApplications() {
         </div>
       )}
 
-      {/* Application Detail Modal - now includes full campaign info */}
       {selectedApp && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" onClick={() => setSelectedApp(null)}>
           <div className="bg-white rounded-2xl w-full max-w-2xl overflow-hidden shadow-xl my-8" onClick={e => e.stopPropagation()}>
@@ -160,21 +263,15 @@ export default function MyPageApplications() {
                       </div>
                     </div>
                   </div>
-                  {/* Campaign category */}
                   {selectedApp.campaigns.category && (
-                    <div className="flex gap-2">
-                      <Badge variant="outline">{selectedApp.campaigns.category}</Badge>
-                    </div>
+                    <div className="flex gap-2"><Badge variant="outline">{selectedApp.campaigns.category}</Badge></div>
                   )}
                 </>
               )}
-
-              {/* Status */}
               <div>
                 <h4 className="font-bold text-gray-800 mb-2 text-sm">ステータス</h4>
                 <div>{getStatusBadge(selectedApp.status)}</div>
               </div>
-
               {selectedApp.motivation && (
                 <div>
                   <h4 className="font-bold text-gray-800 mb-2 text-sm">応募動機</h4>
