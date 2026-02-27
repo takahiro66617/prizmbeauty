@@ -1,6 +1,6 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
-  LayoutDashboard, FileEdit, Building2, Users, Settings, LogOut, ClipboardList, MessageCircle,
+  LayoutDashboard, FileEdit, Building2, Users, Settings, LogOut, ClipboardList, MessageCircle, Bug,
 } from "lucide-react";
 
 const navItems = [
@@ -10,6 +10,7 @@ const navItems = [
   { title: "インフルエンサー管理", href: "/admin/influencers", icon: Users },
   { title: "応募管理", href: "/admin/applications", icon: ClipboardList },
   { title: "案件進行管理", href: "/admin/messages", icon: MessageCircle },
+  { title: "バグレポート", href: "/admin/debug-reports", icon: Bug },
 ];
 
 export function AdminSidebar() {
