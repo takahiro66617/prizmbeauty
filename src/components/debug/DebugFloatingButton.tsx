@@ -5,14 +5,14 @@ import { useDebugMode } from "./DebugModeProvider";
 import { DebugReportModal } from "./DebugReportModal";
 
 export function DebugFloatingButton() {
-  const { isActive, startSession, errorCount } = useDebugMode();
+  const { isActive, startSession, stopSession, errorCount } = useDebugMode();
   const [modalOpen, setModalOpen] = useState(false);
 
   const handleClick = () => {
     if (!isActive) {
       startSession();
     } else {
-      setModalOpen(true);
+      stopSession();
     }
   };
 
