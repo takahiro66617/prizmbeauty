@@ -3,6 +3,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { DebugModeWrapper } from "@/components/debug/DebugModeWrapper";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import CampaignsPage from "./pages/Campaigns";
@@ -44,6 +45,7 @@ import MyPageSettings from "./pages/mypage/MyPageSettings";
 import MyPageCampaigns from "./pages/mypage/MyPageCampaigns";
 import MyPageCampaignDetail from "./pages/mypage/MyPageCampaignDetail";
 import MyPageRewards from "./pages/mypage/MyPageRewards";
+import DebugReportsPage from "./pages/DebugReportsPage";
 
 const queryClient = new QueryClient();
 
@@ -53,6 +55,7 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
+        <DebugModeWrapper>
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/campaigns" element={<CampaignsPage />} />
@@ -99,9 +102,11 @@ const App = () => (
             <Route path="influencers" element={<AdminInfluencersPage />} />
             <Route path="applications" element={<AdminApplications />} />
             <Route path="messages" element={<AdminMessages />} />
+            <Route path="debug-reports" element={<DebugReportsPage />} />
           </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>
+        </DebugModeWrapper>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
