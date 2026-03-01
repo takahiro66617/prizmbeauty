@@ -1,20 +1,27 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { FileText, Clock, CheckCircle, Circle, ArrowRight, Megaphone, Calendar, DollarSign, MessageCircle } from "lucide-react";
+import { FileText, Clock, CheckCircle, Circle, ArrowRight, Megaphone, Calendar, DollarSign, MessageCircle, AlertCircle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useExternalApplications } from "@/hooks/useExternalApplications";
 import { useExternalMessages } from "@/hooks/useExternalMessages";
+import { supabase } from "@/integrations/supabase/client";
 
 const formatDate = (date: Date) =>
   new Intl.DateTimeFormat("ja-JP", { year: "numeric", month: "long", day: "numeric", weekday: "short" }).format(date);
 
 export default function MyPageDashboard() {
   const [user, setUser] = useState<any>(null);
+  const [influencerStatus, setInfluencerStatus] = useState<string | null>(null);
 
   useEffect(() => {
     const storedUser = sessionStorage.getItem("currentUser");
-    if (storedUser) setUser(JSON.parse(storedUser));
+    if (storedUser) {
+      const parsed = JSON.parse(storedUser);
+      setUser(parsed);
+      supabase.from("influencer_profiles").select("status").eq("id", parsed.id).maybeSingle()
+        .then(({ data }) => { if (data) setInfluencerStatus(data.status); });
+    }
   }, []);
 
   const userId = user?.id || "";
@@ -50,6 +57,20 @@ export default function MyPageDashboard() {
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
+      {influencerStatus === "pending" && (
+        <Card className="border-yellow-200 bg-yellow-50 shadow-sm">
+          <CardContent className="p-5 flex items-start gap-4">
+            <div className="p-2 bg-yellow-100 rounded-full shrink-0">
+              <AlertCircle className="w-6 h-6 text-yellow-600" />
+            </div>
+            <div>
+              <h3 className="font-bold text-yellow-800 mb-1">現在、事務局にて審査中です</h3>
+              <p className="text-sm text-yellow-700">承認後に案件への応募やメッセージなどの全機能をご利用いただけます。プロフィール設定は引き続きご利用いただけます。</p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       <div>
         <h1 className="text-2xl font-bold text-gray-800">おかえりなさい、{user.lastName || ""} {user.firstName || user.name || ""}さん！</h1>
         <p className="text-gray-500 mt-1 flex items-center gap-2"><Calendar className="w-4 h-4" />{formatDate(new Date())}</p>
