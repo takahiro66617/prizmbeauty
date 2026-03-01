@@ -158,7 +158,21 @@ export default function AdminCampaignsPage() {
                   <td className="px-6 py-4"><Badge className={statusObj(campaign.status)?.color || ""}>{statusObj(campaign.status)?.label || campaign.status}</Badge></td>
                   <td className="px-6 py-4 text-gray-600">{appCount}</td>
                   <td className="px-6 py-4">
-                    <Button variant="ghost" size="sm" className="text-purple-600 hover:text-purple-800" onClick={() => openDetail(campaign)}>編集</Button>
+                    <div className="flex gap-1">
+                      {campaign.status === "pending_approval" && (
+                        <>
+                          <Button variant="ghost" size="sm" className="text-green-600 hover:text-green-800 hover:bg-green-50"
+                            onClick={() => { updateCampaign.mutate({ id: campaign.id, updates: { status: "recruiting" } }, { onSuccess: () => toast.success("承認しました"), onError: () => toast.error("失敗しました") }); }}>
+                            承認
+                          </Button>
+                          <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-800 hover:bg-red-50"
+                            onClick={() => { updateCampaign.mutate({ id: campaign.id, updates: { status: "draft" } }, { onSuccess: () => toast.success("差し戻しました"), onError: () => toast.error("失敗しました") }); }}>
+                            差戻
+                          </Button>
+                        </>
+                      )}
+                      <Button variant="ghost" size="sm" className="text-purple-600 hover:text-purple-800" onClick={() => openDetail(campaign)}>編集</Button>
+                    </div>
                   </td>
                 </tr>
               );
