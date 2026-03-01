@@ -8,6 +8,7 @@ export interface ExternalCampaign {
   company_id: string;
   category: string | null;
   image_url: string | null;
+  image_urls: string[] | null;
   budget_min: number | null;
   budget_max: number | null;
   deadline: string | null;
@@ -62,6 +63,7 @@ export function useCreateCampaign() {
       requirements: string;
       platform: string;
       image_url?: string;
+      image_urls?: string[];
       status?: string;
     }) => {
       const { data, error } = await supabase.from("campaigns").insert({ ...campaign, status: campaign.status || "recruiting" }).select().single();
