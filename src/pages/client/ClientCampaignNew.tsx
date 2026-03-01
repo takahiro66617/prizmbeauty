@@ -66,9 +66,9 @@ export default function ClientCampaignNew() {
       title: form.title, description: form.description, company_id: companyId, category: form.category,
       budget_min: Number(form.budgetMin), budget_max: Number(form.budgetMax || form.budgetMin),
       deadline: form.deadline, requirements: form.requirements, platform: form.platforms.join(","),
-      status: "recruiting", image_url: imageUrl,
+      status: "pending_approval", image_url: imageUrl,
     }, {
-      onSuccess: () => { toast.success("案件を作成しました"); navigate("/client/campaigns"); },
+      onSuccess: () => { toast.success("案件を作成しました。事務局の承認後に公開されます。"); navigate("/client/campaigns"); },
       onError: () => { toast.error("案件の作成に失敗しました"); setIsUploading(false); },
     });
   };

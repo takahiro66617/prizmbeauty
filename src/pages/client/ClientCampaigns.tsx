@@ -91,7 +91,7 @@ function EditCampaignDialog({ campaign, open, onOpenChange }: { campaign: Extern
               <label className="block text-sm font-medium text-gray-700 mb-1">ステータス</label>
               <select value={form.status} onChange={e => setForm({ ...form, status: e.target.value })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-                {CAMPAIGN_STATUSES.map(s => <option key={s.id} value={s.id}>{s.label}</option>)}
+                {CAMPAIGN_STATUSES.filter(s => s.id !== "recruiting").map(s => <option key={s.id} value={s.id}>{s.label}</option>)}
               </select>
             </div>
           </div>
