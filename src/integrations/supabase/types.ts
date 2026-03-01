@@ -117,6 +117,7 @@ export type Database = {
           description: string | null
           id: string
           image_url: string | null
+          image_urls: string[] | null
           max_applicants: number | null
           payment_date: string | null
           platform: string | null
@@ -136,6 +137,7 @@ export type Database = {
           description?: string | null
           id?: string
           image_url?: string | null
+          image_urls?: string[] | null
           max_applicants?: number | null
           payment_date?: string | null
           platform?: string | null
@@ -155,6 +157,7 @@ export type Database = {
           description?: string | null
           id?: string
           image_url?: string | null
+          image_urls?: string[] | null
           max_applicants?: number | null
           payment_date?: string | null
           platform?: string | null

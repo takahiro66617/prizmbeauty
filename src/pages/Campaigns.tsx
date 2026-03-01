@@ -85,10 +85,13 @@ export default function CampaignsPage() {
               return (
                 <div key={campaign.id} className="group bg-card rounded-2xl shadow-soft overflow-hidden hover:shadow-lg hover:-translate-y-1 transition-all flex flex-col">
                   <div className="relative aspect-video bg-muted overflow-hidden">
-                    {campaign.image_url ? (
-                      <img src={campaign.image_url} alt={campaign.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                    {(campaign.image_urls?.length ? campaign.image_urls[0] : campaign.image_url) ? (
+                      <img src={campaign.image_urls?.length ? campaign.image_urls[0] : campaign.image_url!} alt={campaign.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center text-muted-foreground"><FileText className="w-12 h-12" /></div>
+                    )}
+                    {(campaign.image_urls?.length || 0) > 1 && (
+                      <span className="absolute bottom-2 left-2 bg-black/50 text-white text-[10px] px-1.5 py-0.5 rounded font-bold">{campaign.image_urls!.length}枚</span>
                     )}
                     <div className="absolute top-3 right-3">
                       {isEndingSoon ? (

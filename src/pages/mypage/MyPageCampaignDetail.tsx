@@ -6,6 +6,7 @@ import { useApplyToCampaign } from "@/hooks/useApplyToCampaign";
 import { useToggleFavorite, useIsFavorite } from "@/hooks/useFavorites";
 import { useExternalApplications } from "@/hooks/useExternalApplications";
 import { Heart, Clock, Users, CheckCircle, Instagram, ArrowLeft, FileText, Send } from "lucide-react";
+import { CampaignImageGallery } from "@/components/campaign/CampaignImageGallery";
 import { toast } from "sonner";
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -90,16 +91,13 @@ export default function MyPageCampaignDetail() {
 
       <div className="grid lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
-          <div className="relative aspect-video w-full rounded-xl overflow-hidden bg-gray-100">
-            {campaign.image_url ? (
-              <img src={campaign.image_url} alt={campaign.title} className="w-full h-full object-cover" />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center text-gray-300"><FileText className="w-16 h-16" /></div>
-            )}
-            {campaign.category && (
-              <span className="absolute top-3 left-3 px-3 py-1 bg-white/90 rounded-full text-sm font-bold shadow-sm">{campaign.category}</span>
-            )}
-          </div>
+          <CampaignImageGallery
+            imageUrls={campaign.image_urls || []}
+            imageUrl={campaign.image_url}
+            title={campaign.title}
+            category={campaign.category}
+            className=""
+          />
 
           <Card className="p-6 border-0 shadow-sm">
             <h1 className="text-2xl font-bold text-gray-900 mb-4">{campaign.title}</h1>
