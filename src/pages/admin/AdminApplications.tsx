@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Search, X } from "lucide-react";
+import HelpGuideModal from "@/components/admin/HelpGuideModal";
 import { useExternalApplications, useUpdateApplicationStatus } from "@/hooks/useExternalApplications";
 import { useExternalCampaigns } from "@/hooks/useExternalCampaigns";
 import { useExternalCompanies } from "@/hooks/useExternalCompanies";
@@ -53,9 +54,26 @@ export default function AdminApplications() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-800">応募管理</h1>
-        <p className="text-gray-500 mt-1">全応募の横断一覧です。マッチング状況を確認できます。</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-800">応募管理</h1>
+          <p className="text-gray-500 mt-1">全応募の横断一覧です。マッチング状況を確認できます。</p>
+        </div>
+        <HelpGuideModal
+          title="応募管理の使い方"
+          description="インフルエンサーからの応募を一元管理し、選考・ステータス変更を行います。"
+          sections={[
+            { title: "応募一覧", content: ["全案件への応募を横断的に確認", "企業・案件・ステータス・カテゴリ・期間で絞り込み", "IF名・案件名のキーワード検索も可能"] },
+            { title: "ステータス管理", content: ["応募ステータスを段階的に進行（応募→選考中→採用→進行中…）", "各ステータスの詳細はクリックで確認", "ステータス変更時にIF・企業へ自動通知"] },
+            { title: "詳細確認", content: ["応募者のプロフィール・応募動機を確認", "案件情報と照合してマッチング判断", "応募モーダルからステータスを直接変更可能"] },
+          ]}
+          workflow={[
+            "新規応募（applied）を確認し内容を精査",
+            "適切なIFを「選考中」→「採用」に変更",
+            "採用後、案件スレッドで進行管理を開始",
+            "投稿確認後、報酬処理へ進む",
+          ]}
+        />
       </div>
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">

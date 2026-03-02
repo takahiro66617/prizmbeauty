@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Search, X, Save, AlertTriangle } from "lucide-react";
+import HelpGuideModal from "@/components/admin/HelpGuideModal";
 import { useExternalCampaigns, useUpdateCampaign, useDeleteCampaign } from "@/hooks/useExternalCampaigns";
 import { useExternalApplications } from "@/hooks/useExternalApplications";
 import { CATEGORIES, PLATFORMS, CAMPAIGN_STATUSES } from "@/lib/constants";
@@ -81,6 +82,21 @@ export default function AdminCampaignsPage() {
           <h1 className="text-2xl font-bold text-gray-800">案件管理</h1>
           <p className="text-gray-500 mt-1">全案件を管理・絞り込みできます。</p>
         </div>
+        <HelpGuideModal
+          title="案件管理の使い方"
+          description="企業が作成した案件を一覧で確認し、承認・却下・編集を行えます。"
+          sections={[
+            { title: "承認フロー", content: ["企業が作成した案件は「承認待ち」で登録されます", "内容を確認し「承認」→承認済みに、「却下」→却下に変更", "承認済みの案件のみインフルエンサーに公開されます"] },
+            { title: "絞り込み検索", content: ["企業名・案件名・ステータス・カテゴリ・プラットフォームで絞り込み", "締切日・報酬額での範囲指定も可能"] },
+            { title: "案件編集", content: ["「編集」ボタンで案件の詳細情報を修正可能", "ステータス変更・応募一覧の確認もモーダル内で実行"] },
+          ]}
+          workflow={[
+            "「承認待ち」の案件を確認し、内容をチェック",
+            "問題なければ「承認」、修正が必要なら「却下」",
+            "承認後、募集中に変更してインフルエンサーに公開",
+            "応募が集まったら応募管理で選考を進める",
+          ]}
+        />
       </div>
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">

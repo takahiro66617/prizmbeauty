@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Plus, Search, Building2, User, Calendar, X, Save, Trash2, KeyRound } from "lucide-react";
+import HelpGuideModal from "@/components/admin/HelpGuideModal";
 import { useExternalCompanies, useUpdateCompany } from "@/hooks/useExternalCompanies";
 import { useExternalCampaigns } from "@/hooks/useExternalCampaigns";
 import { useExternalApplications } from "@/hooks/useExternalApplications";
@@ -116,6 +117,21 @@ export default function AdminClientsPage() {
           <h1 className="text-2xl font-bold text-gray-900">企業管理</h1>
           <p className="text-gray-500 mt-1">登録済みの企業一覧です。新規アカウント発行・編集を行えます。</p>
         </div>
+        <HelpGuideModal
+          title="企業管理の使い方"
+          description="登録企業のアカウント管理・情報編集・認証情報の変更を行います。"
+          sections={[
+            { title: "企業アカウント発行", content: ["「＋新規企業登録」ボタンで企業アカウントを作成", "メールアドレス・パスワード・企業名を入力して発行", "発行後、企業はログインして案件を作成可能に"] },
+            { title: "企業情報編集", content: ["企業名クリックで詳細モーダルを開き編集", "業種・連絡先・Webサイト等の基本情報を管理", "企業ステータスの変更（契約中/承認待ち/停止中）"] },
+            { title: "認証情報管理", content: ["ログイン用メールアドレスの確認", "パスワードの変更（企業からの依頼時に使用）", "アカウントの無効化・削除"] },
+          ]}
+          workflow={[
+            "新規企業の問い合わせを受けアカウントを発行",
+            "企業がログインして案件を作成",
+            "事務局で案件内容を確認し承認",
+            "必要に応じて企業情報やパスワードを管理",
+          ]}
+        />
         <Button className="bg-purple-600 hover:bg-purple-700" onClick={() => setShowRegister(true)}>
           <Plus className="w-4 h-4 mr-2" />新規企業アカウント発行
         </Button>

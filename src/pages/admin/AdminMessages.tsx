@@ -3,6 +3,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { MessageCircle, Search, FileText, Clock, User, Building2 } from "lucide-react";
+import HelpGuideModal from "@/components/admin/HelpGuideModal";
 import { supabase } from "@/integrations/supabase/client";
 import { APPLICATION_STATUSES, CATEGORIES } from "@/lib/constants";
 import ThreadConversation from "@/components/ThreadConversation";
@@ -66,9 +67,26 @@ export default function AdminMessages() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-800">案件進行管理</h1>
-        <p className="text-gray-500 mt-1">全ての案件スレッドを監視・仲介します。企業・インフルエンサーへ個別にメッセージを送信できます。</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-800">案件進行管理</h1>
+          <p className="text-gray-500 mt-1">全ての案件スレッドを監視・仲介します。企業・インフルエンサーへ個別にメッセージを送信できます。</p>
+        </div>
+        <HelpGuideModal
+          title="案件進行管理の使い方"
+          description="採用後の案件スレッドを監視し、企業・IFの間を仲介します。"
+          sections={[
+            { title: "スレッド一覧", content: ["採用以降のステータスの応募がスレッドとして表示", "ステータス・カテゴリ・キーワードで絞り込み可能", "最終更新日でソートされ新しい順に表示"] },
+            { title: "メッセージ機能", content: ["スレッドを開くと3者間のメッセージ画面が表示", "事務局はIF向け・企業向けに個別メッセージ送信可能", "画像添付やステータス変更もスレッド内で実行"] },
+            { title: "進行管理", content: ["投稿内容の確認・修正依頼・確認済みへの変更", "振込待ちステータスへの移行管理", "完了処理で案件をクローズ"] },
+          ]}
+          workflow={[
+            "採用後のスレッドで投稿内容の指示を送信",
+            "IFの投稿を確認し、問題なければ「投稿確認済み」に変更",
+            "企業に報酬振込を依頼し「振込待ち」に変更",
+            "振込確認後「完了」に変更してクローズ",
+          ]}
+        />
       </div>
 
       {/* Filters */}
