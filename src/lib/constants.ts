@@ -33,8 +33,10 @@ export const APPLICATION_STATUSES = [
 export const CAMPAIGN_STATUSES = [
   { id: "draft", label: "下書き", color: "bg-gray-100 text-gray-600" },
   { id: "pending_approval", label: "承認待ち", color: "bg-yellow-100 text-yellow-700" },
-  { id: "recruiting", label: "募集中", color: "bg-green-100 text-green-700" },
-  { id: "closed", label: "終了", color: "bg-red-100 text-red-700" },
+  { id: "approved", label: "承認済み", color: "bg-green-100 text-green-700" },
+  { id: "rejected", label: "却下", color: "bg-red-100 text-red-700" },
+  { id: "recruiting", label: "募集中", color: "bg-emerald-100 text-emerald-700" },
+  { id: "closed", label: "募集終了", color: "bg-orange-100 text-orange-700" },
   { id: "completed", label: "完了", color: "bg-blue-100 text-blue-700" },
 ];
 
