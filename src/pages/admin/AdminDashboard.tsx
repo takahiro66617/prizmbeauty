@@ -5,6 +5,7 @@ import { Link } from "react-router-dom";
 import {
   ArrowRight, Bell, TrendingUp, Users, FileText, FileEdit, Building2, UserCheck, Filter,
 } from "lucide-react";
+import HelpGuideModal from "@/components/admin/HelpGuideModal";
 import { useExternalCampaigns } from "@/hooks/useExternalCampaigns";
 import { useExternalCompanies } from "@/hooks/useExternalCompanies";
 import { useExternalInfluencers } from "@/hooks/useExternalInfluencers";
@@ -66,9 +67,26 @@ export default function AdminDashboard() {
 
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-800">ダッシュボード</h1>
-        <p className="text-gray-500 mt-1">事務局管理画面へようこそ。全体の状況を確認しましょう。</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-800">ダッシュボード</h1>
+          <p className="text-gray-500 mt-1">事務局管理画面へようこそ。全体の状況を確認しましょう。</p>
+        </div>
+        <HelpGuideModal
+          title="ダッシュボードの使い方"
+          description="ダッシュボードでは、プラットフォーム全体の状況をリアルタイムで把握できます。"
+          sections={[
+            { title: "統計カード", content: ["総応募数・稼働中案件数・企業数・IF数を一目で確認", "各カードをクリックすると詳細ページへ移動"] },
+            { title: "統計分析", content: ["ステータス・カテゴリ・期間でフィルタリング可能", "月別応募推移とステータス別円グラフで分析"] },
+            { title: "ToDo / お知らせ", content: ["審査待ちのインフルエンサーや新規応募を確認", "クリックで該当ページへ移動"] },
+          ]}
+          workflow={[
+            "審査待ちインフルエンサーの承認・却下を処理",
+            "承認待ち案件の内容を確認し承認・却下",
+            "新規応募のマッチングを確認",
+            "案件スレッドで進行状況をモニタリング",
+          ]}
+        />
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">

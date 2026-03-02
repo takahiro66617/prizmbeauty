@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Download, Search, X, Save } from "lucide-react";
+import HelpGuideModal from "@/components/admin/HelpGuideModal";
 import { useExternalInfluencers, useUpdateInfluencerStatus } from "@/hooks/useExternalInfluencers";
 import { useExternalApplications } from "@/hooks/useExternalApplications";
 import { GENRES, INFLUENCER_STATUSES, APPLICATION_STATUSES } from "@/lib/constants";
@@ -111,6 +112,21 @@ export default function AdminInfluencersPage() {
           <h1 className="text-2xl font-bold text-gray-800">インフルエンサー管理</h1>
           <p className="text-gray-500 mt-1">登録インフルエンサーの検索・審査・編集を行います。</p>
         </div>
+        <HelpGuideModal
+          title="インフルエンサー管理の使い方"
+          description="登録されたインフルエンサーの審査・プロフィール編集・ステータス管理を行います。"
+          sections={[
+            { title: "審査プロセス", content: ["新規登録されたIFは「審査中」ステータスで表示", "プロフィール内容を確認し「承認」または「却下」を実行", "承認後、IFは案件への応募が可能になります"] },
+            { title: "絞り込み検索", content: ["名前・ユーザー名・ステータス・カテゴリで検索", "LINE連携状況・フォロワー数・登録日でのフィルタリング", "CSV出力機能で一覧データをダウンロード"] },
+            { title: "プロフィール編集", content: ["IF名をクリックして詳細を開き編集可能", "SNSアカウント情報・フォロワー数・カテゴリ等を管理", "応募履歴も一緒に確認できます"] },
+          ]}
+          workflow={[
+            "「審査中」のIFを上から順にプロフィールを確認",
+            "SNS情報やフォロワー数が適切か判断",
+            "問題なければ「承認」、基準に満たなければ「却下」",
+            "承認後、IFは案件一覧から応募可能に",
+          ]}
+        />
         <Button variant="outline" className="shadow-sm"><Download className="w-4 h-4 mr-2" />CSV出力</Button>
       </div>
 
