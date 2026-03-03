@@ -1,48 +1,59 @@
 
 
-## バグレポート管理機能 実装計画
+## 案件フローの修正計画
 
-### 1. データベースマイグレーション
-- `debug_reports` テーブル作成（仕様書通りのスキーマ）
-- RLSポリシー設定：INSERT は誰でも可、SELECT は認証ユーザー、ALL は admin ロール
-- `debug-screenshots` ストレージバケット作成（public）
-- ストレージRLSポリシー（誰でもアップロード可、公開読み取り）
+### 現状の問題点
 
-### 2. 新規ファイル作成
+**問題1: 修正依頼後の再投稿フロー**
+- 企業が修正依頼 → ステータスが `revision_requested` に変更
+- インフルエンサーが再投稿報告を送信できる（UIは存在する）
+- **しかし、再投稿してもステータスが `post_submitted` に自動で戻らない** → 企業が再確認できない
 
-| ファイル | 内容 |
-|---|---|
-| `src/components/debug/DebugModeProvider.tsx` | Context + ログ収集エンジン（console.error/warn フック、fetch モンキーパッチ、click/navigation インターセプト） |
-| `src/components/debug/DebugFloatingButton.tsx` | 右下FAB（Portal使用、z-index最大値）。非アクティブ時は再生アイコン、アクティブ時は赤パルス停止ボタン+エラーバッジ |
-| `src/components/debug/DebugReportModal.tsx` | 送信ダイアログ。html2canvasでスクリーンショット、画像アップロード、コメント入力、セッション情報表示、debug_reportsへINSERT |
-| `src/components/debug/DebugModeWrapper.tsx` | Provider + FloatingButton をまとめるラッパー |
-| `src/pages/DebugReportsPage.tsx` | 管理者向けレポート一覧・詳細。ステータスフィルター、インラインステータス変更、詳細ダイアログ（ログJSON表示） |
+**問題2: 振込確認フロー**
+- 投稿確認済（`post_confirmed`）で振込先情報は自動送信される（既に実装済み）
+- **インフルエンサーが振込を確認する手段がない** → `payment_pending` から `completed` への遷移が企業/管理者側のみ
 
-### 3. 依存ライブラリ追加
-- `html2canvas` ^1.4.1
+---
 
-### 4. 既存ファイル修正
+### 修正内容
 
-**`src/App.tsx`**:
-- `DebugModeWrapper` でアプリ全体をラップ（BrowserRouter の内側）
-- `/debug-reports` ルート追加
+#### 1. 修正依頼後の再投稿で自動ステータス更新
+- `ThreadConversation.tsx` の `handlePostSubmit` で、現在のステータスが `revision_requested` の場合、投稿報告送信後に自動で `post_submitted` に戻す
+- `send-status-notification` edge function を呼び出してステータス更新＋通知を送信
 
-### 技術詳細
+#### 2. インフルエンサー側「振込確認」ボタン追加
+- `payment_pending` ステータス時、インフルエンサーに「振込確認済み」ボタンを表示
+- ボタン押下で `completed` に遷移（`send-status-notification` 経由）
+- 企業/管理者にも通知を送信
 
-**ログ収集（DebugModeProvider）**:
-- `console.error` / `console.warn` をオーバーライドしてログ配列に蓄積
-- `window.fetch` をモンキーパッチしてリクエスト/レスポンス情報を記録
-- `document.addEventListener("click", ..., true)` でクリックイベントをキャプチャフェーズで取得
-- `history.pushState` / `replaceState` / `popstate` をインターセプト
-- セッション停止時に全インターセプターを復元
+#### 3. ステータスフローの整理
 
-**スクリーンショット（DebugReportModal）**:
-- html2canvas でキャプチャ時、モーダルを一時非表示（300ms待機）→ キャプチャ → 再表示
-- `debug-screenshots` バケットにアップロード後、公開URLを取得
+```text
+approved → in_progress → post_submitted → post_confirmed → payment_pending → completed
+                              ↑                                    ↓
+                         revision_requested ←──(修正依頼)     インフルエンサーが
+                              │                              「振込確認」で完了
+                              └──(再投稿で自動戻り)
+```
 
-**管理画面（DebugReportsPage）**:
-- TanStack Query でレポート一覧取得
-- ステータスフィルタータブ（すべて/未対応/対応中/解決済/対応不要）
-- インラインでステータス変更（SELECT ドロップダウン）
-- 詳細ダイアログでログをJSON整形表示（ScrollArea使用）
+---
+
+### 変更ファイル
+1. **`src/components/ThreadConversation.tsx`**
+   - `handlePostSubmit`: revision_requested時にステータス自動更新追加
+   - `payment_pending` 時にインフルエンサー用「振込確認済み」ボタンを追加
+
+2. **`send-status-notification` edge function**: 変更不要（既に汎用的に動作）
+
+---
+
+### 請求書発行について（ご相談への回答）
+
+インフルエンサーマーケティングの実務では以下が一般的です：
+
+- **個人のインフルエンサー**: 報酬が支払調書の対象となるため、企業側が源泉徴収を行い支払調書を発行するのが一般的。インフルエンサー側から請求書を発行するケースもあるが、プラットフォーム仲介型では不要なことが多い
+- **法人化しているインフルエンサー**: 請求書発行が必要（インボイス制度対応含む）
+- **プラットフォーム型の場合**: PR IZMが仲介する形なので、**企業→PR IZM→インフルエンサー** の二段階にするか、**企業→インフルエンサー直接** にするかで対応が変わる
+
+**推奨**: まずは請求書なしで運用を開始し、需要が出てきたら後から追加する方が開発効率が良い。必要になった場合は、インフルエンサーのプロフィールに「適格請求書発行事業者番号（T+13桁）」を登録できるフィールドを追加し、PDF請求書を自動生成する機能を実装できます。
 
