@@ -178,8 +178,8 @@ export default function AdminCampaignsPage() {
                       {campaign.status === "pending_approval" && (
                         <>
                           <Button variant="ghost" size="sm" className="text-green-600 hover:text-green-800 hover:bg-green-50"
-                            onClick={() => { updateCampaign.mutate({ id: campaign.id, updates: { status: "approved" } }, { onSuccess: () => toast.success("承認しました"), onError: () => toast.error("失敗しました") }); }}>
-                            承認
+                            onClick={() => { updateCampaign.mutate({ id: campaign.id, updates: { status: "recruiting" } }, { onSuccess: () => toast.success("承認して公開しました"), onError: () => toast.error("失敗しました") }); }}>
+                            承認・公開
                           </Button>
                           <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-800 hover:bg-red-50"
                             onClick={() => { updateCampaign.mutate({ id: campaign.id, updates: { status: "rejected" } }, { onSuccess: () => toast.success("却下しました"), onError: () => toast.error("失敗しました") }); }}>
