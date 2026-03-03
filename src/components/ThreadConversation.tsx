@@ -158,12 +158,31 @@ export default function ThreadConversation({ applicationId, userType, senderId, 
       const imageUrls = await uploadMultipleImages(selectedImages);
       const content = `📱 投稿報告\n\n${postUrl ? `投稿URL: ${postUrl}\n` : ""}${postCaption ? `説明: ${postCaption}` : ""}`;
       await handleSendMessage(content, imageUrls[0] || undefined, imageUrls.length > 1 ? imageUrls : undefined, "post_report", "all");
+      
+      // Auto-update status back to post_submitted when resubmitting after revision
+      if (app?.status === "revision_requested") {
+        try {
+          await supabase.functions.invoke("send-status-notification", {
+            body: {
+              applicationId: app.id,
+              newStatus: "post_submitted",
+              message: "修正後の投稿報告が再提出されました。確認をお願いします。",
+              notificationTitle: "再投稿報告",
+              notificationMessage: `「${app.campaigns?.title || "案件"}」の修正後の投稿報告が届きました。`,
+            },
+          });
+        } catch (e) {
+          console.error("Failed to auto-update status:", e);
+        }
+      }
+      
       setShowPostSubmit(false);
       setPostUrl("");
       setPostCaption("");
       setSelectedImages([]);
       setImagePreviews([]);
       toast.success("投稿報告を送信しました");
+      fetchThread();
     } catch {
       toast.error("送信に失敗しました");
     } finally {
@@ -284,7 +303,31 @@ export default function ThreadConversation({ applicationId, userType, senderId, 
   const canSubmitPost = userType === "influencer" && (app.status === "in_progress" || app.status === "revision_requested");
   const canRequestRevision = userType === "company" && app.status === "post_submitted";
   const canAdvance = (userType === "company" || userType === "admin") && nextLabel && !isCompleted;
+  const canConfirmPayment = userType === "influencer" && app.status === "payment_pending";
   const filteredMessages = filterMessages(messages);
+
+  const handleConfirmPayment = async () => {
+    setUpdatingStatus(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("send-status-notification", {
+        body: {
+          applicationId: app.id,
+          newStatus: "completed",
+          message: "インフルエンサーが振込を確認しました。案件が完了しました。",
+          notificationTitle: "振込確認・案件完了",
+          notificationMessage: `「${app.campaigns?.title || "案件"}」のインフルエンサーが振込確認を行い、案件が完了しました。`,
+        },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      toast.success("振込確認が完了しました！");
+      fetchThread();
+    } catch {
+      toast.error("更新に失敗しました");
+    } finally {
+      setUpdatingStatus(false);
+    }
+  };
 
   const renderImagePreviews = (previews: string[], onRemove: (i: number) => void) => (
     <div className="flex flex-wrap gap-2">
@@ -391,6 +434,15 @@ export default function ThreadConversation({ applicationId, userType, senderId, 
           </span>
           <Button size="sm" className="bg-blue-600 hover:bg-blue-700 text-white" onClick={() => setShowPostSubmit(true)}>
             <FileText className="w-3 h-3 mr-1" />{app.status === "revision_requested" ? "再投稿報告" : "投稿報告"}
+          </Button>
+        </div>
+      )}
+
+      {canConfirmPayment && (
+        <div className="bg-green-50 border-b px-4 py-2 flex items-center justify-between shrink-0">
+          <span className="text-sm text-green-700">💰 振込が確認できましたら、下のボタンを押してください</span>
+          <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white" onClick={handleConfirmPayment} disabled={updatingStatus}>
+            <CheckCircle className="w-3 h-3 mr-1" />振込確認済み
           </Button>
         </div>
       )}
