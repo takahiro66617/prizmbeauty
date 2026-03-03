@@ -1,0 +1,2 @@
+ALTER TABLE public.campaigns DROP CONSTRAINT campaigns_status_check;
+ALTER TABLE public.campaigns ADD CONSTRAINT campaigns_status_check CHECK (status = ANY (ARRAY['draft'::text, 'pending_approval'::text, 'recruiting'::text, 'in_progress'::text, 'completed'::text, 'cancelled'::text]));
