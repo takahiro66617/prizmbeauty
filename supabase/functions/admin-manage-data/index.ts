@@ -23,7 +23,12 @@ Deno.serve(async (req) => {
       case "update_campaign": {
         const { id, updates } = body;
         if (!id) return jsonError("id is required");
-        const { data, error } = await supabase.from("campaigns").update(updates).eq("id", id).select().single();
+        // Convert empty strings to null for timestamp/numeric fields
+        const cleaned = { ...updates };
+        for (const key of ["deadline", "payment_date"]) {
+          if (cleaned[key] === "") cleaned[key] = null;
+        }
+        const { data, error } = await supabase.from("campaigns").update(cleaned).eq("id", id).select().single();
         if (error) return jsonError(error.message);
         return jsonOk(data);
       }
