@@ -1,6 +1,7 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { LayoutDashboard, Search, MessageCircle, Heart, Bell, Settings, LogOut, ClipboardList, PenTool, User, Wallet } from "lucide-react";
 import { useEffect, useState } from "react";
+import { useExternalApplications } from "@/hooks/useExternalApplications";
 
 export default function InfluencerSidebar() {
   const location = useLocation();
@@ -17,10 +18,14 @@ export default function InfluencerSidebar() {
     navigate("/auth/login");
   };
 
+  const userId = user?.id || "";
+  const { data: applications = [] } = useExternalApplications({ influencerId: userId });
+  const approvedCount = applications.filter(a => a.status === "approved").length;
+
   const menuItems = [
-    { icon: LayoutDashboard, label: "ダッシュボード", href: "/mypage" },
+    { icon: LayoutDashboard, label: "ダッシュボード", href: "/mypage", badge: approvedCount > 0 ? `${approvedCount}` : undefined, badgeColor: "bg-green-500" },
     { icon: Search, label: "案件を探す", href: "/mypage/campaigns" },
-    { icon: ClipboardList, label: "応募履歴", href: "/mypage/applications" },
+    { icon: ClipboardList, label: "応募履歴", href: "/mypage/applications", badge: approvedCount > 0 ? "新着" : undefined, badgeColor: "bg-green-500" },
     { icon: PenTool, label: "投稿管理", href: "/mypage/posts" },
     { icon: MessageCircle, label: "案件進行管理", href: "/mypage/messages" },
     { icon: Wallet, label: "報酬管理", href: "/mypage/rewards" },
@@ -61,7 +66,12 @@ export default function InfluencerSidebar() {
                   ${isActive ? "bg-pink-50 text-pink-500 font-bold" : "text-gray-500 hover:bg-gray-50 hover:text-gray-900"}`}>
                   <item.icon className={`w-5 h-5 ${isActive ? "text-pink-500" : "text-gray-400 group-hover:text-gray-600"}`} />
                   <span>{item.label}</span>
-                  {isActive && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-pink-500"></div>}
+                  {(item as any).badge && (
+                    <span className={`ml-auto text-[10px] text-white px-1.5 py-0.5 rounded-full font-bold ${(item as any).badgeColor || "bg-pink-500"} animate-pulse`}>
+                      {(item as any).badge}
+                    </span>
+                  )}
+                  {isActive && !(item as any).badge && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-pink-500"></div>}
                 </div>
               </Link>
             );

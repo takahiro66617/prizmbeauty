@@ -17,7 +17,8 @@ import { cn } from "@/lib/utils";
 const TABS = [
   { id: "all", label: "すべて" },
   { id: "reviewing", label: "選考中" },
-  { id: "approved", label: "採用済み" },
+  { id: "approved", label: "採用済み", highlight: true },
+  { id: "in_progress", label: "進行中" },
   { id: "rejected", label: "不採用" },
   { id: "completed", label: "完了" },
 ];
@@ -55,10 +56,22 @@ export default function MyPageApplications() {
     setBudgetMax("");
   };
 
+  const tabCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    TABS.forEach(t => {
+      if (t.id === "all") counts[t.id] = applications.length;
+      else if (t.id === "reviewing") counts[t.id] = applications.filter(a => ["applied", "reviewing"].includes(a.status)).length;
+      else if (t.id === "in_progress") counts[t.id] = applications.filter(a => ["in_progress", "post_submitted", "revision_requested", "post_confirmed", "payment_pending"].includes(a.status)).length;
+      else counts[t.id] = applications.filter(a => a.status === t.id).length;
+    });
+    return counts;
+  }, [applications]);
+
   const filtered = useMemo(() => {
     return applications.filter(app => {
       if (activeTab === "reviewing" && !["applied", "reviewing"].includes(app.status)) return false;
-      else if (activeTab !== "all" && activeTab !== "reviewing" && app.status !== activeTab) return false;
+      else if (activeTab === "in_progress" && !["in_progress", "post_submitted", "revision_requested", "post_confirmed", "payment_pending"].includes(app.status)) return false;
+      else if (activeTab !== "all" && activeTab !== "reviewing" && activeTab !== "in_progress" && app.status !== activeTab) return false;
       if (searchQuery) {
         const q = searchQuery.toLowerCase();
         if (!(app.campaigns?.title || "").toLowerCase().includes(q) && !(app.campaigns?.companies?.name || "").toLowerCase().includes(q)) return false;
@@ -179,9 +192,20 @@ export default function MyPageApplications() {
         <nav className="flex space-x-8 px-1 min-w-max">
           {TABS.map(tab => (
             <button key={tab.id} onClick={() => setActiveTab(tab.id)}
-              className={`py-4 px-1 border-b-2 text-sm font-medium transition-colors whitespace-nowrap ${activeTab === tab.id ? "border-pink-500 text-pink-500" : "border-transparent text-gray-500 hover:text-gray-700"}`}>
+              className={`py-4 px-1 border-b-2 text-sm font-medium transition-colors whitespace-nowrap relative ${activeTab === tab.id ? "border-pink-500 text-pink-500" : "border-transparent text-gray-500 hover:text-gray-700"}`}>
               {tab.label}
-              {tab.id === "all" && <span className="ml-2 bg-gray-100 text-gray-600 py-0.5 px-2 rounded-full text-xs">{applications.length}</span>}
+              {tabCounts[tab.id] > 0 && (
+                <span className={`ml-2 py-0.5 px-2 rounded-full text-xs ${
+                  (tab as any).highlight && tabCounts[tab.id] > 0
+                    ? "bg-green-100 text-green-700 font-bold"
+                    : "bg-gray-100 text-gray-600"
+                }`}>
+                  {tabCounts[tab.id]}
+                </span>
+              )}
+              {(tab as any).highlight && tabCounts[tab.id] > 0 && activeTab !== tab.id && (
+                <span className="absolute -top-0.5 -right-1 w-2.5 h-2.5 bg-green-500 rounded-full animate-pulse" />
+              )}
             </button>
           ))}
         </nav>
