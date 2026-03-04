@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 
 const SUPABASE_PROJECT_ID = import.meta.env.VITE_SUPABASE_PROJECT_ID;
-const LINE_FRIEND_ADD_URL = "https://line.me/R/ti/p/@616jfxwh";
 
 export default function LineCallback() {
   const [searchParams] = useSearchParams();
@@ -44,30 +43,9 @@ export default function LineCallback() {
         const data = await res.json();
 
         if (!res.ok) {
-          const message = String(data?.error || "認証に失敗しました");
-          const isFriendRequirementError =
-            message.includes("フレンド") ||
-            message.includes("友だち") ||
-            message.toLowerCase().includes("friend");
-
-          if (isFriendRequirementError) {
-            sessionStorage.setItem("lineFriendStatus", "not_added");
-            window.location.replace(LINE_FRIEND_ADD_URL);
-            return;
-          }
-
-          setError(message);
+          setError(data.error || "認証に失敗しました");
           return;
         }
-
-        // 友だち追加は必須: 未追加時はLINE友だち追加画面へ遷移
-        if (data.friendFlag !== true) {
-          sessionStorage.setItem("lineFriendStatus", "not_added");
-          window.location.replace(LINE_FRIEND_ADD_URL);
-          return;
-        }
-
-        sessionStorage.setItem("lineFriendStatus", "added");
 
         // Use line-auth response directly (it queries with service role key, bypassing RLS)
         if (!data.isNewUser && data.user) {
@@ -88,7 +66,13 @@ export default function LineCallback() {
           return;
         }
 
-        // Proceed to profile registration
+        // New user - check friendship status
+        if (!data.friendFlag) {
+          setError("LINE公式アカウントの友だち追加が確認できませんでした。\nログイン画面に戻り、再度LINEログインを行う際に「友だち追加」にチェックを入れてください。");
+          return;
+        }
+
+        // Friend added - proceed to profile registration
         const lineProfile = data.lineProfile || {
           userId: data.user?.line_user_id,
           displayName: data.user?.name,

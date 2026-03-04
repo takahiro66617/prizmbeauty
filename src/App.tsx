@@ -54,7 +54,7 @@ import MyPageCampaignDetail from "./pages/mypage/MyPageCampaignDetail";
 import MyPageRewards from "./pages/mypage/MyPageRewards";
 import DebugReportsPage from "./pages/DebugReportsPage";
 
-const queryClient = new QueryClient(); // v2
+const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
