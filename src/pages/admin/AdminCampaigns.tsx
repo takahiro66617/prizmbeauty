@@ -5,8 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Search, X, Save, AlertTriangle, Image as ImageIcon } from "lucide-react";
 import { CampaignImageGallery } from "@/components/campaign/CampaignImageGallery";
 import HelpGuideModal from "@/components/admin/HelpGuideModal";
-import { useExternalCampaigns } from "@/hooks/useExternalCampaigns";
-import { useAdminUpdateCampaign, useAdminDeleteCampaign, useAdminApplications } from "@/hooks/useAdminData";
+import { useAdminCampaigns, useAdminUpdateCampaign, useAdminDeleteCampaign, useAdminApplications } from "@/hooks/useAdminData";
 import { CATEGORIES, PLATFORMS, CAMPAIGN_STATUSES } from "@/lib/constants";
 import { toast } from "sonner";
 
@@ -21,7 +20,7 @@ export default function AdminCampaignsPage() {
   const [budgetMax, setBudgetMax] = useState("");
   const [selectedCampaign, setSelectedCampaign] = useState<any>(null);
   const [editForm, setEditForm] = useState<any>({});
-  const { data: campaigns = [], isLoading } = useExternalCampaigns();
+  const { data: campaigns = [], isLoading } = useAdminCampaigns();
   const { data: applications = [] } = useAdminApplications();
   const updateCampaign = useAdminUpdateCampaign();
   const deleteCampaign = useAdminDeleteCampaign();

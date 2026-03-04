@@ -20,6 +20,23 @@ Deno.serve(async (req) => {
     const { action } = body;
 
     switch (action) {
+      case "get_campaigns": {
+        const { companyId, statuses } = body;
+        let query = supabase
+          .from("campaigns")
+          .select("*, companies(id, name, logo_url)")
+          .order("created_at", { ascending: false });
+
+        if (companyId) query = query.eq("company_id", companyId);
+        if (statuses && Array.isArray(statuses) && statuses.length > 0) {
+          query = query.in("status", statuses);
+        }
+
+        const { data, error } = await query;
+        if (error) return jsonError(error.message);
+        return jsonOk(data);
+      }
+
       case "update_campaign": {
         const { id, updates } = body;
         if (!id) return jsonError("id is required");
