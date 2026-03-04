@@ -161,7 +161,13 @@ export default function AdminCampaignsPage() {
                 <tr key={campaign.id} className={`hover:bg-gray-50 transition-colors ${overdue ? "bg-red-50" : ""}`}>
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-3">
-                      {campaign.image_url && <img src={campaign.image_url} alt="" className="w-10 h-10 rounded-lg object-cover" />}
+                      {campaign.image_url ? (
+                        <img src={campaign.image_url} alt="" className="w-10 h-10 rounded-lg object-cover shrink-0" />
+                      ) : (
+                        <div className="w-10 h-10 rounded-lg bg-gray-200 flex items-center justify-center shrink-0">
+                          <ImageIcon className="w-4 h-4 text-gray-400" />
+                        </div>
+                      )}
                       <div>
                         <span className="font-medium text-gray-900">{campaign.title}</span>
                         {overdue && <div className="flex items-center gap-1 text-xs text-red-600 mt-0.5"><AlertTriangle className="w-3 h-3" />締切超過</div>}

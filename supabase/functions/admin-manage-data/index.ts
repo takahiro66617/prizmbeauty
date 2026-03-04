@@ -136,6 +136,55 @@ Deno.serve(async (req) => {
         return jsonOk({ success: true });
       }
 
+      case "get_payments": {
+        const { companyId } = body;
+        let query = supabase
+          .from("payments")
+          .select("*, campaigns(id, title, image_url, payment_date, budget_min, budget_max)")
+          .order("created_at", { ascending: false });
+        if (companyId) query = query.eq("company_id", companyId);
+        const { data, error } = await query;
+        if (error) return jsonError(error.message);
+
+        // Enrich with influencer profiles and bank accounts
+        const influencerIds = [...new Set((data || []).map((p: any) => p.influencer_user_id))];
+        let influencerMap: Record<string, any> = {};
+        let bankMap: Record<string, any> = {};
+        if (influencerIds.length > 0) {
+          const { data: profiles } = await supabase
+            .from("influencer_profiles")
+            .select("id, name, username, image_url, user_id")
+            .or(influencerIds.map(id => `user_id.eq.${id},id.eq.${id}`).join(","));
+          if (profiles) {
+            profiles.forEach((p: any) => {
+              if (p.user_id) influencerMap[p.user_id] = p;
+              influencerMap[p.id] = p;
+            });
+          }
+          // Fetch bank accounts for these influencers
+          const bankUserIds = [...new Set([
+            ...influencerIds,
+            ...(profiles || []).filter((p: any) => p.id).map((p: any) => p.id),
+          ])];
+          const { data: banks } = await supabase
+            .from("bank_accounts")
+            .select("*")
+            .in("user_id", bankUserIds);
+          if (banks) {
+            banks.forEach((b: any) => {
+              bankMap[b.user_id] = b;
+            });
+          }
+        }
+
+        const enriched = (data || []).map((p: any) => {
+          const profile = influencerMap[p.influencer_user_id] || null;
+          const bankAccount = bankMap[p.influencer_user_id] || (profile ? bankMap[profile.id] : null) || null;
+          return { ...p, influencer_profiles: profile, bank_account: bankAccount };
+        });
+        return jsonOk(enriched);
+      }
+
       default:
         return jsonError("Unknown action: " + action, 400);
     }

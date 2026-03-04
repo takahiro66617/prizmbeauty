@@ -138,7 +138,18 @@ export default function AdminApplications() {
                     </div>
                   </div>
                 </td>
-                <td className="px-6 py-4 text-gray-700">{app.campaigns?.title || "-"}</td>
+                <td className="px-6 py-4">
+                  <div className="flex items-center gap-2">
+                    {app.campaigns?.image_url ? (
+                      <img src={app.campaigns.image_url} alt="" className="w-8 h-8 rounded-lg object-cover shrink-0" />
+                    ) : (
+                      <div className="w-8 h-8 rounded-lg bg-gray-200 flex items-center justify-center shrink-0">
+                        <span className="text-xs text-gray-400">📋</span>
+                      </div>
+                    )}
+                    <span className="text-gray-700">{app.campaigns?.title || "-"}</span>
+                  </div>
+                </td>
                 <td className="px-6 py-4 text-gray-600">{app.campaigns?.companies?.name || "-"}</td>
                 <td className="px-6 py-4"><Badge variant="outline" className="text-xs">{app.campaigns?.category || "-"}</Badge></td>
                 <td className="px-6 py-4 text-gray-500">{new Date(app.applied_at).toLocaleDateString("ja-JP")}</td>

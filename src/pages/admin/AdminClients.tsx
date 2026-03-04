@@ -1,8 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Plus, Search, Building2, User, Calendar, X, Save, Trash2, KeyRound } from "lucide-react";
+import { Plus, Search, Building2, User, Calendar, X, Save, Trash2, KeyRound, Wallet, AlertTriangle } from "lucide-react";
 import HelpGuideModal from "@/components/admin/HelpGuideModal";
 import { useExternalCompanies } from "@/hooks/useExternalCompanies";
 import { useExternalCampaigns } from "@/hooks/useExternalCampaigns";
@@ -25,6 +25,8 @@ export default function AdminClientsPage() {
   const [authEmail, setAuthEmail] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [authLoading, setAuthLoading] = useState(false);
+  const [companyPayments, setCompanyPayments] = useState<any[]>([]);
+  const [paymentsLoading, setPaymentsLoading] = useState(false);
 
   const { data: companies = [], isLoading, refetch } = useExternalCompanies();
   const { data: campaigns = [] } = useExternalCampaigns();
@@ -41,24 +43,42 @@ export default function AdminClientsPage() {
     return matchesSearch && matchesStatus && matchesIndustry && matchesDateFrom && matchesDateTo;
   });
 
+  const fetchCompanyPayments = async (companyId: string) => {
+    setPaymentsLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("admin-manage-data", {
+        body: { action: "get_payments", companyId },
+      });
+      if (error) throw error;
+      setCompanyPayments(data?.data || []);
+    } catch {
+      setCompanyPayments([]);
+    }
+    setPaymentsLoading(false);
+  };
+
   const openDetail = async (company: any) => {
     setSelectedCompany(company);
     setNewPassword("");
     setAuthEmail("");
+    setCompanyPayments([]);
     setEditForm({
       name: company.name, contact_name: company.contact_name || "", contact_email: company.contact_email || "",
       phone: company.phone || "", industry: company.industry || "", website: company.website || "",
       description: company.description || "", status: company.status,
     });
-    // Fetch auth email for this company's user
+    // Fetch auth email and payments in parallel
+    const promises: Promise<any>[] = [fetchCompanyPayments(company.id)];
     if (company.user_id) {
-      try {
-        const { data } = await supabase.functions.invoke("admin-get-user-email", {
+      promises.push(
+        supabase.functions.invoke("admin-get-user-email", {
           body: { userId: company.user_id },
-        });
-        if (data?.email) setAuthEmail(data.email);
-      } catch { /* silent */ }
+        }).then(({ data }) => {
+          if (data?.email) setAuthEmail(data.email);
+        }).catch(() => {})
+      );
     }
+    await Promise.all(promises);
   };
 
   const handleSave = () => {
@@ -90,7 +110,6 @@ export default function AdminClientsPage() {
       if (res.error) throw res.error;
       const data = res.data as any;
       if (data?.error) { toast.error(data.error); return; }
-      // Update company details via admin edge function (bypasses RLS)
       if (data?.user_id) {
         const { data: comp } = await supabase.from("companies").select("id").eq("user_id", data.user_id).maybeSingle();
         if (comp && (regForm.industry || regForm.phone || regForm.website || regForm.description)) {
@@ -118,6 +137,16 @@ export default function AdminClientsPage() {
   };
 
   const clearFilters = () => { setSearch(""); setStatusFilter("all"); setIndustryFilter("all"); setDateFrom(""); setDateTo(""); };
+
+  const isDeadlineNear = (paymentDate: string | null) => {
+    if (!paymentDate) return false;
+    const diff = new Date(paymentDate).getTime() - Date.now();
+    return diff > 0 && diff < 3 * 24 * 60 * 60 * 1000;
+  };
+  const isOverdue = (paymentDate: string | null) => {
+    if (!paymentDate) return false;
+    return new Date(paymentDate).getTime() < Date.now();
+  };
 
   return (
     <div className="font-sans space-y-6">
@@ -238,7 +267,7 @@ export default function AdminClientsPage() {
       {/* Detail/Edit Modal */}
       {selectedCompany && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" onClick={() => setSelectedCompany(null)}>
-          <div className="bg-white rounded-2xl w-full max-w-2xl shadow-xl" onClick={e => e.stopPropagation()}>
+          <div className="bg-white rounded-2xl w-full max-w-3xl shadow-xl" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between p-6 border-b">
               <h3 className="font-bold text-lg">企業詳細・編集</h3>
               <button onClick={() => setSelectedCompany(null)}><X className="w-5 h-5 text-gray-400" /></button>
@@ -324,13 +353,26 @@ export default function AdminClientsPage() {
                 </div>
               )}
 
+              {/* Company Campaigns with thumbnails */}
               <div>
                 <h4 className="font-bold text-gray-800 mb-2">この企業の案件</h4>
                 {campaigns.filter(c => c.company_id === selectedCompany.id).length > 0 ? (
                   <div className="space-y-2">
                     {campaigns.filter(c => c.company_id === selectedCompany.id).map(c => (
                       <div key={c.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                        <div><p className="font-medium text-sm">{c.title}</p><p className="text-xs text-gray-500">{c.category} | {c.deadline ? new Date(c.deadline).toLocaleDateString("ja-JP") : "締切未設定"}</p></div>
+                        <div className="flex items-center gap-3">
+                          {c.image_url ? (
+                            <img src={c.image_url} alt="" className="w-10 h-10 rounded-lg object-cover shrink-0" />
+                          ) : (
+                            <div className="w-10 h-10 rounded-lg bg-gray-200 flex items-center justify-center shrink-0">
+                              <Building2 className="w-4 h-4 text-gray-400" />
+                            </div>
+                          )}
+                          <div>
+                            <p className="font-medium text-sm">{c.title}</p>
+                            <p className="text-xs text-gray-500">{c.category} | {c.deadline ? new Date(c.deadline).toLocaleDateString("ja-JP") : "締切未設定"}</p>
+                          </div>
+                        </div>
                         <Badge className={CAMPAIGN_STATUSES.find(cs => cs.id === c.status)?.color || "bg-gray-100 text-gray-700"}>{CAMPAIGN_STATUSES.find(cs => cs.id === c.status)?.label || c.status}</Badge>
                       </div>
                     ))}
@@ -338,6 +380,7 @@ export default function AdminClientsPage() {
                 ) : <p className="text-sm text-gray-400">案件なし</p>}
               </div>
 
+              {/* Assigned Influencers */}
               <div>
                 <h4 className="font-bold text-gray-800 mb-2">アサイン済みインフルエンサー</h4>
                 {applications.filter(a => a.company_id === selectedCompany.id && a.status === "approved").length > 0 ? (
@@ -350,6 +393,95 @@ export default function AdminClientsPage() {
                     ))}
                   </div>
                 ) : <p className="text-sm text-gray-400">アサイン済みのインフルエンサーなし</p>}
+              </div>
+
+              {/* Payments Section */}
+              <div>
+                <h4 className="font-bold text-gray-800 mb-2 flex items-center gap-2">
+                  <Wallet className="w-4 h-4" />振込管理
+                </h4>
+                {paymentsLoading ? (
+                  <p className="text-sm text-gray-400">読み込み中...</p>
+                ) : companyPayments.length > 0 ? (
+                  <div className="space-y-3">
+                    {/* Summary */}
+                    <div className="grid grid-cols-3 gap-3">
+                      <div className="bg-blue-50 rounded-lg p-3 text-center">
+                        <p className="text-xs text-gray-500">合計</p>
+                        <p className="font-bold text-blue-600">¥{companyPayments.reduce((s, p) => s + p.amount, 0).toLocaleString()}</p>
+                      </div>
+                      <div className="bg-green-50 rounded-lg p-3 text-center">
+                        <p className="text-xs text-gray-500">振込済</p>
+                        <p className="font-bold text-green-600">¥{companyPayments.filter(p => p.status === "paid").reduce((s, p) => s + p.amount, 0).toLocaleString()}</p>
+                      </div>
+                      <div className="bg-orange-50 rounded-lg p-3 text-center">
+                        <p className="text-xs text-gray-500">振込待ち</p>
+                        <p className="font-bold text-orange-600">¥{companyPayments.filter(p => p.status === "pending").reduce((s, p) => s + p.amount, 0).toLocaleString()}</p>
+                      </div>
+                    </div>
+
+                    {/* Payment List */}
+                    {companyPayments.map(p => {
+                      const deadlineNear = p.status === "pending" && isDeadlineNear(p.campaigns?.payment_date ?? null);
+                      const overdue = p.status === "pending" && isOverdue(p.campaigns?.payment_date ?? null);
+                      return (
+                        <div key={p.id} className={`p-4 rounded-lg border ${
+                          overdue ? "bg-red-50 border-red-200" : deadlineNear ? "bg-yellow-50 border-yellow-200" : "bg-gray-50 border-gray-200"
+                        }`}>
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="flex items-center gap-3 min-w-0 flex-1">
+                              {p.campaigns?.image_url ? (
+                                <img src={p.campaigns.image_url} alt="" className="w-10 h-10 rounded-lg object-cover shrink-0" />
+                              ) : (
+                                <div className="w-10 h-10 rounded-lg bg-gray-200 flex items-center justify-center shrink-0">
+                                  <Wallet className="w-4 h-4 text-gray-400" />
+                                </div>
+                              )}
+                              <div className="min-w-0">
+                                <div className="flex items-center gap-2">
+                                  <p className="font-medium text-sm text-gray-900 truncate">{p.campaigns?.title || "不明な案件"}</p>
+                                  {overdue && <AlertTriangle className="w-4 h-4 text-red-500 shrink-0" />}
+                                  {deadlineNear && !overdue && <AlertTriangle className="w-4 h-4 text-yellow-500 shrink-0" />}
+                                </div>
+                                {/* Influencer info */}
+                                <div className="flex items-center gap-2 mt-1">
+                                  {p.influencer_profiles?.image_url && (
+                                    <img src={p.influencer_profiles.image_url} alt="" className="w-5 h-5 rounded-full" />
+                                  )}
+                                  <p className="text-xs text-gray-600">{p.influencer_profiles?.name || "不明"} (@{p.influencer_profiles?.username || "-"})</p>
+                                </div>
+                                {p.campaigns?.payment_date && (
+                                  <p className={`text-xs mt-1 ${overdue ? "text-red-600 font-medium" : deadlineNear ? "text-yellow-600 font-medium" : "text-gray-400"}`}>
+                                    振込期日: {new Date(p.campaigns.payment_date).toLocaleDateString("ja-JP")}
+                                    {overdue && " （期限超過）"}
+                                    {deadlineNear && !overdue && " （間もなく期限）"}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                            <div className="flex flex-col items-end gap-1 shrink-0">
+                              <span className={`text-xs px-2 py-0.5 rounded-full ${p.status === "paid" ? "bg-green-100 text-green-700" : "bg-orange-100 text-orange-700"}`}>
+                                {p.status === "paid" ? "振込済" : "振込待ち"}
+                              </span>
+                              <span className="font-bold text-gray-900">¥{p.amount.toLocaleString()}</span>
+                            </div>
+                          </div>
+                          {/* Bank Account Info */}
+                          {p.bank_account ? (
+                            <div className="mt-3 p-2 bg-white rounded-md border border-gray-100 text-xs text-gray-600">
+                              <span className="font-medium text-gray-700">振込先: </span>
+                              {p.bank_account.bank_name} {p.bank_account.branch_name} ({p.bank_account.account_type === "ordinary" ? "普通" : p.bank_account.account_type === "current" ? "当座" : p.bank_account.account_type}) {p.bank_account.account_number} {p.bank_account.account_holder}
+                            </div>
+                          ) : (
+                            <div className="mt-3 p-2 bg-red-50 rounded-md border border-red-100 text-xs text-red-600">
+                              ⚠ 振込先口座が未登録です
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : <p className="text-sm text-gray-400">振込データなし</p>}
               </div>
             </div>
             <div className="p-6 border-t flex justify-between">
