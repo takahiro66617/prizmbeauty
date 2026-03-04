@@ -46,9 +46,19 @@ export default function MyPageDashboard() {
     { label: "未読メッセージ", value: `${stats.messages}件`, icon: MessageCircle, color: "text-pink-500", link: "/mypage/messages" },
   ];
 
+  const approvedApps = applications.filter(a => a.status === "approved");
+  const inProgressApps = applications.filter(a => ["in_progress", "post_submitted", "revision_requested"].includes(a.status));
+  const paymentPendingApps = applications.filter(a => a.status === "payment_pending");
+
   const todos: any[] = [];
-  applications.filter(a => a.status === "approved").forEach(a => {
-    if (a.campaigns) todos.push({ id: `todo-${a.id}`, text: `「${a.campaigns.title}」の投稿準備をしましょう`, link: "/mypage/posts", type: "urgent" });
+  approvedApps.forEach(a => {
+    if (a.campaigns) todos.push({ id: `todo-approved-${a.id}`, text: `🎉「${a.campaigns.title}」に採用されました！案件を開始しましょう`, link: "/mypage/applications", type: "approved" });
+  });
+  inProgressApps.forEach(a => {
+    if (a.campaigns) todos.push({ id: `todo-progress-${a.id}`, text: `「${a.campaigns.title}」の投稿準備をしましょう`, link: "/mypage/posts", type: "urgent" });
+  });
+  paymentPendingApps.forEach(a => {
+    if (a.campaigns) todos.push({ id: `todo-payment-${a.id}`, text: `「${a.campaigns.title}」の振込確認をしてください`, link: "/mypage/applications", type: "urgent" });
   });
   if (applications.length === 0) {
     todos.push({ id: "todo-1", text: "プロフィールを充実させて、スカウトを受け取りやすくしましょう！", link: "/mypage/settings", type: "info" });
@@ -57,6 +67,27 @@ export default function MyPageDashboard() {
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
+      {approvedApps.length > 0 && (
+        <Card className="border-green-200 bg-gradient-to-r from-green-50 to-emerald-50 shadow-md animate-in fade-in slide-in-from-top-2 duration-500">
+          <CardContent className="p-5 flex items-start gap-4">
+            <div className="p-3 bg-green-100 rounded-full shrink-0">
+              <CheckCircle className="w-7 h-7 text-green-600" />
+            </div>
+            <div className="flex-1">
+              <h3 className="font-bold text-green-800 text-lg mb-1">🎉 案件が決まりました！</h3>
+              <p className="text-sm text-green-700 mb-3">
+                {approvedApps.length}件の案件に採用されました。応募履歴から詳細を確認して、案件を進めましょう。
+              </p>
+              <Link to="/mypage/applications">
+                <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white shadow-sm">
+                  採用案件を確認する <ArrowRight className="w-4 h-4 ml-1" />
+                </Button>
+              </Link>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {influencerStatus === "pending" && (
         <Card className="border-yellow-200 bg-yellow-50 shadow-sm">
           <CardContent className="p-5 flex items-start gap-4">
@@ -100,10 +131,16 @@ export default function MyPageDashboard() {
               {todos.length > 0 ? (
                 <div className="space-y-3">
                   {todos.map(todo => (
-                    <div key={todo.id} className={`flex items-start gap-3 p-3 rounded-lg ${todo.type === "urgent" ? "bg-red-50 border border-red-100" : "bg-white border border-gray-100"}`}>
-                      <div className={`mt-0.5 ${todo.type === "urgent" ? "text-red-500" : "text-purple-500"}`}>
-                        {todo.type === "urgent" ? <Clock className="w-5 h-5" /> : <Circle className="w-5 h-5" />}
-                      </div>
+                    <div key={todo.id} className={`flex items-start gap-3 p-3 rounded-lg ${
+                      todo.type === "approved" ? "bg-green-50 border-2 border-green-200" :
+                      todo.type === "urgent" ? "bg-red-50 border border-red-100" : "bg-white border border-gray-100"
+                    }`}>
+                       <div className={`mt-0.5 ${
+                         todo.type === "approved" ? "text-green-500" :
+                         todo.type === "urgent" ? "text-red-500" : "text-purple-500"
+                       }`}>
+                         {todo.type === "approved" ? <CheckCircle className="w-5 h-5" /> : todo.type === "urgent" ? <Clock className="w-5 h-5" /> : <Circle className="w-5 h-5" />}
+                       </div>
                       <div className="flex-1">
                         <p className="text-sm font-medium text-gray-800">{todo.text}</p>
                         {todo.link && (
