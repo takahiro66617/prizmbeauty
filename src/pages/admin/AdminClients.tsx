@@ -7,7 +7,7 @@ import HelpGuideModal from "@/components/admin/HelpGuideModal";
 import { useExternalCompanies } from "@/hooks/useExternalCompanies";
 import { useExternalCampaigns } from "@/hooks/useExternalCampaigns";
 import { useAdminApplications, useAdminUpdateCompany, useAdminDeleteCompany } from "@/hooks/useAdminData";
-import { COMPANY_STATUSES, INDUSTRIES } from "@/lib/constants";
+import { COMPANY_STATUSES, INDUSTRIES, CAMPAIGN_STATUSES } from "@/lib/constants";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -90,14 +90,20 @@ export default function AdminClientsPage() {
       if (res.error) throw res.error;
       const data = res.data as any;
       if (data?.error) { toast.error(data.error); return; }
-      // Update company details if provided
+      // Update company details via admin edge function (bypasses RLS)
       if (data?.user_id) {
-        const { data: comp } = await supabase.from("companies").select("id").eq("user_id", data.user_id).single();
-        if (comp) {
-          await supabase.from("companies").update({
-            industry: regForm.industry || null, phone: regForm.phone || null,
-            website: regForm.website || null, description: regForm.description || null,
-          }).eq("id", comp.id);
+        const { data: comp } = await supabase.from("companies").select("id").eq("user_id", data.user_id).maybeSingle();
+        if (comp && (regForm.industry || regForm.phone || regForm.website || regForm.description)) {
+          await supabase.functions.invoke("admin-manage-data", {
+            body: {
+              action: "update_company",
+              id: comp.id,
+              updates: {
+                industry: regForm.industry || null, phone: regForm.phone || null,
+                website: regForm.website || null, description: regForm.description || null,
+              },
+            },
+          });
         }
       }
       toast.success("企業アカウントを作成しました");
@@ -251,7 +257,20 @@ export default function AdminClientsPage() {
                 <div><label className="block text-sm font-medium text-gray-700 mb-1">メールアドレス</label><Input value={editForm.contact_email} onChange={e => setEditForm({ ...editForm, contact_email: e.target.value })} /></div>
               </div>
               <div className="grid grid-cols-2 gap-4">
-                <div><label className="block text-sm font-medium text-gray-700 mb-1">電話番号</label><Input value={editForm.phone} onChange={e => setEditForm({ ...editForm, phone: e.target.value })} /></div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">電話番号</label>
+                  <Input 
+                    value={editForm.phone} 
+                    onChange={e => {
+                      const v = e.target.value.replace(/[^\d\-+()]/g, "");
+                      setEditForm({ ...editForm, phone: v });
+                    }}
+                    placeholder="03-1234-5678"
+                  />
+                  {editForm.phone && !/^[\d\-+()]{10,15}$/.test(editForm.phone.replace(/[\-()]/g, "")) && (
+                    <p className="text-xs text-red-500 mt-1">正しい電話番号を入力してください</p>
+                  )}
+                </div>
                 <div><label className="block text-sm font-medium text-gray-700 mb-1">Webサイト</label><Input value={editForm.website} onChange={e => setEditForm({ ...editForm, website: e.target.value })} /></div>
               </div>
               <div><label className="block text-sm font-medium text-gray-700 mb-1">概要</label>
@@ -312,7 +331,7 @@ export default function AdminClientsPage() {
                     {campaigns.filter(c => c.company_id === selectedCompany.id).map(c => (
                       <div key={c.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                         <div><p className="font-medium text-sm">{c.title}</p><p className="text-xs text-gray-500">{c.category} | {c.deadline ? new Date(c.deadline).toLocaleDateString("ja-JP") : "締切未設定"}</p></div>
-                        <Badge className={c.status === "recruiting" ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-700"}>{c.status === "recruiting" ? "募集中" : c.status}</Badge>
+                        <Badge className={CAMPAIGN_STATUSES.find(cs => cs.id === c.status)?.color || "bg-gray-100 text-gray-700"}>{CAMPAIGN_STATUSES.find(cs => cs.id === c.status)?.label || c.status}</Badge>
                       </div>
                     ))}
                   </div>
@@ -370,8 +389,20 @@ export default function AdminClientsPage() {
                   {INDUSTRIES.map(i => <option key={i} value={i}>{i}</option>)}
                 </select></div>
               <div className="grid grid-cols-2 gap-4">
-                <div><label className="block text-sm font-medium text-gray-700 mb-1">電話番号</label>
-                  <Input value={regForm.phone} onChange={e => setRegForm({ ...regForm, phone: e.target.value })} /></div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">電話番号</label>
+                  <Input 
+                    value={regForm.phone} 
+                    onChange={e => {
+                      const v = e.target.value.replace(/[^\d\-+()]/g, "");
+                      setRegForm({ ...regForm, phone: v });
+                    }}
+                    placeholder="03-1234-5678"
+                  />
+                  {regForm.phone && !/^[\d\-+()]{10,15}$/.test(regForm.phone.replace(/[\-()]/g, "")) && (
+                    <p className="text-xs text-red-500 mt-1">正しい電話番号を入力してください</p>
+                  )}
+                </div>
                 <div><label className="block text-sm font-medium text-gray-700 mb-1">Webサイト</label>
                   <Input value={regForm.website} onChange={e => setRegForm({ ...regForm, website: e.target.value })} /></div>
               </div>
