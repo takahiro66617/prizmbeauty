@@ -346,6 +346,13 @@ export default function AdminInfluencerDetail() {
               <Save className="w-4 h-4 mr-2" />{saving ? "保存中..." : "保存"}
             </Button>
           </div>
+
+          {/* Contact Info */}
+          <div className="bg-gray-50 rounded-xl p-4 border border-gray-200 mt-4">
+            <h4 className="font-bold text-gray-800 mb-2">📩 お問い合わせ先</h4>
+            <p className="text-sm text-gray-700">メール 24時間受付（返信: 2〜3営業日）</p>
+            <a href="mailto:media@pr-izm.com" className="text-sm text-blue-600 hover:underline font-medium">media@pr-izm.com</a>
+          </div>
         </div>
       </div>
     </div>
