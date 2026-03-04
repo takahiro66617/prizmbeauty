@@ -1,15 +1,16 @@
 import { useEffect, useState } from "react";
-import { Outlet, useNavigate, useLocation } from "react-router-dom";
+import { Outlet, useNavigate, useLocation, Link } from "react-router-dom";
 import InfluencerSidebar from "./InfluencerSidebar";
-import { Header } from "./Header";
 import { supabase } from "@/integrations/supabase/client";
-import { Clock } from "lucide-react";
+import { Clock, Menu, X, LayoutDashboard, Search, ClipboardList, PenTool, MessageCircle, Wallet, Heart, Bell, Settings, LogOut } from "lucide-react";
+import logoImg from "@/assets/logo.png";
 
 export default function MyPageLayout() {
   const navigate = useNavigate();
   const location = useLocation();
   const [isAuthorized, setIsAuthorized] = useState(false);
   const [influencerStatus, setInfluencerStatus] = useState<string | null>(null);
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   useEffect(() => {
     const user = sessionStorage.getItem("currentUser");
@@ -19,7 +20,6 @@ export default function MyPageLayout() {
     }
     setIsAuthorized(true);
     const parsed = JSON.parse(user);
-    // Fetch influencer status
     const fetchStatus = async () => {
       const { data } = await supabase.from("influencer_profiles").select("status").eq("id", parsed.id).maybeSingle();
       if (data) setInfluencerStatus(data.status);
@@ -29,14 +29,63 @@ export default function MyPageLayout() {
 
   if (!isAuthorized) return null;
 
-  // Allow only dashboard and settings when pending
   const allowedPaths = ["/mypage", "/mypage/settings"];
   const isRestricted = influencerStatus === "pending" && !allowedPaths.includes(location.pathname);
 
+  const mobileMenuItems = [
+    { icon: LayoutDashboard, label: "ダッシュボード", href: "/mypage" },
+    { icon: Search, label: "案件を探す", href: "/mypage/campaigns" },
+    { icon: ClipboardList, label: "応募履歴", href: "/mypage/applications" },
+    { icon: PenTool, label: "投稿管理", href: "/mypage/posts" },
+    { icon: MessageCircle, label: "案件進行管理", href: "/mypage/messages" },
+    { icon: Wallet, label: "報酬管理", href: "/mypage/rewards" },
+    { icon: Heart, label: "お気に入り", href: "/mypage/favorites" },
+    { icon: Bell, label: "お知らせ", href: "/mypage/notifications" },
+    { icon: Settings, label: "登録情報", href: "/mypage/settings" },
+  ];
+
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col md:flex-row">
-      <div className="md:hidden">
-        <Header />
+    <div className="min-h-screen bg-muted/30 flex flex-col md:flex-row">
+      {/* Mobile Header for MyPage */}
+      <div className="md:hidden sticky top-0 z-50 bg-card/90 backdrop-blur-md border-b border-border">
+        <div className="flex items-center justify-between px-4 h-14">
+          <Link to="/mypage" className="flex items-center gap-1">
+            <img src={logoImg} alt="PRizm" className="h-8" />
+          </Link>
+          <button className="p-2" onClick={() => setMobileOpen(!mobileOpen)}>
+            {mobileOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+          </button>
+        </div>
+        {mobileOpen && (
+          <div className="bg-card border-t border-border px-4 py-3 space-y-1">
+            {mobileMenuItems.map((item) => {
+              const isActive = location.pathname === item.href;
+              return (
+                <Link
+                  key={item.href}
+                  to={item.href}
+                  className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors ${
+                    isActive ? "bg-pink-50 text-pink-500 font-bold" : "text-muted-foreground hover:bg-muted"
+                  }`}
+                  onClick={() => setMobileOpen(false)}
+                >
+                  <item.icon className="w-4 h-4" />
+                  <span>{item.label}</span>
+                </Link>
+              );
+            })}
+            <button
+              onClick={() => {
+                sessionStorage.removeItem("currentUser");
+                navigate("/auth/login");
+              }}
+              className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-destructive hover:bg-destructive/10 w-full mt-2"
+            >
+              <LogOut className="w-4 h-4" />
+              <span>ログアウト</span>
+            </button>
+          </div>
+        )}
       </div>
       <InfluencerSidebar />
       <main className="flex-1 p-4 md:p-8 overflow-y-auto h-screen">
