@@ -31,18 +31,17 @@ export default function ClientPayments() {
   const fetchPayments = async () => {
     setLoading(true);
     try {
-      const res = await supabase.functions.invoke("admin-manage-data", {
-        body: {
-          action: "fetch",
-          table: "payments",
-          filters: { company_id: companyId },
-          select: "*, campaigns(id, title, payment_date)",
-        },
-      });
-      const data = res.data?.data || [];
+      const { data, error } = await supabase
+        .from("payments")
+        .select("*, campaigns(id, title, payment_date)")
+        .eq("company_id", companyId)
+        .order("created_at", { ascending: false });
 
-      // Fetch influencer names for each payment
-      const influencerIds = [...new Set(data.map((p: any) => p.influencer_user_id))];
+      if (error) throw error;
+      const rows = data || [];
+
+      // Fetch influencer names
+      const influencerIds = [...new Set(rows.map((p: any) => p.influencer_user_id))];
       let influencerMap: Record<string, { name: string; username: string }> = {};
       if (influencerIds.length > 0) {
         const { data: profiles } = await supabase
@@ -57,11 +56,10 @@ export default function ClientPayments() {
         }
       }
 
-      const enriched = data.map((p: any) => ({
+      const enriched = rows.map((p: any) => ({
         ...p,
         influencer_profiles: influencerMap[p.influencer_user_id] || null,
       }));
-      enriched.sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
       setPayments(enriched);
     } catch (e) {
       console.error("Failed to fetch payments:", e);
