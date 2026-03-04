@@ -21,7 +21,8 @@ export function Footer() {
             <h4 className="font-bold text-sm mb-4 text-foreground">サービス</h4>
             <ul className="space-y-2 text-sm text-muted-foreground">
               <li><Link to="/campaigns" className="hover:text-primary transition-colors">案件を探す</Link></li>
-              <li><Link to="/auth/login" className="hover:text-primary transition-colors">ログイン / 新規登録</Link></li>
+              <li><Link to="/auth/login" className="hover:text-primary transition-colors">ログイン</Link></li>
+              <li><Link to="/register" className="hover:text-primary transition-colors">新規登録</Link></li>
             </ul>
           </div>
 
@@ -29,8 +30,8 @@ export function Footer() {
           <div>
             <h4 className="font-bold text-sm mb-4 text-foreground">サポート</h4>
             <ul className="space-y-2 text-sm text-muted-foreground">
-              <li><Link to="/faq" className="hover:text-primary transition-colors">よくある質問</Link></li>
-              <li><Link to="/guide" className="hover:text-primary transition-colors">ご利用ガイド</Link></li>
+              <li><Link to="/guide" className="hover:text-primary transition-colors">よくある質問</Link></li>
+              <li><Link to="/guide" className="hover:text-primary transition-colors">お問い合わせ</Link></li>
               <li><Link to="/terms" className="hover:text-primary transition-colors">利用規約</Link></li>
               <li><Link to="/privacy" className="hover:text-primary transition-colors">プライバシーポリシー</Link></li>
             </ul>
