@@ -66,13 +66,17 @@ export default function LineCallback() {
           return;
         }
 
-        // New user - check friendship status
-        if (!data.friendFlag) {
-          setError("LINE公式アカウントの友だち追加が確認できませんでした。\nログイン画面に戻り、再度LINEログインを行う際に「友だち追加」にチェックを入れてください。");
-          return;
+        // New user - proceed to profile registration.
+        // Keep friendship status for downstream UX, but never block registration here.
+        if (data.friendshipChecked === true && data.friendFlag === false) {
+          sessionStorage.setItem("lineFriendStatus", "not_added");
+        } else if (data.friendFlag === true) {
+          sessionStorage.setItem("lineFriendStatus", "added");
+        } else {
+          sessionStorage.setItem("lineFriendStatus", "unknown");
         }
 
-        // Friend added - proceed to profile registration
+        // Proceed to profile registration
         const lineProfile = data.lineProfile || {
           userId: data.user?.line_user_id,
           displayName: data.user?.name,
