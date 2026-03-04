@@ -39,7 +39,7 @@ export function FeaturesSection() {
               className="relative p-8 rounded-[2rem] bg-background shadow-soft hover:shadow-lg transition-all hover:-translate-y-1 overflow-hidden"
             >
               {/* Point label - vertical */}
-              <div className="absolute top-4 right-4 text-xs font-bold text-primary/80 tracking-widest"
+              <div className="absolute top-4 right-4 text-xs font-bold text-primary tracking-widest"
                 style={{ writingMode: "vertical-rl" }}
               >
                 Point {item.point}

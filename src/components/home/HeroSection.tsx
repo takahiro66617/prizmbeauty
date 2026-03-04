@@ -82,7 +82,7 @@ export function HeroSection() {
 
             <div>
               <a
-                href="https://pr-izm.com/gifting"
+                href="https://pr-izm.com/casting"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-sm text-muted-foreground hover:text-primary transition-colors underline"

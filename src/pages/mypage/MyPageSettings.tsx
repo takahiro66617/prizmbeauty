@@ -106,6 +106,10 @@ export default function MyPageSettings() {
 
   const handleSaveBasic = (e: React.FormEvent) => {
     e.preventDefault();
+    if (formData.phone && !/^[\d\-+()]{10,15}$/.test(formData.phone)) {
+      toast.error("正しい電話番号を入力してください");
+      return;
+    }
     handleSaveProfile({
       name: formData.name, username: formData.username,
       email: formData.email || null, phone: formData.phone || null,

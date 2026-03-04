@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { ArrowLeft, Save, Trash2, AlertTriangle, Users, Image as ImageIcon } from "lucide-react";
 import { CampaignImageGallery } from "@/components/campaign/CampaignImageGallery";
 import { useAdminCampaigns, useAdminUpdateCampaign, useAdminDeleteCampaign, useAdminApplications } from "@/hooks/useAdminData";
-import { CATEGORIES, PLATFORMS, CAMPAIGN_STATUSES, APPLICATION_STATUSES } from "@/lib/constants";
+import { CATEGORIES, PLATFORMS, CAMPAIGN_STATUSES, APPLICATION_STATUSES, PREFECTURES } from "@/lib/constants";
 import { toast } from "sonner";
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend } from "recharts";
 import { ApplicationProgressTimeline } from "@/components/ApplicationProgressTimeline";
@@ -36,6 +36,7 @@ export default function AdminCampaignDetail() {
         payment_date: campaign.payment_date ? campaign.payment_date.split("T")[0] : "",
         requirements: campaign.requirements || "", platform: campaign.platform || "",
         status: campaign.status, deliverables: campaign.deliverables || "",
+        prefecture: campaign.prefecture || "",
       });
     }
   }, [campaign]);
@@ -196,10 +197,17 @@ export default function AdminCampaignDetail() {
           <div><label className="block text-sm font-medium text-gray-700 mb-1">振込予定日</label>
             <Input type="date" value={editForm.payment_date} onChange={e => setEditForm({ ...editForm, payment_date: e.target.value })} /></div>
         </div>
-        <div><label className="block text-sm font-medium text-gray-700 mb-1">ステータス</label>
-          <select value={editForm.status} onChange={e => setEditForm({ ...editForm, status: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm">
-            {CAMPAIGN_STATUSES.map(s => <option key={s.id} value={s.id}>{s.label}</option>)}
-          </select></div>
+        <div className="grid grid-cols-2 gap-4">
+          <div><label className="block text-sm font-medium text-gray-700 mb-1">都道府県</label>
+            <select value={editForm.prefecture || ""} onChange={e => setEditForm({ ...editForm, prefecture: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm">
+              <option value="">指定なし</option>
+              {PREFECTURES.map(p => <option key={p} value={p}>{p}</option>)}
+            </select></div>
+          <div><label className="block text-sm font-medium text-gray-700 mb-1">ステータス</label>
+            <select value={editForm.status} onChange={e => setEditForm({ ...editForm, status: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm">
+              {CAMPAIGN_STATUSES.map(s => <option key={s.id} value={s.id}>{s.label}</option>)}
+            </select></div>
+        </div>
         <div><label className="block text-sm font-medium text-gray-700 mb-1">応募条件</label>
           <textarea value={editForm.requirements} onChange={e => setEditForm({ ...editForm, requirements: e.target.value })}
             className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm min-h-[80px]" /></div>
