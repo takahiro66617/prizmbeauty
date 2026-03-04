@@ -72,11 +72,17 @@ export default function LineAddFriend() {
           {/* Official Account Info */}
           <div className="bg-[#06C755]/5 border border-[#06C755]/20 rounded-xl p-4">
             <div className="flex items-center gap-3">
-              <img
-                src={logoImg}
-                alt="PRizm公式アカウント"
-                className="w-14 h-14 rounded-full object-contain border-2 border-[#06C755]/30 bg-white p-1"
-              />
+              <div className="w-14 h-14 rounded-full border-2 border-[#06C755]/30 bg-white flex items-center justify-center overflow-hidden shrink-0">
+                <img
+                  src={logoImg}
+                  alt="PRizm公式アカウント"
+                  className="w-10 h-10 object-contain"
+                  onError={(e) => {
+                    e.currentTarget.style.display = 'none';
+                    e.currentTarget.parentElement!.innerHTML = '<span class="text-lg font-bold text-[#06C755]">P</span>';
+                  }}
+                />
+              </div>
               <div className="flex-1 min-w-0">
                 <p className="font-bold text-foreground text-base">PRizm（プリズム）</p>
                 <p className="text-xs text-muted-foreground">LINE公式アカウント</p>
@@ -105,6 +111,17 @@ export default function LineAddFriend() {
             <UserPlus className="w-5 h-5" />
             友だち追加する
           </a>
+
+          {/* Return instruction — shown after clicking add friend */}
+          {hasClickedAdd && !showNext && (
+            <div className="text-center space-y-2 animate-in fade-in duration-300">
+              <div className="w-6 h-6 border-3 border-[#06C755] border-t-transparent rounded-full animate-spin mx-auto" />
+              <p className="text-sm text-muted-foreground">
+                友だち追加が完了したら、<br />
+                <span className="font-semibold text-foreground">このページに戻ってきてください</span>
+              </p>
+            </div>
+          )}
 
           {/* Next section — appears after delay */}
           {showNext && (
