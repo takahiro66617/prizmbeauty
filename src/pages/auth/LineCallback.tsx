@@ -133,8 +133,7 @@ export default function LineCallback() {
           pictureUrl: data.user?.image_url,
         };
         sessionStorage.setItem("lineProfile", JSON.stringify(lineProfile));
-        sessionStorage.setItem("lineFriendAdded", "true");
-        navigate("/auth/register/profile");
+        navigate("/auth/register/add-friend");
       } catch {
         setError("通信エラーが発生しました");
       }
