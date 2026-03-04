@@ -49,6 +49,7 @@ export default function AdminInfluencersPage() {
       name: inf.name, username: inf.username, bio: inf.bio || "",
       category: inf.category || "",
       selectedGenres: inf.category ? inf.category.split(",").map((g: string) => g.trim()).filter(Boolean) : [],
+      pendingStatus: inf.status,
       instagram_followers: inf.instagram_followers || 0, tiktok_followers: inf.tiktok_followers || 0,
       youtube_followers: inf.youtube_followers || 0, twitter_followers: inf.twitter_followers || 0,
       instagram_url: (inf as any).instagram_url || "",
@@ -69,7 +70,19 @@ export default function AdminInfluencersPage() {
 
   const handleSaveEdit = async () => {
     if (!selectedInf) return;
-    const { selectedGenres: genres, ...rest } = editForm;
+    const { selectedGenres: genres, pendingStatus, ...rest } = editForm;
+    
+    // Handle status change (including reject)
+    if (pendingStatus && pendingStatus !== selectedInf.status) {
+      if (pendingStatus === "rejected") {
+        if (!window.confirm("このインフルエンサーを却下し退会させますか？")) return;
+      }
+      const { data: statusData, error: statusError } = await supabase.functions.invoke("admin-update-influencer", {
+        body: { id: selectedInf.id, updates: { status: pendingStatus } },
+      });
+      if (statusError || statusData?.error) { toast.error("ステータス更新に失敗しました"); return; }
+    }
+    
     const updates = {
       name: rest.name,
       username: rest.username,
@@ -375,13 +388,14 @@ export default function AdminInfluencersPage() {
                 <label className="block text-sm font-medium text-gray-700 mb-2">ステータス変更</label>
                 <div className="flex gap-2 flex-wrap">
                   {INFLUENCER_STATUSES.map(s => (
-                    <Button key={s.id} size="sm" variant={selectedInf.status === s.id ? "default" : "outline"}
-                      onClick={() => { if (s.id === "rejected") { handleReject(selectedInf.id); } else { handleStatusChange(selectedInf.id, s.id); } }}
-                      className={selectedInf.status === s.id ? "bg-purple-600" : ""}>
+                    <Button key={s.id} size="sm" variant={editForm.pendingStatus === s.id ? "default" : "outline"}
+                      onClick={() => setEditForm({ ...editForm, pendingStatus: s.id })}
+                      className={editForm.pendingStatus === s.id ? "bg-purple-600" : ""}>
                       {s.label}
                     </Button>
                   ))}
                 </div>
+                <p className="text-xs text-gray-400 mt-1">※ 「保存」ボタンを押すと反映されます</p>
               </div>
             </div>
             <div className="p-6 border-t flex justify-end gap-3 shrink-0">

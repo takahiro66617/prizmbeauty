@@ -26,7 +26,7 @@ export function FlowSection() {
                 <div className="hidden md:block absolute top-8 left-[calc(50%+2rem)] w-[calc(100%-4rem)] h-0.5 bg-gradient-to-r from-pastel-pink to-pastel-blue" />
               )}
 
-              <div className="w-16 h-16 rounded-full gradient-pink-blue flex items-center justify-center mb-4 relative z-10 shadow-md">
+              <div className="w-16 h-16 rounded-full bg-gradient-to-br from-pink-500 to-purple-600 flex items-center justify-center mb-4 relative z-10 shadow-md">
                 <step.icon className="w-7 h-7 text-white" />
               </div>
               <div className="text-xs font-bold text-primary mb-1">STEP {String(i + 1).padStart(2, "0")}</div>

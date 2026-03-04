@@ -28,6 +28,10 @@ Deno.serve(async (req) => {
         for (const key of ["deadline", "payment_date"]) {
           if (cleaned[key] === "") cleaned[key] = null;
         }
+        // Ensure numeric fields are proper numbers
+        for (const key of ["budget_min", "budget_max", "max_applicants"]) {
+          if (cleaned[key] !== undefined) cleaned[key] = Number(cleaned[key]) || 0;
+        }
         const { data, error } = await supabase.from("campaigns").update(cleaned).eq("id", id).select().single();
         if (error) return jsonError(error.message);
         return jsonOk(data);

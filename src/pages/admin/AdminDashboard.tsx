@@ -131,7 +131,7 @@ export default function AdminDashboard() {
           <Card className="p-6 border-0 shadow-lg bg-white h-full">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-500">登録IF数</p>
+                <p className="text-sm font-medium text-gray-500">登録インフルエンサー数</p>
                 <h3 className="text-3xl font-bold text-gray-800 mt-2">{influencerCount}<span className="text-sm font-normal text-gray-400 ml-1">名</span></h3>
                 {pendingInfluencers > 0 && <p className="text-xs text-yellow-600 mt-1">審査待ち: {pendingInfluencers}名</p>}
               </div>
