@@ -310,17 +310,17 @@ export default function AdminDashboard() {
         <p className="text-xs text-gray-400 mt-2">絞り込み結果: {filteredApps.length}件</p>
       </Card>
 
-      {/* Activity Feed + Quick Actions */}
+      {/* Activity Feed + 3-Panel Progress */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Activity Feed - takes 2 cols */}
-        <Card className="p-6 border-0 shadow-lg bg-white lg:col-span-2">
+        {/* Activity Feed - full width */}
+        <Card className="p-6 border-0 shadow-lg bg-white lg:col-span-3">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2">
               <Bell className="w-5 h-5 text-yellow-500" />アクティビティ・進捗
             </h2>
             <Badge variant="outline" className="text-xs">{activityItems.length}件</Badge>
           </div>
-          <div className="space-y-2 max-h-[500px] overflow-y-auto">
+          <div className="space-y-2 max-h-[400px] overflow-y-auto">
             {activityItems.length > 0 ? activityItems.slice(0, 20).map(item => (
               <Link key={item.id} to={item.link} className="block">
                 <div className="flex items-start gap-3 p-3 hover:bg-gray-50 rounded-xl transition-colors border border-gray-100">
@@ -340,73 +340,126 @@ export default function AdminDashboard() {
           </div>
         </Card>
 
-        {/* Quick Actions + Summary */}
-        <div className="space-y-6">
-          <Card className="p-6 border-0 shadow-lg bg-white">
-            <h2 className="text-lg font-bold text-gray-800 mb-4">クイックアクション</h2>
-            <div className="space-y-3">
-              <Link to="/admin/campaigns" className="block">
-                <div className="p-4 border border-dashed border-gray-200 rounded-xl hover:border-purple-400 hover:bg-purple-50 transition-all flex items-center gap-3 group">
-                  <div className="p-2 bg-purple-100 rounded-lg text-purple-600 group-hover:bg-purple-200"><FileEdit className="w-5 h-5" /></div>
-                  <div>
-                    <span className="text-sm font-bold text-gray-700 group-hover:text-purple-700">案件管理</span>
-                    <p className="text-xs text-gray-400">承認待ち: {campaigns.filter(c => c.status === "pending_approval").length}件</p>
+        {/* IF Progress Panel */}
+        <Card className="p-6 border-0 shadow-lg bg-gradient-to-br from-pink-50 to-purple-50">
+          <div className="flex items-center gap-2 mb-4">
+            <div className="p-2 bg-pink-100 rounded-lg"><Users className="w-5 h-5 text-pink-600" /></div>
+            <h2 className="text-base font-bold text-gray-800">インフルエンサー進捗</h2>
+          </div>
+          <div className="space-y-3">
+            {(() => {
+              const ifItems = [
+                { label: "審査待ち", count: pendingInfluencers, color: "bg-yellow-500", ring: "ring-yellow-200" },
+                { label: "新規応募", count: applications.filter(a => a.status === "applied").length, color: "bg-blue-500", ring: "ring-blue-200" },
+                { label: "選考中", count: applications.filter(a => a.status === "reviewing").length, color: "bg-indigo-500", ring: "ring-indigo-200" },
+                { label: "採用済み", count: applications.filter(a => a.status === "approved").length, color: "bg-green-500", ring: "ring-green-200" },
+                { label: "案件進行中", count: applications.filter(a => a.status === "in_progress").length, color: "bg-purple-500", ring: "ring-purple-200" },
+                { label: "投稿済み", count: applications.filter(a => a.status === "post_submitted").length, color: "bg-teal-500", ring: "ring-teal-200" },
+                { label: "修正依頼中", count: applications.filter(a => a.status === "revision_requested").length, color: "bg-amber-500", ring: "ring-amber-200" },
+              ];
+              const total = ifItems.reduce((s, i) => s + i.count, 0) || 1;
+              return ifItems.map(item => (
+                <div key={item.label}>
+                  <div className="flex items-center justify-between mb-1">
+                    <div className="flex items-center gap-2">
+                      <div className={`w-2.5 h-2.5 rounded-full ${item.color}`} />
+                      <span className="text-xs text-gray-600">{item.label}</span>
+                    </div>
+                    <span className={`text-sm font-bold ${item.count > 0 ? "text-gray-900" : "text-gray-300"}`}>{item.count}</span>
+                  </div>
+                  <div className="w-full h-1.5 bg-white/80 rounded-full overflow-hidden">
+                    <div className={`h-full rounded-full ${item.color} transition-all duration-500`} style={{ width: `${(item.count / total) * 100}%` }} />
                   </div>
                 </div>
-              </Link>
-              <Link to="/admin/clients" className="block">
-                <div className="p-4 border border-dashed border-gray-200 rounded-xl hover:border-blue-400 hover:bg-blue-50 transition-all flex items-center gap-3 group">
-                  <div className="p-2 bg-blue-100 rounded-lg text-blue-600 group-hover:bg-blue-200"><Building2 className="w-5 h-5" /></div>
-                  <div>
-                    <span className="text-sm font-bold text-gray-700 group-hover:text-blue-700">企業管理</span>
-                    <p className="text-xs text-gray-400">{companyCount}社</p>
-                  </div>
-                </div>
-              </Link>
-              <Link to="/admin/influencers" className="block">
-                <div className="p-4 border border-dashed border-gray-200 rounded-xl hover:border-green-400 hover:bg-green-50 transition-all flex items-center gap-3 group">
-                  <div className="p-2 bg-green-100 rounded-lg text-green-600 group-hover:bg-green-200"><Users className="w-5 h-5" /></div>
-                  <div>
-                    <span className="text-sm font-bold text-gray-700 group-hover:text-green-700">IF管理</span>
-                    <p className="text-xs text-gray-400">審査待ち: {pendingInfluencers}名</p>
-                  </div>
-                </div>
-              </Link>
-              <Link to="/admin/messages" className="block">
-                <div className="p-4 border border-dashed border-gray-200 rounded-xl hover:border-pink-400 hover:bg-pink-50 transition-all flex items-center gap-3 group">
-                  <div className="p-2 bg-pink-100 rounded-lg text-pink-600 group-hover:bg-pink-200"><MessageCircle className="w-5 h-5" /></div>
-                  <div>
-                    <span className="text-sm font-bold text-gray-700 group-hover:text-pink-700">メッセージ管理</span>
-                    <p className="text-xs text-gray-400">スレッド監視</p>
-                  </div>
-                </div>
-              </Link>
-            </div>
-          </Card>
+              ));
+            })()}
+          </div>
+          <Link to="/admin/influencers" className="block mt-4">
+            <Button variant="ghost" size="sm" className="w-full text-pink-600 hover:bg-pink-100 text-xs">IF管理へ <ArrowRight className="w-3 h-3 ml-1" /></Button>
+          </Link>
+        </Card>
 
-          {/* Progress Summary */}
-          <Card className="p-6 border-0 shadow-lg bg-white">
-            <h2 className="text-sm font-bold text-gray-800 mb-3">進捗サマリー</h2>
-            <div className="space-y-3">
-              {[
-                { label: "審査待ちIF", count: pendingInfluencers, color: "bg-yellow-500" },
-                { label: "新規応募", count: applications.filter(a => a.status === "applied").length, color: "bg-blue-500" },
-                { label: "案件進行中", count: applications.filter(a => a.status === "in_progress").length, color: "bg-purple-500" },
-                { label: "投稿確認待ち", count: applications.filter(a => a.status === "post_submitted").length, color: "bg-green-500" },
-                { label: "振込待ち", count: applications.filter(a => a.status === "payment_pending").length, color: "bg-orange-500" },
-                { label: "完了", count: applications.filter(a => a.status === "completed").length, color: "bg-gray-400" },
-              ].map(item => (
-                <div key={item.label} className="flex items-center justify-between">
+        {/* Company Progress Panel */}
+        <Card className="p-6 border-0 shadow-lg bg-gradient-to-br from-blue-50 to-indigo-50">
+          <div className="flex items-center gap-2 mb-4">
+            <div className="p-2 bg-blue-100 rounded-lg"><Building2 className="w-5 h-5 text-blue-600" /></div>
+            <h2 className="text-base font-bold text-gray-800">企業側 進捗</h2>
+          </div>
+          <div className="space-y-3">
+            {(() => {
+              const pendingApproval = campaigns.filter(c => c.status === "pending_approval").length;
+              const recruiting = campaigns.filter(c => c.status === "recruiting").length;
+              const closed = campaigns.filter(c => c.status === "closed").length;
+              const deadlineSoon = campaigns.filter(c => c.status === "recruiting" && c.deadline && (new Date(c.deadline).getTime() - Date.now()) < 3 * 86400000 && (new Date(c.deadline).getTime() - Date.now()) > 0).length;
+              const postConfirmed = applications.filter(a => a.status === "post_confirmed").length;
+              const paymentPending = applications.filter(a => a.status === "payment_pending").length;
+              const compItems = [
+                { label: "案件承認待ち", count: pendingApproval, color: "bg-yellow-500" },
+                { label: "募集中", count: recruiting, color: "bg-emerald-500" },
+                { label: "締切間近（3日以内）", count: deadlineSoon, color: "bg-red-500" },
+                { label: "募集終了", count: closed, color: "bg-gray-500" },
+                { label: "投稿確認済み", count: postConfirmed, color: "bg-teal-500" },
+                { label: "振込待ち", count: paymentPending, color: "bg-orange-500" },
+              ];
+              const total = compItems.reduce((s, i) => s + i.count, 0) || 1;
+              return compItems.map(item => (
+                <div key={item.label}>
+                  <div className="flex items-center justify-between mb-1">
+                    <div className="flex items-center gap-2">
+                      <div className={`w-2.5 h-2.5 rounded-full ${item.color}`} />
+                      <span className="text-xs text-gray-600">{item.label}</span>
+                    </div>
+                    <span className={`text-sm font-bold ${item.count > 0 ? "text-gray-900" : "text-gray-300"}`}>{item.count}</span>
+                  </div>
+                  <div className="w-full h-1.5 bg-white/80 rounded-full overflow-hidden">
+                    <div className={`h-full rounded-full ${item.color} transition-all duration-500`} style={{ width: `${(item.count / total) * 100}%` }} />
+                  </div>
+                </div>
+              ));
+            })()}
+          </div>
+          <Link to="/admin/campaigns" className="block mt-4">
+            <Button variant="ghost" size="sm" className="w-full text-blue-600 hover:bg-blue-100 text-xs">案件管理へ <ArrowRight className="w-3 h-3 ml-1" /></Button>
+          </Link>
+        </Card>
+
+        {/* Admin/Platform Progress Panel */}
+        <Card className="p-6 border-0 shadow-lg bg-gradient-to-br from-purple-50 to-violet-50">
+          <div className="flex items-center gap-2 mb-4">
+            <div className="p-2 bg-purple-100 rounded-lg"><TrendingUp className="w-5 h-5 text-purple-600" /></div>
+            <h2 className="text-base font-bold text-gray-800">全体サマリー</h2>
+          </div>
+          <div className="space-y-3">
+            {(() => {
+              const completed = applications.filter(a => a.status === "completed").length;
+              const rejected = applications.filter(a => a.status === "rejected").length;
+              const totalApps = applications.length;
+              const matchRate = totalApps > 0 ? Math.round(((totalApps - rejected) / totalApps) * 100) : 0;
+              const summaryItems = [
+                { label: "総応募数", count: totalApps, color: "bg-blue-500" },
+                { label: "マッチング率", count: matchRate, suffix: "%", color: "bg-green-500" },
+                { label: "完了案件", count: completed, color: "bg-gray-500" },
+                { label: "不採用", count: rejected, color: "bg-red-500" },
+                { label: "登録IF数", count: influencerCount, color: "bg-pink-500" },
+                { label: "登録企業数", count: companyCount, color: "bg-indigo-500" },
+              ];
+              return summaryItems.map(item => (
+                <div key={item.label} className="flex items-center justify-between py-1">
                   <div className="flex items-center gap-2">
                     <div className={`w-2.5 h-2.5 rounded-full ${item.color}`} />
                     <span className="text-xs text-gray-600">{item.label}</span>
                   </div>
-                  <span className="text-sm font-bold text-gray-800">{item.count}</span>
+                  <span className="text-sm font-bold text-gray-900">
+                    {item.count}{(item as any).suffix || ""}
+                  </span>
                 </div>
-              ))}
-            </div>
-          </Card>
-        </div>
+              ));
+            })()}
+          </div>
+          <Link to="/admin/applications" className="block mt-4">
+            <Button variant="ghost" size="sm" className="w-full text-purple-600 hover:bg-purple-100 text-xs">応募管理へ <ArrowRight className="w-3 h-3 ml-1" /></Button>
+          </Link>
+        </Card>
       </div>
 
       {/* Notification Send Modal */}
