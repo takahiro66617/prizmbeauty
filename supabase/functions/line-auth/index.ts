@@ -70,8 +70,10 @@ Deno.serve(async (req) => {
       );
     }
 
-    // 3. Check friendship status (capture signal, but don't hard-fail on API instability)
-    let friendFlag: boolean | null = null;
+    // 3. Check friendship status
+    // IMPORTANT: fail-open when LINE friendship API is unavailable (e.g. 40007)
+    // so registration never gets blocked by channel-side configuration issues.
+    let friendFlag = true;
     let friendshipChecked = false;
     let friendshipError: string | null = null;
 
@@ -86,10 +88,12 @@ Deno.serve(async (req) => {
         friendFlag = friendshipData.friendFlag === true;
       } else {
         friendshipError = `friendship_api_${friendshipRes.status}`;
+        // Keep friendFlag=true to avoid blocking onboarding on external API/config issues.
         console.error("LINE friendship check failed:", await friendshipRes.text());
       }
     } catch (e) {
       friendshipError = "friendship_api_exception";
+      // Keep friendFlag=true to avoid blocking onboarding on external API/config issues.
       console.error("Friendship API error:", e);
     }
 
