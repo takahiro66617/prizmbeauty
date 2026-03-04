@@ -70,19 +70,26 @@ Deno.serve(async (req) => {
       );
     }
 
-    // 3. Check friendship status
-    let friendFlag = false;
+    // 3. Check friendship status (capture signal, but don't hard-fail on API instability)
+    let friendFlag: boolean | null = null;
+    let friendshipChecked = false;
+    let friendshipError: string | null = null;
+
     try {
       const friendshipRes = await fetch("https://api.line.me/friendship/v1/status", {
         headers: { Authorization: `Bearer ${tokenData.access_token}` },
       });
+
       if (friendshipRes.ok) {
         const friendshipData = await friendshipRes.json();
+        friendshipChecked = true;
         friendFlag = friendshipData.friendFlag === true;
       } else {
+        friendshipError = `friendship_api_${friendshipRes.status}`;
         console.error("LINE friendship check failed:", await friendshipRes.text());
       }
     } catch (e) {
+      friendshipError = "friendship_api_exception";
       console.error("Friendship API error:", e);
     }
 
@@ -110,6 +117,8 @@ Deno.serve(async (req) => {
       JSON.stringify({
         isNewUser: !existingUser,
         friendFlag,
+        friendshipChecked,
+        friendshipError,
         lineProfile: {
           userId: profileData.userId,
           displayName: profileData.displayName,
