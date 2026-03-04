@@ -7,37 +7,17 @@ import HelpGuideModal from "@/components/admin/HelpGuideModal";
 import { supabase } from "@/integrations/supabase/client";
 import { APPLICATION_STATUSES, CATEGORIES } from "@/lib/constants";
 import ThreadConversation from "@/components/ThreadConversation";
+import { useAdminApplications } from "@/hooks/useAdminData";
+
+const ACTIVE_STATUSES = ["approved", "in_progress", "post_submitted", "revision_requested", "post_confirmed", "payment_pending", "completed"];
+const ADMIN_SENDER_ID = "00000000-0000-0000-0000-000000000000";
 
 export default function AdminMessages() {
-  const [applications, setApplications] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data: applications = [], isLoading: loading } = useAdminApplications({ statuses: ACTIVE_STATUSES });
   const [threadAppId, setThreadAppId] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState("all");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [search, setSearch] = useState("");
-  const [adminUserId, setAdminUserId] = useState("");
-
-  useEffect(() => {
-    const fetchAll = async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session) setAdminUserId(session.user.id);
-
-        const { data, error } = await supabase
-          .from("applications")
-          .select("*, campaigns(id, title, image_url, budget_min, budget_max, deadline, category, companies(id, name)), influencer_profiles(id, name, username, image_url, user_id)")
-          .in("status", ["approved", "in_progress", "post_submitted", "revision_requested", "post_confirmed", "payment_pending", "completed"])
-          .order("updated_at", { ascending: false });
-        if (error) throw error;
-        setApplications(data || []);
-      } catch {
-        // silent
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchAll();
-  }, []);
 
   const filtered = applications.filter(app => {
     const matchesStatus = statusFilter === "all" || app.status === statusFilter;
@@ -58,7 +38,7 @@ export default function AdminMessages() {
         <ThreadConversation
           applicationId={threadAppId}
           userType="admin"
-          senderId={adminUserId}
+          senderId={ADMIN_SENDER_ID}
           onBack={() => setThreadAppId(null)}
         />
       </div>

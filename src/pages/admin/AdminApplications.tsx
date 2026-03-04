@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Search, X } from "lucide-react";
 import HelpGuideModal from "@/components/admin/HelpGuideModal";
-import { useExternalApplications, useUpdateApplicationStatus } from "@/hooks/useExternalApplications";
+import { useAdminApplications, useAdminUpdateApplicationStatus } from "@/hooks/useAdminData";
 import { useExternalCampaigns } from "@/hooks/useExternalCampaigns";
 import { useExternalCompanies } from "@/hooks/useExternalCompanies";
 import { APPLICATION_STATUSES, CATEGORIES, PLATFORMS } from "@/lib/constants";
@@ -19,10 +19,10 @@ export default function AdminApplications() {
   const [dateTo, setDateTo] = useState("");
   const [selectedApp, setSelectedApp] = useState<any>(null);
 
-  const { data: applications = [], isLoading } = useExternalApplications();
+  const { data: applications = [], isLoading } = useAdminApplications();
   const { data: campaigns = [] } = useExternalCampaigns();
   const { data: companies = [] } = useExternalCompanies();
-  const updateStatus = useUpdateApplicationStatus();
+  const updateStatus = useAdminUpdateApplicationStatus();
 
   const filtered = applications.filter(a => {
     const matchesStatus = statusFilter === "all" || a.status === statusFilter;
