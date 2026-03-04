@@ -50,6 +50,12 @@ export default function LineCallback() {
           return;
         }
 
+        // Block registration if not friends with LINE Official Account
+        if (!data.isFriend) {
+          setError("PRizmのLINE公式アカウント（@616jfxwh）を友だち追加してからログインしてください。ログイン画面の同意画面で「友だち追加」にチェックを入れてください。");
+          return;
+        }
+
         // Use line-auth response directly (it queries with service role key, bypassing RLS)
         if (!data.isNewUser && data.user) {
           // Existing user - store session and go to dashboard

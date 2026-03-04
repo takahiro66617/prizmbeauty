@@ -62,7 +62,27 @@ Deno.serve(async (req) => {
       );
     }
 
-    // 3. Check if user exists in Lovable Cloud DB
+    // 3. Check friendship status with LINE Official Account
+    let isFriend = false;
+    try {
+      const friendshipRes = await fetch("https://api.line.me/friendship/v1/status", {
+        headers: { Authorization: `Bearer ${tokenData.access_token}` },
+      });
+      if (friendshipRes.ok) {
+        const friendshipData = await friendshipRes.json();
+        isFriend = friendshipData.friendFlag === true;
+        console.log("Friendship status:", friendshipData);
+      } else {
+        // API error - fail open (allow registration)
+        console.warn("Friendship API error, failing open:", friendshipRes.status);
+        isFriend = true;
+      }
+    } catch (e) {
+      console.warn("Friendship check failed, failing open:", e);
+      isFriend = true;
+    }
+
+    // 4. Check if user exists in Lovable Cloud DB
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
     const supabase = createClient(supabaseUrl!, serviceRoleKey!);
@@ -85,6 +105,7 @@ Deno.serve(async (req) => {
     return new Response(
       JSON.stringify({
         isNewUser: !existingUser,
+        isFriend,
         lineProfile: {
           userId: profileData.userId,
           displayName: profileData.displayName,
