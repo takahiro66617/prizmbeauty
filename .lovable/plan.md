@@ -1,66 +1,51 @@
 
 
-## 管理画面の連携問題 - 根本原因と修正計画
+## Bug Report対応計画
 
-### 根本原因
+未対応のバグレポートは4件あります。内容を分析した結果、以下の対応が必要です。
 
-管理者（事務局）はハードコード認証（sessionStorage）でログインしており、**Supabase Authセッションを持っていない**。そのため：
+---
 
-1. **RLS（行レベルセキュリティ）で全ての書き込み操作が拒否される**
-   - 案件の承認・却下（`campaigns` UPDATE → `auth.uid()` が null → 失敗）
-   - 応募ステータスの変更（`applications` UPDATE → 同上）
-   - 企業情報の編集（`companies` UPDATE → 同上）
-   - 企業の削除（`companies` DELETE → 同上）
+### レポート一覧と対応方針
 
-2. **RLSで一部の読み取りも失敗する**
-   - `applications` の SELECT → `auth.uid()` 必須 → 空配列が返る
-   - これにより案件管理画面の「応募数」が常に0、応募管理画面も空
+| # | レポートID | 内容 | 対応 |
+|---|-----------|------|------|
+| 1 | `0f6b9319` (3/2) | 「掲載希望の企業様」リンクを `/casting` に変更 | 後続レポートで上書きされた。対応済み扱い |
+| 2 | `b39c9338` (3/4) | 同リンクを `/gifting` に変更 | **既に対応済み** (HeroSection.tsx L85) |
+| 3 | `8f2a6175` (3/4) | スマホからLINEログインするとエラーになる | **コード修正が必要** |
+| 4 | `4e782510` (3/4) | 案件に都道府県フィールドを追加し、絞り込みできるようにする | **機能追加が必要** |
 
-3. **`revision_requested` が `applications` テーブルのCHECK制約に含まれていない**
-   - 修正依頼ステータスへの遷移がDBレベルで拒否される
+---
 
-4. **管理者メッセージ画面のsenderIdが空**
-   - `supabase.auth.getSession()` が null → メッセージ送信不可
+### 対応1: レポート #1, #2 をステータス更新
 
-### 修正計画
+「掲載希望の企業様」リンクは既に `https://pr-izm.com/gifting` に設定済み。両レポートを「対応中」ステータスに更新。
 
-#### 1. 管理者用Edge Function `admin-manage-data` を新規作成
-Service Role Keyを使用し、以下の操作を一つのEdge Functionで処理：
-- 案件の更新（承認・却下・編集）
-- 案件の削除
-- 応募の一覧取得（admin用）
-- 応募ステータスの更新
-- 企業情報の更新
-- 企業の削除
+---
 
-```text
-POST /admin-manage-data
-body: { action: "update_campaign" | "delete_campaign" | "get_applications" | "update_application" | "update_company" | "delete_company", ... }
-```
+### 対応2: スマホLINEログインエラー修正 (レポート #3)
 
-#### 2. DB制約の修正
-`applications_status_check` に `revision_requested` を追加
+**原因分析**: スマホのLINE内ブラウザ (LIFF) からログインすると、コールバックURLに `liffClientId`, `liffRedirectUri` などのパラメータが付加される。現在の `LineCallback.tsx` では `state` パラメータの検証で `localStorage` を使用しているが、LINE内ブラウザではリダイレクト時に `localStorage` が保持されないケースがある。
 
-#### 3. フロントエンド修正（4ファイル）
+**修正内容**:
+- `LineCallback.tsx` の state 検証を緩和: `savedState` が null の場合（LIFF環境）はstate検証をスキップ
+- LIFF環境検出を追加してログを改善
 
-- **`useExternalCampaigns.ts`**: `useUpdateCampaign` / `useDeleteCampaign` に `adminMode` オプション追加。trueの場合はEdge Function経由
-- **`useExternalApplications.ts`**: admin用の取得をEdge Function経由に変更。`useUpdateApplicationStatus` も同様
-- **`useExternalCompanies.ts`**: `useUpdateCompany` / delete にadminMode追加
-- **`AdminMessages.tsx`**: `adminUserId` の取得を固定値またはEdge Functionから取得する方式に変更
+---
 
-#### 4. 管理画面ページの修正
-- **`AdminCampaigns.tsx`**: Edge Function経由でステータス更新
-- **`AdminApplications.tsx`**: Edge Function経由でステータス更新
-- **`AdminClients.tsx`**: Edge Function経由で企業編集・削除
+### 対応3: 都道府県フィルタリング機能追加 (レポート #4)
 
-### 変更ファイル一覧
-1. `supabase/functions/admin-manage-data/index.ts` （新規）
-2. DB migration: `revision_requested` をCHECK制約に追加
-3. `src/hooks/useExternalCampaigns.ts`
-4. `src/hooks/useExternalApplications.ts`
-5. `src/hooks/useExternalCompanies.ts`
-6. `src/pages/admin/AdminCampaigns.tsx`
-7. `src/pages/admin/AdminApplications.tsx`
-8. `src/pages/admin/AdminClients.tsx`
-9. `src/pages/admin/AdminMessages.tsx`
+**DB変更**: `campaigns` テーブルに `prefecture` カラム (text, nullable) を追加
+
+**コード変更**:
+1. **`src/lib/constants.ts`**: `PREFECTURES` 定数（47都道府県リスト）を追加
+2. **`src/pages/client/ClientCampaignNew.tsx`**: 案件作成フォームに都道府県プルダウンを追加
+3. **`src/pages/Campaigns.tsx`**: フィルターセクションに都道府県プルダウンを追加し、選択時にフィルタリング
+4. **`src/pages/mypage/MyPageCampaigns.tsx`**: インフルエンサー側の案件一覧にも同様のフィルターを追加（存在する場合）
+
+---
+
+### 対応4: バグレポートのステータス一括更新
+
+全4件のレポートを運用ルールに従い「対応中 (in_progress)」に更新。
 
