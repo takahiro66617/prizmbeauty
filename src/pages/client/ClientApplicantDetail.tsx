@@ -86,7 +86,7 @@ export default function ClientApplicantDetail() {
         appliedAt={app.applied_at}
         updatedAt={app.updated_at}
         influencer={inf ? { name: inf.name, username: inf.username, image_url: inf.image_url } : null}
-        campaign={camp ? { title: camp.title, deadline: camp.deadline, payment_date: camp.payment_date, companies: undefined } : null}
+        campaign={camp ? { title: camp.title, deadline: camp.deadline, payment_date: (camp as any).payment_date, companies: undefined } : null}
       />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
