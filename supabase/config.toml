@@ -44,3 +44,21 @@ verify_jwt = false
 
 [functions.admin-manage-data]
 verify_jwt = false
+
+[functions.check-approved-deadlines]
+verify_jwt = false
+
+[functions.get-company-payments]
+verify_jwt = false
+
+[functions.get-my-payments]
+verify_jwt = false
+
+[functions.get-my-bank-account]
+verify_jwt = false
+
+[functions.upsert-my-bank-account]
+verify_jwt = false
+
+[functions.check-payment-deadlines]
+verify_jwt = false
