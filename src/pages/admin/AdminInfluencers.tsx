@@ -50,71 +50,7 @@ export default function AdminInfluencersPage() {
   };
 
   const openDetail = (inf: any) => {
-    setSelectedInf(inf);
-    setEditForm({
-      name: inf.name, username: inf.username, bio: inf.bio || "",
-      category: inf.category || "",
-      selectedGenres: inf.category ? inf.category.split(",").map((g: string) => g.trim()).filter(Boolean) : [],
-      pendingStatus: inf.status,
-      instagram_followers: inf.instagram_followers || 0, tiktok_followers: inf.tiktok_followers || 0,
-      youtube_followers: inf.youtube_followers || 0, twitter_followers: inf.twitter_followers || 0,
-      instagram_url: (inf as any).instagram_url || "",
-      tiktok_url: (inf as any).tiktok_url || "",
-      youtube_url: (inf as any).youtube_url || "",
-      twitter_url: (inf as any).twitter_url || "",
-    });
-  };
-
-  const toggleGenre = (genre: string) => {
-    setEditForm((prev: any) => ({
-      ...prev,
-      selectedGenres: prev.selectedGenres.includes(genre)
-        ? prev.selectedGenres.filter((g: string) => g !== genre)
-        : [...prev.selectedGenres, genre],
-    }));
-  };
-
-  const handleSaveEdit = async () => {
-    if (!selectedInf) return;
-    const { selectedGenres: genres, pendingStatus, ...rest } = editForm;
-    
-    // Handle status change (including reject)
-    if (pendingStatus && pendingStatus !== selectedInf.status) {
-      if (pendingStatus === "rejected") {
-        if (!window.confirm("このインフルエンサーを却下し退会させますか？")) return;
-      }
-      const { data: statusData, error: statusError } = await supabase.functions.invoke("admin-update-influencer", {
-        body: { id: selectedInf.id, updates: { status: pendingStatus } },
-      });
-      if (statusError || statusData?.error) { toast.error("ステータス更新に失敗しました"); return; }
-    }
-    
-    const updates = {
-      name: rest.name,
-      username: rest.username,
-      bio: rest.bio,
-      category: genres.join(", "),
-      instagram_followers: rest.instagram_followers,
-      tiktok_followers: rest.tiktok_followers,
-      youtube_followers: rest.youtube_followers,
-      twitter_followers: rest.twitter_followers,
-      instagram_url: rest.instagram_url || null,
-      tiktok_url: rest.tiktok_url || null,
-      youtube_url: rest.youtube_url || null,
-      twitter_url: rest.twitter_url || null,
-    };
-    const { data, error } = await supabase.functions.invoke("admin-update-influencer", {
-      body: { id: selectedInf.id, updates },
-    });
-    if (error || data?.error) { toast.error("保存に失敗しました"); } else { toast.success("保存しました"); refetch(); setSelectedInf(null); }
-  };
-
-  const handleReject = async (id: string) => {
-    if (!window.confirm("このインフルエンサーを却下し退会させますか？")) return;
-    const { data, error } = await supabase.functions.invoke("admin-update-influencer", {
-      body: { id, updates: { status: "rejected" } },
-    });
-    if (error || data?.error) { toast.error("処理に失敗しました"); } else { toast.success("却下・退会処理を行いました"); refetch(); setSelectedInf(null); }
+    navigate(`/admin/influencers/${inf.id}`);
   };
 
   const clearFilters = () => {
