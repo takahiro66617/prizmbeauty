@@ -1,14 +1,21 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Download, Search, X, Save } from "lucide-react";
+import { Download, Search } from "lucide-react";
 import HelpGuideModal from "@/components/admin/HelpGuideModal";
 import { useExternalInfluencers, useUpdateInfluencerStatus } from "@/hooks/useExternalInfluencers";
 import { useExternalApplications } from "@/hooks/useExternalApplications";
 import { GENRES, INFLUENCER_STATUSES, APPLICATION_STATUSES } from "@/lib/constants";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+
+function formatFollowers(n: number) {
+  if (n >= 10000) return (n / 10000).toFixed(1).replace(/\.0$/, "") + "万";
+  if (n >= 1000) return (n / 1000).toFixed(1).replace(/\.0$/, "") + "K";
+  return n.toLocaleString();
+}
 
 export default function AdminInfluencersPage() {
   const [search, setSearch] = useState("");
