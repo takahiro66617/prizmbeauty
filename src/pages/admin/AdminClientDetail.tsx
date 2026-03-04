@@ -98,6 +98,10 @@ export default function AdminClientDetail() {
 
   const handleSave = () => {
     if (!company || !editForm) return;
+    if (editForm.phone && !/^[\d\-+()]{10,15}$/.test(editForm.phone)) {
+      toast.error("正しい電話番号を入力してください");
+      return;
+    }
     updateCompany.mutate({ id: company.id, updates: editForm }, {
       onSuccess: () => { toast.success("保存しました"); refetch(); },
       onError: () => toast.error("保存に失敗しました"),

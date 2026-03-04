@@ -50,22 +50,23 @@ export default function AdminClientsPage() {
       toast.error("メールアドレス、パスワード、企業名は必須です");
       return;
     }
+    if (regForm.phone && !/^[\d\-+()]{10,15}$/.test(regForm.phone)) {
+      toast.error("正しい電話番号を入力してください");
+      return;
+    }
     setRegLoading(true);
     try {
       const res = await supabase.functions.invoke("register-client", {
-        body: { email: regForm.email, password: regForm.password, company_name: regForm.company_name, display_name: regForm.contact_name || regForm.company_name },
+        body: {
+          email: regForm.email, password: regForm.password, company_name: regForm.company_name,
+          display_name: regForm.contact_name || regForm.company_name,
+          contact_name: regForm.contact_name || null, industry: regForm.industry || null,
+          phone: regForm.phone || null, website: regForm.website || null, description: regForm.description || null,
+        },
       });
       if (res.error) throw res.error;
       const data = res.data as any;
       if (data?.error) { toast.error(data.error); return; }
-      if (data?.user_id) {
-        const { data: comp } = await supabase.from("companies").select("id").eq("user_id", data.user_id).maybeSingle();
-        if (comp && (regForm.industry || regForm.phone || regForm.website || regForm.description)) {
-          await supabase.functions.invoke("admin-manage-data", {
-            body: { action: "update_company", id: comp.id, updates: { industry: regForm.industry || null, phone: regForm.phone || null, website: regForm.website || null, description: regForm.description || null } },
-          });
-        }
-      }
       toast.success("企業アカウントを作成しました");
       setShowRegister(false);
       setRegForm({ email: "", password: "", company_name: "", contact_name: "", industry: "", phone: "", website: "", description: "" });

@@ -42,6 +42,11 @@ export default function ClientSettings() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    const phoneVal = getValue("phone");
+    if (phoneVal && !/^[\d\-+()]{10,15}$/.test(phoneVal)) {
+      toast.error("正しい電話番号を入力してください");
+      return;
+    }
     updateCompany.mutate({
       id: companyId,
       updates: {

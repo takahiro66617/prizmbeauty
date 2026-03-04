@@ -74,9 +74,12 @@ Deno.serve(async (req) => {
       case "update_campaign": {
         const { id, updates } = body;
         if (!id) return jsonError("id is required");
-        // Convert empty strings to null for timestamp/numeric fields
+        // Convert empty strings to null for timestamp/numeric/text fields
         const cleaned = { ...updates };
         for (const key of ["deadline", "payment_date"]) {
+          if (cleaned[key] === "") cleaned[key] = null;
+        }
+        for (const key of ["description", "requirements", "deliverables", "prefecture"]) {
           if (cleaned[key] === "") cleaned[key] = null;
         }
         // Ensure numeric fields are proper numbers
