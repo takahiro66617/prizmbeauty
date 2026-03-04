@@ -22,7 +22,9 @@ import AdminLoginPage from "./pages/admin/AdminLogin";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminCampaignsPage from "./pages/admin/AdminCampaigns";
 import AdminClientsPage from "./pages/admin/AdminClients";
+import AdminClientDetail from "./pages/admin/AdminClientDetail";
 import AdminInfluencersPage from "./pages/admin/AdminInfluencers";
+import AdminInfluencerDetail from "./pages/admin/AdminInfluencerDetail";
 import AdminApplications from "./pages/admin/AdminApplications";
 import AdminMessages from "./pages/admin/AdminMessages";
 import { AdminLayout } from "./components/admin/AdminLayout";
@@ -101,7 +103,9 @@ const App = () => (
             <Route path="dashboard" element={<AdminDashboard />} />
             <Route path="campaigns" element={<AdminCampaignsPage />} />
             <Route path="clients" element={<AdminClientsPage />} />
+            <Route path="clients/:id" element={<AdminClientDetail />} />
             <Route path="influencers" element={<AdminInfluencersPage />} />
+            <Route path="influencers/:id" element={<AdminInfluencerDetail />} />
             <Route path="applications" element={<AdminApplications />} />
             <Route path="messages" element={<AdminMessages />} />
             <Route path="debug-reports" element={<DebugReportsPage />} />

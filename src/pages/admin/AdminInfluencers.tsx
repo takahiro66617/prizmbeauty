@@ -1,8 +1,9 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Download, Search, X, Save } from "lucide-react";
+import { Download, Search } from "lucide-react";
 import HelpGuideModal from "@/components/admin/HelpGuideModal";
 import { useExternalInfluencers, useUpdateInfluencerStatus } from "@/hooks/useExternalInfluencers";
 import { useExternalApplications } from "@/hooks/useExternalApplications";
@@ -10,7 +11,14 @@ import { GENRES, INFLUENCER_STATUSES, APPLICATION_STATUSES } from "@/lib/constan
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
+function formatFollowers(n: number) {
+  if (n >= 10000) return (n / 10000).toFixed(1).replace(/\.0$/, "") + "万";
+  if (n >= 1000) return (n / 1000).toFixed(1).replace(/\.0$/, "") + "K";
+  return n.toLocaleString();
+}
+
 export default function AdminInfluencersPage() {
+  const navigate = useNavigate();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [categoryFilter, setCategoryFilter] = useState("all");
@@ -18,8 +26,6 @@ export default function AdminInfluencersPage() {
   const [followerMin, setFollowerMin] = useState("");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
-  const [selectedInf, setSelectedInf] = useState<any>(null);
-  const [editForm, setEditForm] = useState<any>({});
   const { data: influencers = [], isLoading, refetch } = useExternalInfluencers();
   const { data: applications = [] } = useExternalApplications();
   const updateStatus = useUpdateInfluencerStatus();
@@ -44,63 +50,7 @@ export default function AdminInfluencersPage() {
   };
 
   const openDetail = (inf: any) => {
-    setSelectedInf(inf);
-    setEditForm({
-      name: inf.name, username: inf.username, bio: inf.bio || "",
-      category: inf.category || "",
-      selectedGenres: inf.category ? inf.category.split(",").map((g: string) => g.trim()).filter(Boolean) : [],
-      pendingStatus: inf.status,
-      instagram_followers: inf.instagram_followers || 0, tiktok_followers: inf.tiktok_followers || 0,
-      youtube_followers: inf.youtube_followers || 0, twitter_followers: inf.twitter_followers || 0,
-      instagram_url: (inf as any).instagram_url || "",
-      tiktok_url: (inf as any).tiktok_url || "",
-      youtube_url: (inf as any).youtube_url || "",
-      twitter_url: (inf as any).twitter_url || "",
-    });
-  };
-
-  const toggleGenre = (genre: string) => {
-    setEditForm((prev: any) => ({
-      ...prev,
-      selectedGenres: prev.selectedGenres.includes(genre)
-        ? prev.selectedGenres.filter((g: string) => g !== genre)
-        : [...prev.selectedGenres, genre],
-    }));
-  };
-
-  const handleSaveEdit = async () => {
-    if (!selectedInf) return;
-    const { selectedGenres: genres, pendingStatus, ...rest } = editForm;
-    
-    // Handle status change (including reject)
-    if (pendingStatus && pendingStatus !== selectedInf.status) {
-      if (pendingStatus === "rejected") {
-        if (!window.confirm("このインフルエンサーを却下し退会させますか？")) return;
-      }
-      const { data: statusData, error: statusError } = await supabase.functions.invoke("admin-update-influencer", {
-        body: { id: selectedInf.id, updates: { status: pendingStatus } },
-      });
-      if (statusError || statusData?.error) { toast.error("ステータス更新に失敗しました"); return; }
-    }
-    
-    const updates = {
-      name: rest.name,
-      username: rest.username,
-      bio: rest.bio,
-      category: genres.join(", "),
-      instagram_followers: rest.instagram_followers,
-      tiktok_followers: rest.tiktok_followers,
-      youtube_followers: rest.youtube_followers,
-      twitter_followers: rest.twitter_followers,
-      instagram_url: rest.instagram_url || null,
-      tiktok_url: rest.tiktok_url || null,
-      youtube_url: rest.youtube_url || null,
-      twitter_url: rest.twitter_url || null,
-    };
-    const { data, error } = await supabase.functions.invoke("admin-update-influencer", {
-      body: { id: selectedInf.id, updates },
-    });
-    if (error || data?.error) { toast.error("保存に失敗しました"); } else { toast.success("保存しました"); refetch(); setSelectedInf(null); }
+    navigate(`/admin/influencers/${inf.id}`);
   };
 
   const handleReject = async (id: string) => {
@@ -108,7 +58,7 @@ export default function AdminInfluencersPage() {
     const { data, error } = await supabase.functions.invoke("admin-update-influencer", {
       body: { id, updates: { status: "rejected" } },
     });
-    if (error || data?.error) { toast.error("処理に失敗しました"); } else { toast.success("却下・退会処理を行いました"); refetch(); setSelectedInf(null); }
+    if (error || data?.error) { toast.error("処理に失敗しました"); } else { toast.success("却下・退会処理を行いました"); refetch(); }
   };
 
   const clearFilters = () => {
@@ -217,11 +167,12 @@ export default function AdminInfluencersPage() {
                       {inf.line_user_id ? <Badge className="bg-green-100 text-green-700 text-[10px]">連携済</Badge> : <span className="text-gray-400 text-xs">-</span>}
                     </td>
                     <td className="px-6 py-4">
-                      <div className="flex flex-col gap-0.5">
-                        {inf.instagram_followers ? <span className="text-xs text-pink-600">IG: {inf.instagram_followers.toLocaleString()}</span> : null}
-                        {inf.tiktok_followers ? <span className="text-xs">TT: {inf.tiktok_followers.toLocaleString()}</span> : null}
-                        {inf.youtube_followers ? <span className="text-xs text-red-600">YT: {inf.youtube_followers.toLocaleString()}</span> : null}
-                        {inf.twitter_followers ? <span className="text-xs text-blue-500">X: {inf.twitter_followers.toLocaleString()}</span> : null}
+                      <div className="flex flex-col gap-1">
+                        {inf.instagram_followers ? <div className="flex items-center gap-1.5"><span className="w-5 text-[10px] font-bold text-pink-600">IG</span><span className="text-sm font-semibold text-gray-900">{formatFollowers(inf.instagram_followers)}</span></div> : null}
+                        {inf.tiktok_followers ? <div className="flex items-center gap-1.5"><span className="w-5 text-[10px] font-bold text-gray-700">TT</span><span className="text-sm font-semibold text-gray-900">{formatFollowers(inf.tiktok_followers)}</span></div> : null}
+                        {inf.youtube_followers ? <div className="flex items-center gap-1.5"><span className="w-5 text-[10px] font-bold text-red-600">YT</span><span className="text-sm font-semibold text-gray-900">{formatFollowers(inf.youtube_followers)}</span></div> : null}
+                        {inf.twitter_followers ? <div className="flex items-center gap-1.5"><span className="w-5 text-[10px] font-bold text-blue-500">X</span><span className="text-sm font-semibold text-gray-900">{formatFollowers(inf.twitter_followers)}</span></div> : null}
+                        {!inf.instagram_followers && !inf.tiktok_followers && !inf.youtube_followers && !inf.twitter_followers && <span className="text-xs text-gray-400">-</span>}
                       </div>
                     </td>
                     <td className="px-6 py-4">
@@ -297,114 +248,6 @@ export default function AdminInfluencersPage() {
         <div className="p-4 border-t border-gray-200 text-center text-gray-500 text-sm">全 {filtered.length} 件</div>
       </div>
 
-      {selectedInf && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" onClick={() => setSelectedInf(null)}>
-          <div className="bg-white rounded-2xl w-full max-w-2xl shadow-xl max-h-[90vh] flex flex-col" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between p-6 border-b shrink-0">
-              <h3 className="font-bold text-lg">インフルエンサー詳細・編集</h3>
-              <button onClick={() => setSelectedInf(null)}><X className="w-5 h-5 text-gray-400" /></button>
-            </div>
-            <div className="p-6 space-y-5 overflow-y-auto flex-1">
-              <div className="flex items-center gap-4 mb-4">
-                <img src={selectedInf.image_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(selectedInf.name)}`} alt="" className="w-20 h-20 rounded-full" />
-                <div>
-                  <p className="text-sm text-gray-500">ID: {selectedInf.id.slice(0, 8)}...</p>
-                  <p className="text-xs text-gray-400">LINE: {selectedInf.line_user_id || "未連携"}</p>
-                  <p className="text-xs text-gray-400">登録日: {new Date(selectedInf.created_at).toLocaleDateString("ja-JP")}</p>
-                </div>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div><label className="block text-sm font-medium text-gray-700 mb-1">名前</label>
-                  <Input value={editForm.name} onChange={e => setEditForm({ ...editForm, name: e.target.value })} /></div>
-                <div><label className="block text-sm font-medium text-gray-700 mb-1">ユーザー名</label>
-                  <Input value={editForm.username} onChange={e => setEditForm({ ...editForm, username: e.target.value })} /></div>
-              </div>
-
-              {/* Genre chips */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">投稿ジャンル <span className="text-xs text-gray-400">(複数選択可)</span></label>
-                <div className="flex flex-wrap gap-2">
-                  {GENRES.map(genre => (
-                    <button key={genre} type="button" onClick={() => toggleGenre(genre)}
-                      className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-all ${
-                        editForm.selectedGenres?.includes(genre)
-                          ? "bg-purple-600 text-white border-purple-600"
-                          : "bg-white border-gray-200 text-gray-600 hover:border-purple-400"
-                      }`}>{genre}</button>
-                  ))}
-                </div>
-              </div>
-
-              <div><label className="block text-sm font-medium text-gray-700 mb-1">自己紹介</label>
-                <textarea value={editForm.bio} onChange={e => setEditForm({ ...editForm, bio: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm min-h-[80px]" /></div>
-
-              {/* SNS Followers */}
-              <div className="grid grid-cols-2 gap-4">
-                {[
-                  { key: "instagram_followers", label: "Instagram フォロワー" },
-                  { key: "tiktok_followers", label: "TikTok フォロワー" },
-                  { key: "youtube_followers", label: "YouTube 登録者" },
-                  { key: "twitter_followers", label: "X(Twitter) フォロワー" },
-                ].map(f => (
-                  <div key={f.key}><label className="block text-sm font-medium text-gray-700 mb-1">{f.label}</label>
-                    <Input type="number" value={editForm[f.key]} onChange={e => setEditForm({ ...editForm, [f.key]: Number(e.target.value) })} /></div>
-                ))}
-              </div>
-
-              {/* SNS URLs */}
-              <div className="space-y-3">
-                <h4 className="text-sm font-bold text-gray-800">SNS URL</h4>
-                {[
-                  { key: "instagram_url", label: "Instagram URL", placeholder: "https://instagram.com/username" },
-                  { key: "tiktok_url", label: "TikTok URL", placeholder: "https://tiktok.com/@username" },
-                  { key: "youtube_url", label: "YouTube URL", placeholder: "https://youtube.com/@channel" },
-                  { key: "twitter_url", label: "X(Twitter) URL", placeholder: "https://x.com/username" },
-                ].map(f => (
-                  <div key={f.key}><label className="block text-xs font-medium text-gray-600 mb-1">{f.label}</label>
-                    <Input value={editForm[f.key] || ""} onChange={e => setEditForm({ ...editForm, [f.key]: e.target.value })} placeholder={f.placeholder} /></div>
-                ))}
-              </div>
-
-              {/* Applications */}
-              <div>
-                <h4 className="font-bold text-gray-800 mb-2">受けている案件 ({infApps(selectedInf.id).length}件)</h4>
-                <div className="space-y-2">
-                  {infApps(selectedInf.id).map(a => (
-                    <div key={a.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                      <div>
-                        <p className="font-medium text-sm">{a.campaigns?.title || "-"}</p>
-                        <p className="text-xs text-gray-500">{a.campaigns?.companies?.name || ""}</p>
-                      </div>
-                      <Badge className={a.status === "approved" ? "bg-green-100 text-green-700" : a.status === "applied" ? "bg-blue-100 text-blue-700" : "bg-gray-100 text-gray-700"}>
-                        {APPLICATION_STATUSES.find(s => s.id === a.status)?.label || a.status}
-                      </Badge>
-                    </div>
-                  ))}
-                  {infApps(selectedInf.id).length === 0 && <p className="text-sm text-gray-400">応募なし</p>}
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">ステータス変更</label>
-                <div className="flex gap-2 flex-wrap">
-                  {INFLUENCER_STATUSES.map(s => (
-                    <Button key={s.id} size="sm" variant={editForm.pendingStatus === s.id ? "default" : "outline"}
-                      onClick={() => setEditForm({ ...editForm, pendingStatus: s.id })}
-                      className={editForm.pendingStatus === s.id ? "bg-purple-600" : ""}>
-                      {s.label}
-                    </Button>
-                  ))}
-                </div>
-                <p className="text-xs text-gray-400 mt-1">※ 「保存」ボタンを押すと反映されます</p>
-              </div>
-            </div>
-            <div className="p-6 border-t flex justify-end gap-3 shrink-0">
-              <Button variant="outline" onClick={() => setSelectedInf(null)}>キャンセル</Button>
-              <Button className="bg-purple-600 hover:bg-purple-700" onClick={handleSaveEdit}><Save className="w-4 h-4 mr-2" />保存</Button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
