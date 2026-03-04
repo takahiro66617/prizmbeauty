@@ -27,7 +27,7 @@ serve(async (req) => {
 
     const { data, error } = await supabaseAdmin
       .from("applications")
-      .select("*, campaigns(id, title, image_url, budget_min, budget_max, deadline, category, companies(id, name)), influencer_profiles(id, name, username, image_url, instagram_followers, tiktok_followers, youtube_followers, category, bio, status, user_id)")
+      .select("*, campaigns(id, title, image_url, budget_min, budget_max, deadline, category, description, deliverables, platform, requirements, companies(id, name)), influencer_profiles(id, name, username, image_url, instagram_followers, tiktok_followers, youtube_followers, category, bio, status, user_id)")
       .eq("influencer_id", influencerProfileId)
       .order("applied_at", { ascending: false });
 

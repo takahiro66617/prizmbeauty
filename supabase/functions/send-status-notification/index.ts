@@ -30,7 +30,7 @@ serve(async (req) => {
       .from("applications")
       .update({ status: newStatus })
       .eq("id", applicationId)
-      .select("*, campaigns(id, title, budget_min, budget_max, companies(id, name)), influencer_profiles(id, name, username, user_id, line_user_id)")
+      .select("*, campaigns(id, title, budget_min, budget_max, deadline, description, deliverables, platform, requirements, companies(id, name)), influencer_profiles(id, name, username, user_id, line_user_id)")
       .single();
 
     if (updateError) throw updateError;

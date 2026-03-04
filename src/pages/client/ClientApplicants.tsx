@@ -81,11 +81,29 @@ export default function ClientApplicants() {
     }
   };
 
+  const buildApprovalMessage = (app: any) => {
+    const c = app.campaigns;
+    const title = c?.title || "案件";
+    const lines = [`🎉 おめでとうございます！「${title}」に採用されました。\n`];
+    lines.push("━━━━━━━━━━━━━━━━━━━━");
+    lines.push(`📋 案件名: ${title}`);
+    if (c?.description) lines.push(`\n📝 案件概要:\n${c.description}`);
+    if (c?.deliverables) lines.push(`\n📦 納品物・依頼内容:\n${c.deliverables}`);
+    if (c?.requirements) lines.push(`\n✅ 応募条件・注意事項:\n${c.requirements}`);
+    if (c?.platform) lines.push(`\n📱 投稿プラットフォーム: ${c.platform}`);
+    if (c?.deadline) lines.push(`\n⏰ 締切: ${new Date(c.deadline).toLocaleDateString("ja-JP", { year: "numeric", month: "long", day: "numeric" })}`);
+    const budget = c?.budget_max || c?.budget_min;
+    if (budget) lines.push(`\n💰 報酬: ¥${budget.toLocaleString()}`);
+    lines.push("\n━━━━━━━━━━━━━━━━━━━━");
+    lines.push("\n上記内容をご確認の上、ご不明な点がございましたらこちらのスレッドにてお気軽にご連絡ください。");
+    return lines.join("\n");
+  };
+
   const handleApprove = async (app: any) => {
     try {
       await invokeStatusUpdate(
         app, "approved",
-        `🎉 おめでとうございます！「${app.campaigns?.title || "案件"}」に採用されました。詳細は追ってご連絡いたします。`,
+        buildApprovalMessage(app),
         { title: "案件採用通知", message: `「${app.campaigns?.title || "案件"}」に採用されました！`, type: "success" }
       );
       toast.success("採用しました - メッセージスレッドを開きます");

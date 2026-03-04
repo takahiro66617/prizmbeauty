@@ -45,7 +45,7 @@ Deno.serve(async (req) => {
         const { companyId, campaignId, statuses } = body;
         let query = supabase
           .from("applications")
-          .select("*, campaigns(id, title, image_url, budget_min, budget_max, deadline, category, companies(id, name)), influencer_profiles(id, name, username, image_url, instagram_followers, tiktok_followers, youtube_followers, twitter_followers, category, bio, status, user_id, instagram_url, tiktok_url, youtube_url, twitter_url)")
+          .select("*, campaigns(id, title, image_url, budget_min, budget_max, deadline, category, description, deliverables, platform, requirements, companies(id, name)), influencer_profiles(id, name, username, image_url, instagram_followers, tiktok_followers, youtube_followers, twitter_followers, category, bio, status, user_id, instagram_url, tiktok_url, youtube_url, twitter_url)")
           .order("applied_at", { ascending: false });
         if (companyId) query = query.eq("company_id", companyId);
         if (campaignId) query = query.eq("campaign_id", campaignId);
