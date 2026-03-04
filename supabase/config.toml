@@ -41,3 +41,6 @@ verify_jwt = false
 
 [functions.register-client]
 verify_jwt = false
+
+[functions.admin-manage-data]
+verify_jwt = false

@@ -4,9 +4,9 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Plus, Search, Building2, User, Calendar, X, Save, Trash2, KeyRound } from "lucide-react";
 import HelpGuideModal from "@/components/admin/HelpGuideModal";
-import { useExternalCompanies, useUpdateCompany } from "@/hooks/useExternalCompanies";
+import { useExternalCompanies } from "@/hooks/useExternalCompanies";
 import { useExternalCampaigns } from "@/hooks/useExternalCampaigns";
-import { useExternalApplications } from "@/hooks/useExternalApplications";
+import { useAdminApplications, useAdminUpdateCompany, useAdminDeleteCompany } from "@/hooks/useAdminData";
 import { COMPANY_STATUSES, INDUSTRIES } from "@/lib/constants";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -28,8 +28,9 @@ export default function AdminClientsPage() {
 
   const { data: companies = [], isLoading, refetch } = useExternalCompanies();
   const { data: campaigns = [] } = useExternalCampaigns();
-  const { data: applications = [] } = useExternalApplications();
-  const updateCompany = useUpdateCompany();
+  const { data: applications = [] } = useAdminApplications();
+  const updateCompany = useAdminUpdateCompany();
+  const deleteCompany = useAdminDeleteCompany();
 
   const filtered = companies.filter(c => {
     const matchesSearch = !search || c.name.toLowerCase().includes(search.toLowerCase()) || (c.contact_name || "").toLowerCase().includes(search.toLowerCase()) || (c.contact_email || "").toLowerCase().includes(search.toLowerCase());
@@ -68,10 +69,12 @@ export default function AdminClientsPage() {
     });
   };
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = (id: string) => {
     if (!window.confirm("この企業を削除しますか？")) return;
-    const { error } = await supabase.from("companies").delete().eq("id", id);
-    if (error) { toast.error("削除に失敗しました"); } else { toast.success("削除しました"); refetch(); setSelectedCompany(null); }
+    deleteCompany.mutate(id, {
+      onSuccess: () => { toast.success("削除しました"); refetch(); setSelectedCompany(null); },
+      onError: () => toast.error("削除に失敗しました"),
+    });
   };
 
   const handleRegister = async () => {

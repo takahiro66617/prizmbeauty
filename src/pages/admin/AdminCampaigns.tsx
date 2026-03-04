@@ -4,8 +4,8 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Search, X, Save, AlertTriangle } from "lucide-react";
 import HelpGuideModal from "@/components/admin/HelpGuideModal";
-import { useExternalCampaigns, useUpdateCampaign, useDeleteCampaign } from "@/hooks/useExternalCampaigns";
-import { useExternalApplications } from "@/hooks/useExternalApplications";
+import { useExternalCampaigns } from "@/hooks/useExternalCampaigns";
+import { useAdminUpdateCampaign, useAdminDeleteCampaign, useAdminApplications } from "@/hooks/useAdminData";
 import { CATEGORIES, PLATFORMS, CAMPAIGN_STATUSES } from "@/lib/constants";
 import { toast } from "sonner";
 
@@ -21,9 +21,9 @@ export default function AdminCampaignsPage() {
   const [selectedCampaign, setSelectedCampaign] = useState<any>(null);
   const [editForm, setEditForm] = useState<any>({});
   const { data: campaigns = [], isLoading } = useExternalCampaigns();
-  const { data: applications = [] } = useExternalApplications();
-  const updateCampaign = useUpdateCampaign();
-  const deleteCampaign = useDeleteCampaign();
+  const { data: applications = [] } = useAdminApplications();
+  const updateCampaign = useAdminUpdateCampaign();
+  const deleteCampaign = useAdminDeleteCampaign();
 
   const now = new Date();
 
