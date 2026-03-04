@@ -37,6 +37,40 @@ Deno.serve(async (req) => {
         return jsonOk(data);
       }
 
+      case "get_debug_reports": {
+        const { status } = body;
+        let query = supabase
+          .from("debug_reports")
+          .select("*")
+          .order("created_at", { ascending: false });
+
+        if (status && status !== "all") {
+          query = query.eq("status", status);
+        }
+
+        const { data, error } = await query;
+        if (error) return jsonError(error.message);
+        return jsonOk(data);
+      }
+
+      case "update_debug_report_status": {
+        const { id, status } = body;
+        const allowedStatuses = ["open", "in_progress", "resolved", "wontfix"];
+
+        if (!id || !status) return jsonError("id and status are required");
+        if (!allowedStatuses.includes(status)) return jsonError("invalid status");
+
+        const { data, error } = await supabase
+          .from("debug_reports")
+          .update({ status })
+          .eq("id", id)
+          .select()
+          .single();
+
+        if (error) return jsonError(error.message);
+        return jsonOk(data);
+      }
+
       case "update_campaign": {
         const { id, updates } = body;
         if (!id) return jsonError("id is required");

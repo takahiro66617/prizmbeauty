@@ -1,6 +1,5 @@
 import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { useAdminDebugReports, useAdminUpdateDebugReportStatus } from "@/hooks/useAdminData";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -37,30 +36,9 @@ type Report = {
 export default function DebugReportsPage() {
   const [filter, setFilter] = useState("all");
   const [selectedReport, setSelectedReport] = useState<Report | null>(null);
-  const queryClient = useQueryClient();
+  const { data: reports = [], isLoading } = useAdminDebugReports();
 
-  const { data: reports = [], isLoading } = useQuery({
-    queryKey: ["debug-reports"],
-    queryFn: async () => {
-      const { data, error } = await (supabase as any)
-        .from("debug_reports")
-        .select("*")
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-      return data as Report[];
-    },
-  });
-
-  const updateStatus = useMutation({
-    mutationFn: async ({ id, status }: { id: string; status: string }) => {
-      const { error } = await (supabase as any)
-        .from("debug_reports")
-        .update({ status })
-        .eq("id", id);
-      if (error) throw error;
-    },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["debug-reports"] }),
-  });
+  const updateStatus = useAdminUpdateDebugReportStatus();
 
   const filtered = filter === "all" ? reports : reports.filter(r => r.status === filter);
 
