@@ -53,6 +53,14 @@ export default function AdminInfluencersPage() {
     navigate(`/admin/influencers/${inf.id}`);
   };
 
+  const handleReject = async (id: string) => {
+    if (!window.confirm("このインフルエンサーを却下し退会させますか？")) return;
+    const { data, error } = await supabase.functions.invoke("admin-update-influencer", {
+      body: { id, updates: { status: "rejected" } },
+    });
+    if (error || data?.error) { toast.error("処理に失敗しました"); } else { toast.success("却下・退会処理を行いました"); refetch(); }
+  };
+
   const clearFilters = () => {
     setSearch(""); setStatusFilter("all"); setCategoryFilter("all"); setLineFilter("all");
     setFollowerMin(""); setDateFrom(""); setDateTo("");
