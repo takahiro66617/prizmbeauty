@@ -34,6 +34,7 @@ import ClientCampaignNew from "./pages/client/ClientCampaignNew";
 import ClientApplicants from "./pages/client/ClientApplicants";
 import ClientMessages from "./pages/client/ClientMessages";
 import ClientSettings from "./pages/client/ClientSettings";
+import ClientPayments from "./pages/client/ClientPayments";
 import MyPageLayout from "./components/layout/MyPageLayout";
 import MyPageDashboard from "./pages/mypage/MyPageDashboard";
 import MyPageApplications from "./pages/mypage/MyPageApplications";
