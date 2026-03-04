@@ -264,6 +264,9 @@ export default function AdminCampaignsPage() {
               <div><label className="block text-sm font-medium text-gray-700 mb-1">応募条件</label>
                 <textarea value={editForm.requirements} onChange={e => setEditForm({ ...editForm, requirements: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm min-h-[80px]" /></div>
+              <div><label className="block text-sm font-medium text-gray-700 mb-1">納品物・依頼内容</label>
+                <textarea value={editForm.deliverables} onChange={e => setEditForm({ ...editForm, deliverables: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm min-h-[80px]" /></div>
 
               <div>
                 <h4 className="font-bold text-gray-800 mb-2">この案件への応募 ({applications.filter(a => a.campaign_id === selectedCampaign.id).length}件)</h4>
