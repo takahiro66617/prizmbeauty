@@ -1,16 +1,28 @@
 
 
+## 問題の根本原因
+
+`LineCallback.tsx` の処理順序にバグがあります。
+
+現在の順序:
+1. 友だち追加チェック（42行目） → 未追加ならエラー表示で**停止**
+2. 新規ユーザー判定（129行目） → ここに到達しない
+
+新規ユーザーが「LINEでログイン」を押した場合、友だち未追加なので42行目でエラーになり、129行目の「新規→友だち追加画面へリダイレクト」に**到達できません**。これが原因です。
+
+## LINE OAuthについて
+
+LINE OAuth画面（access.line.me）は、ユーザーを特定するために**技術的に回避不可能**です。「LINEでログイン」ボタンを押した場合、LINE画面を経由してからコールバックで新規/既存を判定します。ただし、判定後は即座に友だち追加画面へリダイレクトするため、体感としてはスムーズに遷移します。
+
 ## 修正内容
 
-現在、新規ユーザーが「LINEでログイン」を押した場合、LINE認証後に `isNewUser=true` かつ `pendingRegistration` なしの状態になり、129-137行目でそのまま `/auth/register/profile` に飛ばしています。
+### `src/pages/auth/LineCallback.tsx`
 
-これを `/auth/register/add-friend`（友だち追加画面）にリダイレクトするよう変更します。LINE profileはsessionStorageに保存しておき、友だち追加画面から正規フローに合流させます。
+処理順序を変更:
+1. まず `isNewUser` かつ `pendingRegistration` なし → **友だちチェックをスキップして**即座に `/auth/register/add-friend` へリダイレクト
+2. それ以外（既存ユーザー or 登録完了フロー）→ 従来通り友だちチェック実行
 
-### 変更ファイル: `src/pages/auth/LineCallback.tsx`
+### `src/pages/Login.tsx`
 
-129-137行目の「新規ユーザー・pendingRegistrationなし」ケースを変更:
-- 遷移先を `/auth/register/profile` → `/auth/register/add-friend` に変更
-- `lineProfile` と `lineFriendAdded` をsessionStorageに保存（友だち追加画面→プロフィール画面で利用）
-
-これにより、新規ユーザーが誤って「ログイン」ボタンを押しても、友だち追加画面に案内され、正規の登録フロー（友だち追加→プロフィール入力→LINE認証→完了）に合流できます。
+「LINEでログイン」クリック時に古いセッションデータ（`pendingRegistration`, `lineFriendAdded`, `lineProfile`）をクリアして、誤分岐を防止。
 
