@@ -24,7 +24,7 @@ export default function MyPageCampaigns() {
   const [deadlineFrom, setDeadlineFrom] = useState<Date | undefined>();
   const [deadlineTo, setDeadlineTo] = useState<Date | undefined>();
   const [sortBy, setSortBy] = useState("newest");
-  const [statusFilter, setStatusFilter] = useState<"all" | "recruiting" | "closed">("recruiting");
+  const [statusFilter, setStatusFilter] = useState<"all" | "recruiting" | "closed">("all");
 
   const visibleCampaigns = campaigns.filter(c => {
     if (statusFilter === "recruiting") return c.status === "recruiting";
@@ -91,9 +91,9 @@ export default function MyPageCampaigns() {
       {/* Status tabs */}
       <div className="flex gap-2">
         {([
+          { value: "all" as const, label: "すべて" },
           { value: "recruiting" as const, label: "募集中" },
           { value: "closed" as const, label: "募集終了" },
-          { value: "all" as const, label: "すべて" },
         ]).map(tab => (
           <Button
             key={tab.value}
