@@ -70,14 +70,16 @@ export default function LineCallback() {
           return;
         }
 
-        // New user - go to registration
+        // New user - proceed directly to profile registration
+        // Friend-add is requested during LINE OAuth via bot_prompt=aggressive
         const lineProfile = data.lineProfile || {
           userId: data.user?.line_user_id,
           displayName: data.user?.name,
           pictureUrl: data.user?.image_url,
         };
         sessionStorage.setItem("lineProfile", JSON.stringify(lineProfile));
-        navigate("/auth/register/add-friend");
+        sessionStorage.setItem("lineFriendAdded", "true");
+        navigate("/auth/register/profile");
       } catch {
         setError("通信エラーが発生しました");
       }
