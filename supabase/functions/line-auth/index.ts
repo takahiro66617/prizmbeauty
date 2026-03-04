@@ -17,6 +17,14 @@ Deno.serve(async (req) => {
     const { code, redirect_uri } = await req.json();
     const LINE_CHANNEL_SECRET = Deno.env.get("LINE_CHANNEL_SECRET");
 
+    if (!LINE_CHANNEL_SECRET) {
+      console.error("LINE_CHANNEL_SECRET is not configured");
+      return new Response(
+        JSON.stringify({ error: "Server configuration error: LINE_CHANNEL_SECRET missing" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     if (!code || !redirect_uri) {
       return new Response(
         JSON.stringify({ error: "code and redirect_uri are required" }),
@@ -33,7 +41,7 @@ Deno.serve(async (req) => {
         code,
         redirect_uri,
         client_id: LINE_CHANNEL_ID,
-        client_secret: LINE_CHANNEL_SECRET!,
+        client_secret: LINE_CHANNEL_SECRET,
       }),
     });
 
@@ -62,7 +70,23 @@ Deno.serve(async (req) => {
       );
     }
 
-    // 3. Check if user exists in Lovable Cloud DB
+    // 3. Check friendship status
+    let friendFlag = false;
+    try {
+      const friendshipRes = await fetch("https://api.line.me/friendship/v1/status", {
+        headers: { Authorization: `Bearer ${tokenData.access_token}` },
+      });
+      if (friendshipRes.ok) {
+        const friendshipData = await friendshipRes.json();
+        friendFlag = friendshipData.friendFlag === true;
+      } else {
+        console.error("LINE friendship check failed:", await friendshipRes.text());
+      }
+    } catch (e) {
+      console.error("Friendship API error:", e);
+    }
+
+    // 4. Check if user exists in DB
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
     const supabase = createClient(supabaseUrl!, serviceRoleKey!);
@@ -85,6 +109,7 @@ Deno.serve(async (req) => {
     return new Response(
       JSON.stringify({
         isNewUser: !existingUser,
+        friendFlag,
         lineProfile: {
           userId: profileData.userId,
           displayName: profileData.displayName,

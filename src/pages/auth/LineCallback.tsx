@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
 
 const SUPABASE_PROJECT_ID = import.meta.env.VITE_SUPABASE_PROJECT_ID;
 
@@ -19,8 +18,6 @@ export default function LineCallback() {
       return;
     }
 
-    // LIFF環境（LINE内ブラウザ）ではlocalStorageが保持されないケースがあるため、
-    // savedStateがnullの場合はstate検証をスキップする
     const isLiffEnvironment = !savedState || navigator.userAgent.includes("Line");
     if (!isLiffEnvironment && state !== savedState) {
       setError("認証状態が一致しません。もう一度お試しください。");
@@ -52,7 +49,6 @@ export default function LineCallback() {
 
         // Use line-auth response directly (it queries with service role key, bypassing RLS)
         if (!data.isNewUser && data.user) {
-          // Existing user - store session and go to dashboard
           const existing = data.user;
           const mockUser = {
             id: existing.id,
@@ -70,15 +66,19 @@ export default function LineCallback() {
           return;
         }
 
-        // New user - proceed directly to profile registration
-        // Friend-add is requested during LINE OAuth via bot_prompt=aggressive
+        // New user - check friendship status
+        if (!data.friendFlag) {
+          setError("LINE公式アカウントの友だち追加が確認できませんでした。\nログイン画面に戻り、再度LINEログインを行う際に「友だち追加」にチェックを入れてください。");
+          return;
+        }
+
+        // Friend added - proceed to profile registration
         const lineProfile = data.lineProfile || {
           userId: data.user?.line_user_id,
           displayName: data.user?.name,
           pictureUrl: data.user?.image_url,
         };
         sessionStorage.setItem("lineProfile", JSON.stringify(lineProfile));
-        sessionStorage.setItem("lineFriendAdded", "true");
         navigate("/auth/register/profile");
       } catch {
         setError("通信エラーが発生しました");
@@ -91,8 +91,8 @@ export default function LineCallback() {
   if (error) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background p-4">
-        <div className="text-center space-y-4">
-          <p className="text-destructive font-medium">{error}</p>
+        <div className="text-center space-y-4 max-w-sm">
+          <p className="text-destructive font-medium whitespace-pre-line">{error}</p>
           <button
             onClick={() => navigate("/auth/login")}
             className="text-primary underline text-sm"
