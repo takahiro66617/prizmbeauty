@@ -6,12 +6,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useExternalCampaigns } from "@/hooks/useExternalCampaigns";
 import { Search, X, Users, Calendar, ArrowRight, SlidersHorizontal, FileText } from "lucide-react";
-import { CATEGORIES } from "@/lib/constants";
+import { CATEGORIES, PREFECTURES } from "@/lib/constants";
 
 export default function CampaignsPage() {
   const { data: allCampaigns = [], isLoading } = useExternalCampaigns();
   const [keyword, setKeyword] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
+  const [selectedPrefecture, setSelectedPrefecture] = useState("");
   const [sortOrder, setSortOrder] = useState("newest");
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 9;
@@ -25,6 +26,9 @@ export default function CampaignsPage() {
   }
   if (selectedCategory) {
     filtered = filtered.filter(c => c.category === selectedCategory);
+  }
+  if (selectedPrefecture) {
+    filtered = filtered.filter(c => (c as any).prefecture === selectedPrefecture);
   }
   filtered.sort((a, b) => {
     if (sortOrder === "reward_desc") return (b.budget_max || 0) - (a.budget_max || 0);
@@ -55,6 +59,10 @@ export default function CampaignsPage() {
               <option value="">すべてのカテゴリ</option>
               {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
             </select>
+            <select className="h-10 px-3 rounded-full border border-input bg-background text-sm" value={selectedPrefecture} onChange={e => setSelectedPrefecture(e.target.value)}>
+              <option value="">すべての都道府県</option>
+              {PREFECTURES.map(p => <option key={p} value={p}>{p}</option>)}
+            </select>
             <div className="flex items-center gap-2 ml-auto">
               <SlidersHorizontal className="w-4 h-4 text-muted-foreground" />
               <select className="h-10 px-3 rounded-full border border-input bg-background text-sm" value={sortOrder} onChange={e => setSortOrder(e.target.value)}>
@@ -63,8 +71,8 @@ export default function CampaignsPage() {
                 <option value="deadline_asc">締切が近い順</option>
               </select>
             </div>
-            {(keyword || selectedCategory) && (
-              <Button variant="ghost" size="sm" onClick={() => { setKeyword(""); setSelectedCategory(""); }}>
+            {(keyword || selectedCategory || selectedPrefecture) && (
+              <Button variant="ghost" size="sm" onClick={() => { setKeyword(""); setSelectedCategory(""); setSelectedPrefecture(""); }}>
                 <X className="w-4 h-4 mr-1" /> リセット
               </Button>
             )}

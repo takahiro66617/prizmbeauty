@@ -19,11 +19,16 @@ export default function LineCallback() {
       return;
     }
 
-    if (state !== savedState) {
+    // LIFF環境（LINE内ブラウザ）ではlocalStorageが保持されないケースがあるため、
+    // savedStateがnullの場合はstate検証をスキップする
+    const isLiffEnvironment = !savedState || navigator.userAgent.includes("Line");
+    if (!isLiffEnvironment && state !== savedState) {
       setError("認証状態が一致しません。もう一度お試しください。");
       return;
     }
-    localStorage.removeItem("line_oauth_state");
+    if (savedState) {
+      localStorage.removeItem("line_oauth_state");
+    }
 
     const exchangeCode = async () => {
       try {

@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useExternalCampaigns } from "@/hooks/useExternalCampaigns";
-import { GENRES, PLATFORMS } from "@/lib/constants";
+import { GENRES, PLATFORMS, PREFECTURES } from "@/lib/constants";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
@@ -19,6 +19,7 @@ export default function MyPageCampaigns() {
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [platformFilter, setPlatformFilter] = useState("all");
   const [showFilters, setShowFilters] = useState(false);
+  const [prefectureFilter, setPrefectureFilter] = useState("all");
   const [budgetMin, setBudgetMin] = useState("");
   const [budgetMax, setBudgetMax] = useState("");
   const [deadlineFrom, setDeadlineFrom] = useState<Date | undefined>();
@@ -36,16 +37,18 @@ export default function MyPageCampaigns() {
     let c = 0;
     if (categoryFilter !== "all") c++;
     if (platformFilter !== "all") c++;
+    if (prefectureFilter !== "all") c++;
     if (budgetMin) c++;
     if (budgetMax) c++;
     if (deadlineFrom) c++;
     if (deadlineTo) c++;
     return c;
-  }, [categoryFilter, platformFilter, budgetMin, budgetMax, deadlineFrom, deadlineTo]);
+  }, [categoryFilter, platformFilter, prefectureFilter, budgetMin, budgetMax, deadlineFrom, deadlineTo]);
 
   const clearFilters = () => {
     setCategoryFilter("all");
     setPlatformFilter("all");
+    setPrefectureFilter("all");
     setBudgetMin("");
     setBudgetMax("");
     setDeadlineFrom(undefined);
@@ -57,7 +60,8 @@ export default function MyPageCampaigns() {
       const matchesSearch = !searchQuery || c.title.toLowerCase().includes(searchQuery.toLowerCase()) || (c.companies?.name || "").toLowerCase().includes(searchQuery.toLowerCase());
       const matchesCategory = categoryFilter === "all" || c.category === categoryFilter;
       const matchesPlatform = platformFilter === "all" || (c.platform || "").toLowerCase().includes(platformFilter.toLowerCase());
-      if (!matchesSearch || !matchesCategory || !matchesPlatform) return false;
+      const matchesPrefecture = prefectureFilter === "all" || (c as any).prefecture === prefectureFilter;
+      if (!matchesSearch || !matchesCategory || !matchesPlatform || !matchesPrefecture) return false;
       const budget = c.budget_max || c.budget_min || 0;
       if (budgetMin && budget < Number(budgetMin)) return false;
       if (budgetMax && budget > Number(budgetMax)) return false;
@@ -79,7 +83,7 @@ export default function MyPageCampaigns() {
     });
 
     return result;
-  }, [visibleCampaigns, searchQuery, categoryFilter, platformFilter, budgetMin, budgetMax, deadlineFrom, deadlineTo, sortBy]);
+  }, [visibleCampaigns, searchQuery, categoryFilter, platformFilter, prefectureFilter, budgetMin, budgetMax, deadlineFrom, deadlineTo, sortBy]);
 
   return (
     <div className="space-y-6 pb-20">
@@ -132,7 +136,7 @@ export default function MyPageCampaigns() {
             <h3 className="text-sm font-bold text-gray-700">詳細フィルター</h3>
             {activeFilterCount > 0 && <button onClick={clearFilters} className="text-xs text-pink-500 hover:underline">すべてクリア</button>}
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1">カテゴリ</label>
               <select value={categoryFilter} onChange={e => setCategoryFilter(e.target.value)} className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm bg-white">
@@ -145,6 +149,13 @@ export default function MyPageCampaigns() {
               <select value={platformFilter} onChange={e => setPlatformFilter(e.target.value)} className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm bg-white">
                 <option value="all">すべて</option>
                 {PLATFORMS.map(p => <option key={p} value={p}>{p}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">都道府県</label>
+              <select value={prefectureFilter} onChange={e => setPrefectureFilter(e.target.value)} className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm bg-white">
+                <option value="all">すべて</option>
+                {PREFECTURES.map(p => <option key={p} value={p}>{p}</option>)}
               </select>
             </div>
           </div>

@@ -121,6 +121,7 @@ export type Database = {
           max_applicants: number | null
           payment_date: string | null
           platform: string | null
+          prefecture: string | null
           requirements: string | null
           status: string
           title: string
@@ -141,6 +142,7 @@ export type Database = {
           max_applicants?: number | null
           payment_date?: string | null
           platform?: string | null
+          prefecture?: string | null
           requirements?: string | null
           status?: string
           title: string
@@ -161,6 +163,7 @@ export type Database = {
           max_applicants?: number | null
           payment_date?: string | null
           platform?: string | null
+          prefecture?: string | null
           requirements?: string | null
           status?: string
           title?: string
