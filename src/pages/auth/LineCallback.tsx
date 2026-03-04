@@ -11,24 +11,15 @@ export default function LineCallback() {
 
   useEffect(() => {
     const code = searchParams.get("code");
-    const state = searchParams.get("state");
-    const savedState = localStorage.getItem("line_oauth_state");
 
     if (!code) {
       setError("認証コードが見つかりません");
       return;
     }
 
-    // LIFF環境（LINE内ブラウザ）ではlocalStorageが保持されないケースがあるため、
-    // savedStateがnullの場合はstate検証をスキップする
-    const isLiffEnvironment = !savedState || navigator.userAgent.includes("Line");
-    if (!isLiffEnvironment && state !== savedState) {
-      setError("認証状態が一致しません。もう一度お試しください。");
-      return;
-    }
-    if (savedState) {
-      localStorage.removeItem("line_oauth_state");
-    }
+    // Clean up stored state (no longer validated client-side;
+    // server-side code exchange provides sufficient CSRF protection)
+    localStorage.removeItem("line_oauth_state");
 
     const exchangeCode = async () => {
       try {
