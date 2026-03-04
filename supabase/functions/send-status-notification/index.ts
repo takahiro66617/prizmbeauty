@@ -102,15 +102,15 @@ serve(async (req) => {
           .eq("user_id", targetUserId)
           .single();
 
-        if (bankAccount) {
-          const bankContent = `🏦 振込先情報\n\n銀行名: ${bankAccount.bank_name}\n支店名: ${bankAccount.branch_name}\n口座種別: ${bankAccount.account_type === "ordinary" ? "普通" : bankAccount.account_type === "current" ? "当座" : bankAccount.account_type}\n口座番号: ${bankAccount.account_number}\n口座名義: ${bankAccount.account_holder}`;
-          
-          // Get company user_id for receiver
-          const { data: companyData } = await supabaseAdmin
-            .from("companies")
-            .select("user_id")
-            .eq("id", updatedApp.company_id)
-            .single();
+        // Get company user_id for receiver
+        const { data: companyData } = await supabaseAdmin
+          .from("companies")
+          .select("user_id")
+          .eq("id", updatedApp.company_id)
+          .single();
+
+        if (bankAccount && bankAccount.bank_name) {
+          const bankContent = `🏦 振込先情報（自動送信）\n\n銀行名: ${bankAccount.bank_name}\n支店名: ${bankAccount.branch_name}\n口座種別: ${bankAccount.account_type === "ordinary" ? "普通" : bankAccount.account_type === "current" ? "当座" : bankAccount.account_type}\n口座番号: ${bankAccount.account_number}\n口座名義: ${bankAccount.account_holder}`;
 
           const { error: bankMsgError } = await supabaseAdmin.from("messages").insert({
             sender_id: targetUserId,
@@ -118,10 +118,30 @@ serve(async (req) => {
             content: bankContent,
             application_id: applicationId,
             message_type: "bank_info",
+            visibility: "all",
           });
           if (bankMsgError) console.error("Bank info message error:", bankMsgError);
         } else {
-          console.log("No bank account found for influencer:", targetUserId);
+          // Notify influencer to register bank account
+          const noBankContent = `⚠️ 振込先情報が未登録です。\n\nマイページの「報酬管理」から振込先口座を登録してください。登録後、企業への振込先共有が可能になります。`;
+          const { error: noBankMsgError } = await supabaseAdmin.from("messages").insert({
+            sender_id: companyData?.user_id || updatedApp.company_id,
+            receiver_id: targetUserId,
+            content: noBankContent,
+            application_id: applicationId,
+            message_type: "text",
+            visibility: "admin_influencer",
+          });
+          if (noBankMsgError) console.error("No bank info notification error:", noBankMsgError);
+
+          // Also create a notification
+          await supabaseAdmin.from("notifications").insert({
+            user_id: targetUserId,
+            title: "振込先口座を登録してください",
+            message: `「${updatedApp.campaigns?.title || "案件"}」の投稿が承認されました。報酬を受け取るために振込先口座を登録してください。`,
+            type: "warning",
+            link: "/mypage/rewards",
+          });
         }
       } catch (e) {
         console.error("Failed to send bank info:", e);
