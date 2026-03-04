@@ -92,7 +92,7 @@ serve(async (req) => {
       }
     }
 
-    // 5. Auto-send bank account info when post is confirmed
+    // 5. Auto-send bank account info + payment date when post is confirmed
     if (newStatus === "post_confirmed" && influencer) {
       const targetUserId = influencer.user_id || influencer.id;
       try {
@@ -100,7 +100,7 @@ serve(async (req) => {
           .from("bank_accounts")
           .select("*")
           .eq("user_id", targetUserId)
-          .single();
+          .maybeSingle();
 
         // Get company user_id for receiver
         const { data: companyData } = await supabaseAdmin
@@ -109,8 +109,13 @@ serve(async (req) => {
           .eq("id", updatedApp.company_id)
           .single();
 
+        // Format payment date
+        const paymentDate = updatedApp.campaigns?.payment_date
+          ? new Date(updatedApp.campaigns.payment_date).toLocaleDateString("ja-JP", { year: "numeric", month: "long", day: "numeric" })
+          : "未設定";
+
         if (bankAccount && bankAccount.bank_name) {
-          const bankContent = `🏦 振込先情報（自動送信）\n\n銀行名: ${bankAccount.bank_name}\n支店名: ${bankAccount.branch_name}\n口座種別: ${bankAccount.account_type === "ordinary" ? "普通" : bankAccount.account_type === "current" ? "当座" : bankAccount.account_type}\n口座番号: ${bankAccount.account_number}\n口座名義: ${bankAccount.account_holder}`;
+          const bankContent = `🏦 振込先情報（自動送信）\n\n銀行名: ${bankAccount.bank_name}\n支店名: ${bankAccount.branch_name}\n口座種別: ${bankAccount.account_type === "ordinary" ? "普通" : bankAccount.account_type === "current" ? "当座" : bankAccount.account_type}\n口座番号: ${bankAccount.account_number}\n口座名義: ${bankAccount.account_holder}\n\n💰 振込予定日: ${paymentDate}`;
 
           const { error: bankMsgError } = await supabaseAdmin.from("messages").insert({
             sender_id: targetUserId,
@@ -122,8 +127,20 @@ serve(async (req) => {
           });
           if (bankMsgError) console.error("Bank info message error:", bankMsgError);
         } else {
+          // Send message to company that bank info is not registered yet
+          const noBankForCompany = `⚠️ 振込先情報が未登録です。\n\nインフルエンサーに口座登録を依頼しています。登録され次第、振込先情報が共有されます。\n\n💰 振込予定日: ${paymentDate}`;
+          const { error: noBankCompanyError } = await supabaseAdmin.from("messages").insert({
+            sender_id: targetUserId,
+            receiver_id: companyData?.user_id || updatedApp.company_id,
+            content: noBankForCompany,
+            application_id: applicationId,
+            message_type: "text",
+            visibility: "admin_company",
+          });
+          if (noBankCompanyError) console.error("No bank info company message error:", noBankCompanyError);
+
           // Notify influencer to register bank account
-          const noBankContent = `⚠️ 振込先情報が未登録です。\n\nマイページの「報酬管理」から振込先口座を登録してください。登録後、企業への振込先共有が可能になります。`;
+          const noBankContent = `⚠️ 振込先情報が未登録です。\n\nマイページの「報酬管理」から振込先口座を登録してください。登録後、企業への振込先共有が可能になります。\n\n💰 振込予定日: ${paymentDate}`;
           const { error: noBankMsgError } = await supabaseAdmin.from("messages").insert({
             sender_id: companyData?.user_id || updatedApp.company_id,
             receiver_id: targetUserId,
@@ -138,7 +155,7 @@ serve(async (req) => {
           await supabaseAdmin.from("notifications").insert({
             user_id: targetUserId,
             title: "振込先口座を登録してください",
-            message: `「${updatedApp.campaigns?.title || "案件"}」の投稿が承認されました。報酬を受け取るために振込先口座を登録してください。`,
+            message: `「${updatedApp.campaigns?.title || "案件"}」の投稿が承認されました。報酬を受け取るために振込先口座を登録してください。振込予定日: ${paymentDate}`,
             type: "warning",
             link: "/mypage/rewards",
           });
