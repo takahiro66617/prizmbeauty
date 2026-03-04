@@ -50,6 +50,7 @@ export default function AdminCampaignsPage() {
       deadline: campaign.deadline ? campaign.deadline.split("T")[0] : "",
       payment_date: (campaign as any).payment_date ? (campaign as any).payment_date.split("T")[0] : "",
       requirements: campaign.requirements || "", platform: campaign.platform || "", status: campaign.status,
+      deliverables: campaign.deliverables || "",
     });
   };
 
