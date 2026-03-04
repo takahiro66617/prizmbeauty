@@ -33,6 +33,10 @@ export function ApplicationProgressTimeline({ status, appliedAt, updatedAt, infl
   const deadlineDays = campaign?.deadline ? Math.ceil((new Date(campaign.deadline).getTime() - now.getTime()) / 86400000) : null;
   const paymentDays = campaign?.payment_date ? Math.ceil((new Date(campaign.payment_date).getTime() - now.getTime()) / 86400000) : null;
 
+  // 7-day response deadline for approved status
+  const approvedDeadline = status === "approved" ? new Date(new Date(updatedAt).getTime() + 7 * 24 * 60 * 60 * 1000) : null;
+  const approvedDaysLeft = approvedDeadline ? Math.ceil((approvedDeadline.getTime() - now.getTime()) / 86400000) : null;
+
   const appSt = APPLICATION_STATUSES.find(s => s.id === status);
 
   return (
