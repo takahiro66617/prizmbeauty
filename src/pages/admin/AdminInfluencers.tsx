@@ -18,6 +18,7 @@ function formatFollowers(n: number) {
 }
 
 export default function AdminInfluencersPage() {
+  const navigate = useNavigate();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [categoryFilter, setCategoryFilter] = useState("all");
@@ -25,8 +26,6 @@ export default function AdminInfluencersPage() {
   const [followerMin, setFollowerMin] = useState("");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
-  const [selectedInf, setSelectedInf] = useState<any>(null);
-  const [editForm, setEditForm] = useState<any>({});
   const { data: influencers = [], isLoading, refetch } = useExternalInfluencers();
   const { data: applications = [] } = useExternalApplications();
   const updateStatus = useUpdateInfluencerStatus();
