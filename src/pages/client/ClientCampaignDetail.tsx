@@ -233,5 +233,6 @@ export default function ClientCampaignDetail() {
           </div>
         ) : <p className="text-sm text-gray-400 text-center py-8">応募なし</p>}
       </div>
+    </div>
   );
 }
