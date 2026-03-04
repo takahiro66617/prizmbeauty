@@ -167,11 +167,12 @@ export default function AdminInfluencersPage() {
                       {inf.line_user_id ? <Badge className="bg-green-100 text-green-700 text-[10px]">連携済</Badge> : <span className="text-gray-400 text-xs">-</span>}
                     </td>
                     <td className="px-6 py-4">
-                      <div className="flex flex-col gap-0.5">
-                        {inf.instagram_followers ? <span className="text-xs text-pink-600">IG: {inf.instagram_followers.toLocaleString()}</span> : null}
-                        {inf.tiktok_followers ? <span className="text-xs">TT: {inf.tiktok_followers.toLocaleString()}</span> : null}
-                        {inf.youtube_followers ? <span className="text-xs text-red-600">YT: {inf.youtube_followers.toLocaleString()}</span> : null}
-                        {inf.twitter_followers ? <span className="text-xs text-blue-500">X: {inf.twitter_followers.toLocaleString()}</span> : null}
+                      <div className="flex flex-col gap-1">
+                        {inf.instagram_followers ? <div className="flex items-center gap-1.5"><span className="w-5 text-[10px] font-bold text-pink-600">IG</span><span className="text-sm font-semibold text-gray-900">{formatFollowers(inf.instagram_followers)}</span></div> : null}
+                        {inf.tiktok_followers ? <div className="flex items-center gap-1.5"><span className="w-5 text-[10px] font-bold text-gray-700">TT</span><span className="text-sm font-semibold text-gray-900">{formatFollowers(inf.tiktok_followers)}</span></div> : null}
+                        {inf.youtube_followers ? <div className="flex items-center gap-1.5"><span className="w-5 text-[10px] font-bold text-red-600">YT</span><span className="text-sm font-semibold text-gray-900">{formatFollowers(inf.youtube_followers)}</span></div> : null}
+                        {inf.twitter_followers ? <div className="flex items-center gap-1.5"><span className="w-5 text-[10px] font-bold text-blue-500">X</span><span className="text-sm font-semibold text-gray-900">{formatFollowers(inf.twitter_followers)}</span></div> : null}
+                        {!inf.instagram_followers && !inf.tiktok_followers && !inf.youtube_followers && !inf.twitter_followers && <span className="text-xs text-gray-400">-</span>}
                       </div>
                     </td>
                     <td className="px-6 py-4">
