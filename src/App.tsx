@@ -96,7 +96,9 @@ const App = () => (
             <Route path="dashboard" element={<ClientDashboard />} />
             <Route path="campaigns" element={<ClientCampaigns />} />
             <Route path="campaigns/new" element={<ClientCampaignNew />} />
+            <Route path="campaigns/:id" element={<ClientCampaignDetail />} />
             <Route path="applicants" element={<ClientApplicants />} />
+            <Route path="applicants/:id" element={<ClientApplicantDetail />} />
             <Route path="messages" element={<ClientMessages />} />
             <Route path="settings" element={<ClientSettings />} />
             <Route path="payments" element={<ClientPayments />} />
