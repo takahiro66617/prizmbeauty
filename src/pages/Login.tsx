@@ -18,7 +18,7 @@ export default function LoginPage() {
     const state = generateState();
     localStorage.setItem("line_oauth_state", state);
     const redirectUri = `${window.location.origin}/auth/line/callback`;
-    const url = `https://access.line.me/oauth2/v2.1/authorize?response_type=code&client_id=${LINE_CHANNEL_ID}&redirect_uri=${encodeURIComponent(redirectUri)}&state=${state}&scope=profile%20openid&bot_prompt=aggressive`;
+    const url = `https://access.line.me/oauth2/v2.1/authorize?response_type=code&client_id=${LINE_CHANNEL_ID}&redirect_uri=${encodeURIComponent(redirectUri)}&state=${state}&scope=profile%20openid&bot_prompt=normal`;
     window.location.href = url;
   };
 
