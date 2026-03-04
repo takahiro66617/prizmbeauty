@@ -405,28 +405,66 @@ export default function ClientPayments() {
                     </div>
                   </button>
 
-                  {/* Expanded: Individual payments */}
+                  {/* Expanded: Individual payments with bank info */}
                   {isExpanded && (
                     <div className="divide-y divide-gray-100">
                       {group.payments.map(p => (
-                        <div key={p.id} className="flex items-center justify-between p-4 bg-white">
-                          <div className="flex items-center gap-3 min-w-0 flex-1">
-                            <img
-                              src={p.influencer_profiles?.image_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(p.influencer_profiles?.name || "?")}&background=random`}
-                              alt=""
-                              className="w-9 h-9 rounded-full shrink-0"
-                            />
-                            <div className="min-w-0">
-                              <p className="font-medium text-sm text-gray-900">{p.influencer_profiles?.name || "不明"}</p>
-                              <p className="text-xs text-gray-400">@{p.influencer_profiles?.username || "-"} · {new Date(p.created_at).toLocaleDateString("ja-JP")}</p>
+                        <div key={p.id} className="p-4 bg-white space-y-3">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3 min-w-0 flex-1">
+                              <img
+                                src={p.influencer_profiles?.image_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(p.influencer_profiles?.name || "?")}&background=random`}
+                                alt=""
+                                className="w-10 h-10 rounded-full shrink-0 border-2 border-gray-100"
+                              />
+                              <div className="min-w-0">
+                                <p className="font-bold text-sm text-gray-900">{p.influencer_profiles?.name || "不明"}</p>
+                                <p className="text-xs text-gray-400">@{p.influencer_profiles?.username || "-"} · 登録日: {new Date(p.created_at).toLocaleDateString("ja-JP")}</p>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-3 shrink-0">
+                              <Badge className={p.status === "paid" ? "bg-green-100 text-green-700" : "bg-orange-100 text-orange-700"}>
+                                {p.status === "paid" ? "振込済" : "振込待ち"}
+                              </Badge>
+                              <span className="font-bold text-gray-900 min-w-[80px] text-right">¥{p.amount.toLocaleString()}</span>
                             </div>
                           </div>
-                          <div className="flex items-center gap-3 shrink-0">
-                            <Badge className={p.status === "paid" ? "bg-green-100 text-green-700" : "bg-orange-100 text-orange-700"}>
-                              {p.status === "paid" ? "振込済" : "振込待ち"}
-                            </Badge>
-                            <span className="font-bold text-gray-900 min-w-[80px] text-right">¥{p.amount.toLocaleString()}</span>
-                          </div>
+                          {/* Bank account info */}
+                          {p.bank_account ? (
+                            <div className="bg-blue-50 rounded-xl p-4 border border-blue-100">
+                              <p className="text-xs font-bold text-blue-700 mb-2 flex items-center gap-1">🏦 振込先口座情報</p>
+                              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-sm">
+                                <div>
+                                  <span className="text-xs text-gray-500">銀行名</span>
+                                  <p className="font-medium text-gray-900">{p.bank_account.bank_name}</p>
+                                </div>
+                                <div>
+                                  <span className="text-xs text-gray-500">支店名</span>
+                                  <p className="font-medium text-gray-900">{p.bank_account.branch_name}</p>
+                                </div>
+                                <div>
+                                  <span className="text-xs text-gray-500">口座種別</span>
+                                  <p className="font-medium text-gray-900">{p.bank_account.account_type === "ordinary" ? "普通" : p.bank_account.account_type === "current" ? "当座" : p.bank_account.account_type}</p>
+                                </div>
+                                <div>
+                                  <span className="text-xs text-gray-500">口座番号</span>
+                                  <p className="font-medium text-gray-900">{p.bank_account.account_number}</p>
+                                </div>
+                                <div className="sm:col-span-2">
+                                  <span className="text-xs text-gray-500">口座名義</span>
+                                  <p className="font-medium text-gray-900">{p.bank_account.account_holder}</p>
+                                </div>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="bg-red-50 rounded-xl p-3 border border-red-100 flex items-center gap-2">
+                              <AlertTriangle className="w-4 h-4 text-red-500 shrink-0" />
+                              <p className="text-sm text-red-600 font-medium">振込先口座が未登録です — インフルエンサーに口座登録を依頼してください</p>
+                            </div>
+                          )}
+                          {p.paid_at && (
+                            <p className="text-xs text-green-600">✅ 振込確認日: {new Date(p.paid_at).toLocaleDateString("ja-JP")}</p>
+                          )}
                         </div>
                       ))}
                     </div>
