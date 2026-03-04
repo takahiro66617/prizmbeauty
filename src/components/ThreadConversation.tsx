@@ -36,7 +36,7 @@ export default function ThreadConversation({ applicationId, userType, senderId, 
   const [loading, setLoading] = useState(true);
   const [updatingStatus, setUpdatingStatus] = useState(false);
   const [showPostSubmit, setShowPostSubmit] = useState(false);
-  const [postUrl, setPostUrl] = useState("");
+  const [postUrls, setPostUrls] = useState<string[]>([""]);
   const [postCaption, setPostCaption] = useState("");
   const [selectedImages, setSelectedImages] = useState<File[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
@@ -149,14 +149,16 @@ export default function ThreadConversation({ applicationId, userType, senderId, 
 
   // Post submit by influencer
   const handlePostSubmit = async () => {
-    if (!postUrl.trim() && selectedImages.length === 0) {
+    const validUrls = postUrls.filter(u => u.trim());
+    if (validUrls.length === 0 && selectedImages.length === 0) {
       toast.error("投稿URLまたはスクリーンショットを入力してください");
       return;
     }
     setSending(true);
     try {
       const imageUrls = await uploadMultipleImages(selectedImages);
-      const content = `📱 投稿報告\n\n${postUrl ? `投稿URL: ${postUrl}\n` : ""}${postCaption ? `説明: ${postCaption}` : ""}`;
+      const urlLines = validUrls.map((u, i) => `投稿URL${validUrls.length > 1 ? ` ${i + 1}` : ""}: ${u}`).join("\n");
+      const content = `📱 投稿報告\n\n${urlLines ? `${urlLines}\n` : ""}${postCaption ? `説明: ${postCaption}` : ""}`;
       await handleSendMessage(content, imageUrls[0] || undefined, imageUrls.length > 1 ? imageUrls : undefined, "post_report", "all");
       
       // Auto-update status back to post_submitted when resubmitting after revision
@@ -177,7 +179,7 @@ export default function ThreadConversation({ applicationId, userType, senderId, 
       }
       
       setShowPostSubmit(false);
-      setPostUrl("");
+      setPostUrls([""]);
       setPostCaption("");
       setSelectedImages([]);
       setImagePreviews([]);
@@ -464,11 +466,23 @@ export default function ThreadConversation({ applicationId, userType, senderId, 
           </div>
           <div className="space-y-2">
             <div>
-              <label className="text-xs font-medium text-gray-600 block mb-1">投稿URL</label>
-              <div className="flex items-center gap-2">
-                <LinkIcon className="w-4 h-4 text-gray-400 shrink-0" />
-                <input type="url" value={postUrl} onChange={e => setPostUrl(e.target.value)} placeholder="https://instagram.com/p/..."
-                  className="flex-1 px-3 py-1.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              <label className="text-xs font-medium text-gray-600 block mb-1">投稿URL（複数可）</label>
+              <div className="space-y-2">
+                {postUrls.map((url, i) => (
+                  <div key={i} className="flex items-center gap-2">
+                    <LinkIcon className="w-4 h-4 text-gray-400 shrink-0" />
+                    <input type="url" value={url} onChange={e => { const next = [...postUrls]; next[i] = e.target.value; setPostUrls(next); }} placeholder="https://instagram.com/p/..."
+                      className="flex-1 px-3 py-1.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                    {postUrls.length > 1 && (
+                      <button onClick={() => setPostUrls(postUrls.filter((_, j) => j !== i))} className="text-gray-400 hover:text-red-500 shrink-0">
+                        <X className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
+                ))}
+                <button onClick={() => setPostUrls([...postUrls, ""])} className="text-xs text-blue-600 hover:text-blue-800 flex items-center gap-1">
+                  <LinkIcon className="w-3 h-3" />+ URLを追加
+                </button>
               </div>
             </div>
             <div>
