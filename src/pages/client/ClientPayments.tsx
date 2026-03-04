@@ -4,6 +4,14 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 
+interface BankAccount {
+  bank_name: string;
+  branch_name: string;
+  account_type: string;
+  account_number: string;
+  account_holder: string;
+}
+
 interface Payment {
   id: string;
   application_id: string;
@@ -15,6 +23,7 @@ interface Payment {
   created_at: string;
   campaigns?: { id: string; title: string; payment_date: string | null; image_url: string | null; budget_min: number | null; budget_max: number | null } | null;
   influencer_profiles?: { name: string; username: string; image_url: string | null } | null;
+  bank_account?: BankAccount | null;
 }
 
 interface CampaignGroup {
