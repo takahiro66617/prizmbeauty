@@ -22,6 +22,31 @@ export function useAdminCampaigns(filters?: { companyId?: string; statuses?: str
   });
 }
 
+// ---- Debug Reports ----
+
+export function useAdminDebugReports(filters?: { status?: string }) {
+  return useQuery({
+    queryKey: ["admin-debug-reports", filters],
+    queryFn: async () => {
+      return adminInvoke("get_debug_reports", {
+        status: filters?.status,
+      });
+    },
+  });
+}
+
+export function useAdminUpdateDebugReportStatus() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, status }: { id: string; status: string }) => {
+      return adminInvoke("update_debug_report_status", { id, status });
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["admin-debug-reports"] });
+    },
+  });
+}
+
 // ---- Campaigns ----
 
 export function useAdminUpdateCampaign() {
