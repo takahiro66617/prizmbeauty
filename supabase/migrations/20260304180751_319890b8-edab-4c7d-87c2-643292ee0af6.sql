@@ -1,0 +1,1 @@
+DELETE FROM influencer_profiles WHERE id = '0be39b45-a033-46ee-b88e-a467f2c833e0';
