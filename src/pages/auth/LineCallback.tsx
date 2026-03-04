@@ -38,14 +38,27 @@ export default function LineCallback() {
           return;
         }
 
-        // Block if not friends with LINE Official Account
+        // Check for pending registration data (new registration flow)
+        const pendingReg = sessionStorage.getItem("pendingRegistration");
+
+        // NEW USER without pending registration (clicked "Login" by mistake)
+        // → Skip friendship check entirely, redirect to add-friend page
+        if (data.isNewUser && !pendingReg) {
+          const lineProfile = data.lineProfile || {
+            userId: data.user?.line_user_id,
+            displayName: data.user?.name,
+            pictureUrl: data.user?.image_url,
+          };
+          sessionStorage.setItem("lineProfile", JSON.stringify(lineProfile));
+          navigate("/auth/register/add-friend");
+          return;
+        }
+
+        // Block if not friends with LINE Official Account (existing users & registration finalization)
         if (!data.isFriend) {
           setError("PRizmのLINE公式アカウント（@616jfxwh）を友だち追加してからログインしてください。ログイン画面の同意画面で「友だち追加」にチェックを入れてください。");
           return;
         }
-
-        // Check for pending registration data (new registration flow)
-        const pendingReg = sessionStorage.getItem("pendingRegistration");
 
         if (pendingReg && data.isNewUser) {
           // New user with profile data → complete registration
@@ -126,14 +139,8 @@ export default function LineCallback() {
           return;
         }
 
-        // New user without pending registration data — send to profile page via old flow
-        const lineProfile = data.lineProfile || {
-          userId: data.user?.line_user_id,
-          displayName: data.user?.name,
-          pictureUrl: data.user?.image_url,
-        };
-        sessionStorage.setItem("lineProfile", JSON.stringify(lineProfile));
-        navigate("/auth/register/add-friend");
+        // Fallback: unexpected state
+        setError("予期しないエラーが発生しました。もう一度お試しください。");
       } catch {
         setError("通信エラーが発生しました");
       }
