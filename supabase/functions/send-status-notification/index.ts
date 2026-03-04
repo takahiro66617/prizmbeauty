@@ -80,7 +80,19 @@ serve(async (req) => {
       }
     }
 
-    // 4. Auto-send bank account info when post is confirmed
+    // 4. Auto-close campaign when influencer is approved
+    if (newStatus === "approved") {
+      try {
+        await supabaseAdmin.from("campaigns")
+          .update({ status: "closed" })
+          .eq("id", updatedApp.campaign_id);
+        console.log("Campaign auto-closed:", updatedApp.campaign_id);
+      } catch (e) {
+        console.error("Failed to auto-close campaign:", e);
+      }
+    }
+
+    // 5. Auto-send bank account info when post is confirmed
     if (newStatus === "post_confirmed" && influencer) {
       const targetUserId = influencer.user_id || influencer.id;
       try {
