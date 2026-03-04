@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -14,9 +14,12 @@ export default function LineAddFriend() {
   const [confirmed, setConfirmed] = useState(false);
   const [showQr, setShowQr] = useState(false);
 
+  const navigate = useNavigate();
+
   const handleNext = () => {
-    // Proceed to LINE OAuth with aggressive bot_prompt for friend-add
-    window.location.href = buildLineOAuthUrl("aggressive");
+    // Go to profile registration (LINE OAuth will happen after profile input)
+    sessionStorage.setItem("lineFriendAdded", "true");
+    navigate("/auth/register/profile");
   };
 
   return (
@@ -132,12 +135,12 @@ export default function LineAddFriend() {
               className="w-full h-12 text-base font-bold"
               disabled={!confirmed}
             >
-              次へ進む（LINE認証）
+              次へ進む
               <ChevronRight className="w-5 h-5 ml-1" />
             </Button>
 
             <p className="text-xs text-center text-muted-foreground">
-              次のステップでLINEアカウントの認証を行います
+              次のステップでプロフィールを入力します
             </p>
           </div>
         </Card>

@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { GENRES } from "@/lib/constants";
+import { buildLineOAuthUrl } from "@/lib/lineAuth";
 
 const PREFECTURES = [
   "北海道","青森県","岩手県","宮城県","秋田県","山形県","福島県",
@@ -16,15 +17,8 @@ const PREFECTURES = [
   "熊本県","大分県","宮崎県","鹿児島県","沖縄県",
 ];
 
-interface LineProfile {
-  userId: string;
-  displayName: string;
-  pictureUrl: string | null;
-}
-
 export default function RegisterProfile() {
   const navigate = useNavigate();
-  const [lineProfile, setLineProfile] = useState<LineProfile | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [lastName, setLastName] = useState("");
@@ -36,14 +30,12 @@ export default function RegisterProfile() {
   const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
 
   useEffect(() => {
-    const stored = sessionStorage.getItem("lineProfile");
-    if (!stored) {
+    // Check if user came through the add-friend flow
+    const friendAdded = sessionStorage.getItem("lineFriendAdded");
+    if (!friendAdded) {
       navigate("/auth/login");
       return;
     }
-    const profile = JSON.parse(stored) as LineProfile;
-    setLineProfile(profile);
-    setNickname(profile.displayName || "");
   }, [navigate]);
 
   const toggleGenre = (genre: string) => {
@@ -56,67 +48,31 @@ export default function RegisterProfile() {
     lastName && firstName && nickname && gender && birthDate && prefecture && selectedGenres.length > 0;
 
   const handleSubmit = async () => {
-    if (!isValid || !lineProfile) return;
+    if (!isValid) return;
     setIsSubmitting(true);
 
     try {
-      const bio = "";
-      const category = selectedGenres.join(", ");
-
-      const res = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/register-influencer`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            lineProfile: {
-              userId: lineProfile.userId,
-              displayName: lineProfile.displayName,
-              pictureUrl: lineProfile.pictureUrl,
-            },
-            nickname,
-            name: `${lastName} ${firstName}`,
-            category,
-            bio,
-            gender,
-            birthDate,
-            prefecture,
-          }),
-        }
-      );
-
-      const result = await res.json();
-
-      if (!res.ok || !result.success) {
-        console.error("Register error:", result);
-        alert(result.details || "登録に失敗しました。もう一度お試しください。");
-        setIsSubmitting(false);
-        return;
-      }
-
-      const data = result.data;
-
-      const mockUser = {
-        id: data.id,
+      // Save profile data to sessionStorage, then redirect to LINE OAuth
+      const profileData = {
         lastName,
         firstName,
+        nickname,
         name: `${lastName} ${firstName}`,
-        email: "",
-        profileImagePreview:
-          lineProfile.pictureUrl ||
-          `https://ui-avatars.com/api/?name=${encodeURIComponent(lastName)}&background=FFD6E8&color=333`,
-        type: "influencer",
+        category: selectedGenres.join(", "),
+        bio: "",
+        gender,
+        birthDate,
+        prefecture,
       };
-      sessionStorage.setItem("currentUser", JSON.stringify(mockUser));
-      sessionStorage.removeItem("lineProfile");
-      navigate("/mypage");
+      sessionStorage.setItem("pendingRegistration", JSON.stringify(profileData));
+
+      // Redirect to LINE OAuth (aggressive bot_prompt for friend-add)
+      window.location.href = buildLineOAuthUrl("aggressive");
     } catch {
       alert("エラーが発生しました");
       setIsSubmitting(false);
     }
   };
-
-  if (!lineProfile) return null;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-pastel-pink/30 via-card to-pastel-blue/30 py-8 px-4">
@@ -129,16 +85,6 @@ export default function RegisterProfile() {
         </div>
 
         <Card className="p-6 shadow-xl border-0 bg-card/90 backdrop-blur-sm rounded-2xl space-y-5">
-          {lineProfile.pictureUrl && (
-            <div className="flex justify-center">
-              <img
-                src={lineProfile.pictureUrl}
-                alt="プロフィール"
-                className="w-20 h-20 rounded-full object-cover border-2 border-primary/30"
-              />
-            </div>
-          )}
-
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label className="text-xs font-semibold">姓 <span className="text-destructive">*</span></Label>
