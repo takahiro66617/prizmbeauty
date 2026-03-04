@@ -93,6 +93,7 @@ const App = () => (
             <Route path="applicants" element={<ClientApplicants />} />
             <Route path="messages" element={<ClientMessages />} />
             <Route path="settings" element={<ClientSettings />} />
+            <Route path="payments" element={<ClientPayments />} />
           </Route>
           {/* Admin Dashboard */}
           <Route path="/admin/login" element={<AdminLoginPage />} />
