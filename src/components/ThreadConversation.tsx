@@ -402,7 +402,7 @@ export default function ThreadConversation({ applicationId, userType, senderId, 
       )}
 
       {/* Status Action Bar */}
-      {canAdvance && app.status !== "post_submitted" && (
+      {canAdvance && app.status !== "post_submitted" && app.status !== "in_progress" && (
         <div className="bg-purple-50 border-b px-4 py-2 flex items-center justify-between shrink-0">
           <span className="text-sm text-purple-700">次のステップ:</span>
           <Button size="sm" className="bg-purple-600 hover:bg-purple-700 text-white" onClick={handleAdvanceStatus} disabled={updatingStatus}>
