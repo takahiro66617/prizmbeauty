@@ -7,6 +7,7 @@ import { useToggleFavorite, useIsFavorite } from "@/hooks/useFavorites";
 import { useExternalApplications } from "@/hooks/useExternalApplications";
 import { Heart, Clock, Users, CheckCircle, Instagram, ArrowLeft, FileText, Send } from "lucide-react";
 import { CampaignImageGallery } from "@/components/campaign/CampaignImageGallery";
+import { ApplicationProgressTimeline } from "@/components/ApplicationProgressTimeline";
 import { toast } from "sonner";
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -88,6 +89,22 @@ export default function MyPageCampaignDetail() {
       <Button variant="ghost" onClick={() => navigate("/mypage/campaigns")} className="text-gray-500">
         <ArrowLeft className="w-4 h-4 mr-2" />案件一覧に戻る
       </Button>
+
+      {/* Show progress timeline if already applied */}
+      {alreadyApplied && (() => {
+        const myApp = myApps.find(a => a.campaign_id === id);
+        if (!myApp) return null;
+        return (
+          <ApplicationProgressTimeline
+            status={myApp.status}
+            appliedAt={myApp.applied_at}
+            updatedAt={myApp.updated_at}
+            influencer={user ? { name: user.name || "自分", username: user.username || "", image_url: user.image_url } : null}
+            campaign={{ title: campaign.title, deadline: campaign.deadline, payment_date: (campaign as any).payment_date, companies: campaign.companies }}
+            compact
+          />
+        );
+      })()}
 
       <div className="grid lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">

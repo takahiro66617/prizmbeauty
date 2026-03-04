@@ -7,6 +7,7 @@ import { useAdminApplications, useAdminUpdateApplicationStatus } from "@/hooks/u
 import { APPLICATION_STATUSES } from "@/lib/constants";
 import { toast } from "sonner";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from "recharts";
+import { ApplicationProgressTimeline } from "@/components/ApplicationProgressTimeline";
 
 const SNS_COLORS: Record<string, string> = { Instagram: "#E1306C", TikTok: "#010101", YouTube: "#FF0000", X: "#1DA1F2" };
 
@@ -80,8 +81,16 @@ export default function AdminApplicationDetail() {
         </div>
       </div>
 
+      {/* Progress Timeline */}
+      <ApplicationProgressTimeline
+        status={app.status}
+        appliedAt={app.applied_at}
+        updatedAt={app.updated_at}
+        influencer={inf ? { name: inf.name, username: inf.username, image_url: inf.image_url } : null}
+        campaign={camp ? { title: camp.title, deadline: camp.deadline, payment_date: camp.payment_date, companies: camp.companies } : null}
+      />
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Influencer Profile */}
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-4">
           <h3 className="font-bold text-gray-800">インフルエンサー情報</h3>
           {inf?.bio && <p className="text-sm text-gray-600 bg-gray-50 p-3 rounded-lg">{inf.bio}</p>}

@@ -10,6 +10,7 @@ import { useExternalApplications } from "@/hooks/useExternalApplications";
 import { CATEGORIES, PLATFORMS, CAMPAIGN_STATUSES, APPLICATION_STATUSES } from "@/lib/constants";
 import { toast } from "sonner";
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend } from "recharts";
+import { ApplicationProgressTimeline } from "@/components/ApplicationProgressTimeline";
 
 const COLORS = ["#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#ec4899"];
 
@@ -212,26 +213,23 @@ export default function ClientCampaignDetail() {
         <div className="flex justify-end"><Button className="bg-blue-600 hover:bg-blue-700" onClick={handleSave} disabled={updateCampaign.isPending}><Save className="w-4 h-4 mr-2" />保存</Button></div>
       </div>
 
-      {/* Applications */}
+      {/* Applications with progress */}
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
         <h3 className="font-bold text-gray-800 mb-4 flex items-center gap-2"><Users className="w-5 h-5" />応募者一覧 ({campaignApps.length}件)</h3>
         {campaignApps.length > 0 ? (
-          <div className="space-y-3">
-            {campaignApps.map(a => {
-              const s = APPLICATION_STATUSES.find(x => x.id === a.status);
-              return (
-                <div key={a.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
-                  <div className="flex items-center gap-3">
-                    <img src={a.influencer_profiles?.image_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(a.influencer_profiles?.name || "?")}`} alt="" className="w-10 h-10 rounded-full" />
-                    <div>
-                      <p className="font-medium text-sm text-gray-900">{a.influencer_profiles?.name || "-"}</p>
-                      <p className="text-xs text-gray-500">@{a.influencer_profiles?.username || "-"}</p>
-                    </div>
-                  </div>
-                  <Badge className={s?.color || ""}>{s?.label || a.status}</Badge>
-                </div>
-              );
-            })}
+          <div className="space-y-4">
+            {campaignApps.map(a => (
+              <Link key={a.id} to={`/client/applicants/${a.id}`} className="block hover:ring-2 hover:ring-blue-200 rounded-2xl transition-all">
+                <ApplicationProgressTimeline
+                  status={a.status}
+                  appliedAt={a.applied_at}
+                  updatedAt={a.updated_at}
+                  influencer={a.influencer_profiles ? { name: a.influencer_profiles.name, username: a.influencer_profiles.username, image_url: a.influencer_profiles.image_url } : null}
+                  campaign={{ title: campaign.title, deadline: campaign.deadline, payment_date: (campaign as any).payment_date, companies: undefined }}
+                  compact
+                />
+              </Link>
+            ))}
           </div>
         ) : <p className="text-sm text-gray-400 text-center py-8">応募なし</p>}
       </div>
