@@ -59,35 +59,11 @@ export default function ClientPayments() {
   const fetchPayments = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase
-        .from("payments")
-        .select("*, campaigns(id, title, payment_date, image_url, budget_min, budget_max)")
-        .eq("company_id", companyId)
-        .order("created_at", { ascending: false });
-
+      const { data, error } = await supabase.functions.invoke("get-company-payments", {
+        body: { companyId },
+      });
       if (error) throw error;
-      const rows = data || [];
-
-      const influencerIds = [...new Set(rows.map((p: any) => p.influencer_user_id))];
-      let influencerMap: Record<string, { name: string; username: string; image_url: string | null }> = {};
-      if (influencerIds.length > 0) {
-        const { data: profiles } = await supabase
-          .from("influencer_profiles")
-          .select("id, name, username, image_url, user_id")
-          .or(influencerIds.map(id => `user_id.eq.${id},id.eq.${id}`).join(","));
-        if (profiles) {
-          profiles.forEach(p => {
-            if (p.user_id) influencerMap[p.user_id] = { name: p.name, username: p.username, image_url: p.image_url };
-            influencerMap[p.id] = { name: p.name, username: p.username, image_url: p.image_url };
-          });
-        }
-      }
-
-      const enriched = rows.map((p: any) => ({
-        ...p,
-        influencer_profiles: influencerMap[p.influencer_user_id] || null,
-      }));
-      setPayments(enriched);
+      setPayments(data?.data || []);
     } catch (e) {
       console.error("Failed to fetch payments:", e);
     }
