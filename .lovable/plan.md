@@ -1,59 +1,66 @@
 
 
-## 案件フローの修正計画
+## 管理画面の連携問題 - 根本原因と修正計画
 
-### 現状の問題点
+### 根本原因
 
-**問題1: 修正依頼後の再投稿フロー**
-- 企業が修正依頼 → ステータスが `revision_requested` に変更
-- インフルエンサーが再投稿報告を送信できる（UIは存在する）
-- **しかし、再投稿してもステータスが `post_submitted` に自動で戻らない** → 企業が再確認できない
+管理者（事務局）はハードコード認証（sessionStorage）でログインしており、**Supabase Authセッションを持っていない**。そのため：
 
-**問題2: 振込確認フロー**
-- 投稿確認済（`post_confirmed`）で振込先情報は自動送信される（既に実装済み）
-- **インフルエンサーが振込を確認する手段がない** → `payment_pending` から `completed` への遷移が企業/管理者側のみ
+1. **RLS（行レベルセキュリティ）で全ての書き込み操作が拒否される**
+   - 案件の承認・却下（`campaigns` UPDATE → `auth.uid()` が null → 失敗）
+   - 応募ステータスの変更（`applications` UPDATE → 同上）
+   - 企業情報の編集（`companies` UPDATE → 同上）
+   - 企業の削除（`companies` DELETE → 同上）
 
----
+2. **RLSで一部の読み取りも失敗する**
+   - `applications` の SELECT → `auth.uid()` 必須 → 空配列が返る
+   - これにより案件管理画面の「応募数」が常に0、応募管理画面も空
 
-### 修正内容
+3. **`revision_requested` が `applications` テーブルのCHECK制約に含まれていない**
+   - 修正依頼ステータスへの遷移がDBレベルで拒否される
 
-#### 1. 修正依頼後の再投稿で自動ステータス更新
-- `ThreadConversation.tsx` の `handlePostSubmit` で、現在のステータスが `revision_requested` の場合、投稿報告送信後に自動で `post_submitted` に戻す
-- `send-status-notification` edge function を呼び出してステータス更新＋通知を送信
+4. **管理者メッセージ画面のsenderIdが空**
+   - `supabase.auth.getSession()` が null → メッセージ送信不可
 
-#### 2. インフルエンサー側「振込確認」ボタン追加
-- `payment_pending` ステータス時、インフルエンサーに「振込確認済み」ボタンを表示
-- ボタン押下で `completed` に遷移（`send-status-notification` 経由）
-- 企業/管理者にも通知を送信
+### 修正計画
 
-#### 3. ステータスフローの整理
+#### 1. 管理者用Edge Function `admin-manage-data` を新規作成
+Service Role Keyを使用し、以下の操作を一つのEdge Functionで処理：
+- 案件の更新（承認・却下・編集）
+- 案件の削除
+- 応募の一覧取得（admin用）
+- 応募ステータスの更新
+- 企業情報の更新
+- 企業の削除
 
 ```text
-approved → in_progress → post_submitted → post_confirmed → payment_pending → completed
-                              ↑                                    ↓
-                         revision_requested ←──(修正依頼)     インフルエンサーが
-                              │                              「振込確認」で完了
-                              └──(再投稿で自動戻り)
+POST /admin-manage-data
+body: { action: "update_campaign" | "delete_campaign" | "get_applications" | "update_application" | "update_company" | "delete_company", ... }
 ```
 
----
+#### 2. DB制約の修正
+`applications_status_check` に `revision_requested` を追加
 
-### 変更ファイル
-1. **`src/components/ThreadConversation.tsx`**
-   - `handlePostSubmit`: revision_requested時にステータス自動更新追加
-   - `payment_pending` 時にインフルエンサー用「振込確認済み」ボタンを追加
+#### 3. フロントエンド修正（4ファイル）
 
-2. **`send-status-notification` edge function**: 変更不要（既に汎用的に動作）
+- **`useExternalCampaigns.ts`**: `useUpdateCampaign` / `useDeleteCampaign` に `adminMode` オプション追加。trueの場合はEdge Function経由
+- **`useExternalApplications.ts`**: admin用の取得をEdge Function経由に変更。`useUpdateApplicationStatus` も同様
+- **`useExternalCompanies.ts`**: `useUpdateCompany` / delete にadminMode追加
+- **`AdminMessages.tsx`**: `adminUserId` の取得を固定値またはEdge Functionから取得する方式に変更
 
----
+#### 4. 管理画面ページの修正
+- **`AdminCampaigns.tsx`**: Edge Function経由でステータス更新
+- **`AdminApplications.tsx`**: Edge Function経由でステータス更新
+- **`AdminClients.tsx`**: Edge Function経由で企業編集・削除
 
-### 請求書発行について（ご相談への回答）
-
-インフルエンサーマーケティングの実務では以下が一般的です：
-
-- **個人のインフルエンサー**: 報酬が支払調書の対象となるため、企業側が源泉徴収を行い支払調書を発行するのが一般的。インフルエンサー側から請求書を発行するケースもあるが、プラットフォーム仲介型では不要なことが多い
-- **法人化しているインフルエンサー**: 請求書発行が必要（インボイス制度対応含む）
-- **プラットフォーム型の場合**: PR IZMが仲介する形なので、**企業→PR IZM→インフルエンサー** の二段階にするか、**企業→インフルエンサー直接** にするかで対応が変わる
-
-**推奨**: まずは請求書なしで運用を開始し、需要が出てきたら後から追加する方が開発効率が良い。必要になった場合は、インフルエンサーのプロフィールに「適格請求書発行事業者番号（T+13桁）」を登録できるフィールドを追加し、PDF請求書を自動生成する機能を実装できます。
+### 変更ファイル一覧
+1. `supabase/functions/admin-manage-data/index.ts` （新規）
+2. DB migration: `revision_requested` をCHECK制約に追加
+3. `src/hooks/useExternalCampaigns.ts`
+4. `src/hooks/useExternalApplications.ts`
+5. `src/hooks/useExternalCompanies.ts`
+6. `src/pages/admin/AdminCampaigns.tsx`
+7. `src/pages/admin/AdminApplications.tsx`
+8. `src/pages/admin/AdminClients.tsx`
+9. `src/pages/admin/AdminMessages.tsx`
 
