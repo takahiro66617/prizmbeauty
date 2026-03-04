@@ -1,25 +1,20 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ArrowLeft } from "lucide-react";
 import lineIcon from "@/assets/line.png";
 import logoImg from "@/assets/logo.png";
-
-const LINE_CHANNEL_ID = "2009141875";
-
-function generateState() {
-  const array = new Uint8Array(16);
-  crypto.getRandomValues(array);
-  return Array.from(array, (b) => b.toString(16).padStart(2, "0")).join("");
-}
+import { buildLineOAuthUrl } from "@/lib/lineAuth";
 
 export default function LoginPage() {
+  const navigate = useNavigate();
+
   const handleLineLogin = () => {
-    const state = generateState();
-    localStorage.setItem("line_oauth_state", state);
-    const redirectUri = `${window.location.origin}/auth/line/callback`;
-    const url = `https://access.line.me/oauth2/v2.1/authorize?response_type=code&client_id=${LINE_CHANNEL_ID}&redirect_uri=${encodeURIComponent(redirectUri)}&state=${state}&scope=profile%20openid&bot_prompt=aggressive`;
-    window.location.href = url;
+    window.location.href = buildLineOAuthUrl();
+  };
+
+  const handleRegister = () => {
+    navigate("/auth/register/add-friend");
   };
 
   return (
@@ -31,19 +26,32 @@ export default function LoginPage() {
 
         <div className="text-center space-y-2">
           <img src={logoImg} alt="PRizm" className="h-14 mx-auto" />
-          <p className="text-muted-foreground text-sm">インフルエンサーログイン</p>
+          <p className="text-muted-foreground text-sm">インフルエンサー向け</p>
         </div>
 
         <Card className="p-8 shadow-xl border-0 bg-card/90 backdrop-blur-sm rounded-2xl">
           <div className="space-y-6">
             <div className="text-center space-y-1 mb-6">
-              <h2 className="font-bold">おかえりなさい！</h2>
-              <p className="text-xs text-muted-foreground">アカウントにログインして<br />新しい案件を見つけましょう</p>
+              <h2 className="font-bold text-lg">ログイン / 新規登録</h2>
+              <p className="text-xs text-muted-foreground">LINEアカウントで簡単にご利用いただけます</p>
             </div>
 
+            {/* Login — existing users go straight to OAuth */}
             <Button onClick={handleLineLogin} className="w-full h-12 text-base font-bold text-white shadow-md" style={{ backgroundColor: "#06C755" }}>
               <img src={lineIcon} alt="LINE" className="w-6 h-6" />
-              LINEでログイン / 新規登録
+              LINEでログイン
+            </Button>
+
+            {/* Register — new users go to add-friend page first */}
+            <div className="relative flex items-center gap-3">
+              <div className="flex-1 h-px bg-border" />
+              <span className="text-xs text-muted-foreground">はじめての方</span>
+              <div className="flex-1 h-px bg-border" />
+            </div>
+
+            <Button onClick={handleRegister} variant="outline" className="w-full h-12 text-base font-bold border-[#06C755] text-[#06C755] hover:bg-[#06C755]/10">
+              <img src={lineIcon} alt="LINE" className="w-6 h-6" />
+              LINEで新規登録
             </Button>
           </div>
         </Card>
