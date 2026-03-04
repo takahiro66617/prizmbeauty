@@ -10,6 +10,18 @@ async function adminInvoke(action: string, params: Record<string, unknown> = {})
   return data?.data;
 }
 
+export function useAdminCampaigns(filters?: { companyId?: string; statuses?: string[] }) {
+  return useQuery({
+    queryKey: ["admin-campaigns", filters],
+    queryFn: async () => {
+      return adminInvoke("get_campaigns", {
+        companyId: filters?.companyId,
+        statuses: filters?.statuses,
+      });
+    },
+  });
+}
+
 // ---- Campaigns ----
 
 export function useAdminUpdateCampaign() {
@@ -19,6 +31,7 @@ export function useAdminUpdateCampaign() {
       return adminInvoke("update_campaign", { id, updates });
     },
     onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["admin-campaigns"] });
       qc.invalidateQueries({ queryKey: ["ext-campaigns"] });
       qc.invalidateQueries({ queryKey: ["ext-campaign"] });
     },
@@ -32,6 +45,7 @@ export function useAdminDeleteCampaign() {
       return adminInvoke("delete_campaign", { id });
     },
     onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["admin-campaigns"] });
       qc.invalidateQueries({ queryKey: ["ext-campaigns"] });
     },
   });
