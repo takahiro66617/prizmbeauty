@@ -90,7 +90,21 @@ export default function MyPageCampaignDetail() {
         <ArrowLeft className="w-4 h-4 mr-2" />案件一覧に戻る
       </Button>
 
-      <div className="grid lg:grid-cols-3 gap-6">
+      {/* Show progress timeline if already applied */}
+      {alreadyApplied && (() => {
+        const myApp = myApps.find(a => a.campaign_id === id);
+        if (!myApp) return null;
+        return (
+          <ApplicationProgressTimeline
+            status={myApp.status}
+            appliedAt={myApp.applied_at}
+            updatedAt={myApp.updated_at}
+            influencer={user ? { name: user.name || "自分", username: user.username || "", image_url: user.image_url } : null}
+            campaign={{ title: campaign.title, deadline: campaign.deadline, payment_date: (campaign as any).payment_date, companies: campaign.companies }}
+            compact
+          />
+        );
+      })()}
         <div className="lg:col-span-2 space-y-6">
           <CampaignImageGallery
             imageUrls={campaign.image_urls || []}
