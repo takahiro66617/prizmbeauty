@@ -50,6 +50,7 @@ export default function AdminCampaignsPage() {
       deadline: campaign.deadline ? campaign.deadline.split("T")[0] : "",
       payment_date: (campaign as any).payment_date ? (campaign as any).payment_date.split("T")[0] : "",
       requirements: campaign.requirements || "", platform: campaign.platform || "", status: campaign.status,
+      deliverables: campaign.deliverables || "",
     });
   };
 
@@ -262,6 +263,9 @@ export default function AdminCampaignsPage() {
                 </select></div>
               <div><label className="block text-sm font-medium text-gray-700 mb-1">応募条件</label>
                 <textarea value={editForm.requirements} onChange={e => setEditForm({ ...editForm, requirements: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm min-h-[80px]" /></div>
+              <div><label className="block text-sm font-medium text-gray-700 mb-1">納品物・依頼内容</label>
+                <textarea value={editForm.deliverables} onChange={e => setEditForm({ ...editForm, deliverables: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm min-h-[80px]" /></div>
 
               <div>
