@@ -499,9 +499,14 @@ export default function ThreadConversation({ applicationId, userType, senderId, 
               <input ref={postImageInputRef} type="file" accept="image/*" multiple className="hidden" onChange={e => handleMultiImageSelect(e, setSelectedImages, setImagePreviews)} />
             </div>
           </div>
-          <Button size="sm" className="w-full bg-blue-600 hover:bg-blue-700 text-white" onClick={handlePostSubmit} disabled={sending}>
-            {sending ? "送信中..." : "投稿報告を送信"}
-          </Button>
+          <div className="flex gap-2">
+            <Button size="sm" variant="outline" className="flex-1" onClick={() => { setShowPostSubmit(false); setPostUrls([""]); setPostCaption(""); setSelectedImages([]); setImagePreviews([]); }}>
+              キャンセル
+            </Button>
+            <Button size="sm" className="flex-1 bg-blue-600 hover:bg-blue-700 text-white" onClick={handlePostSubmit} disabled={sending}>
+              {sending ? "送信中..." : "投稿報告を送信"}
+            </Button>
+          </div>
         </div>
       )}
 
