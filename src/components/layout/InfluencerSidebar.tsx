@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { LayoutDashboard, Search, MessageCircle, Heart, Bell, Settings, LogOut, ClipboardList, PenTool, User, Wallet } from "lucide-react";
+import { LayoutDashboard, Search, MessageCircle, Heart, Bell, Settings, LogOut, ClipboardList, PenTool, User, Wallet, Mail } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useExternalApplications } from "@/hooks/useExternalApplications";
 
@@ -79,11 +79,21 @@ export default function InfluencerSidebar() {
         </nav>
       </div>
 
-      <div className="mt-auto p-6 border-t border-gray-100">
-        <button onClick={handleLogout} className="flex items-center gap-3 px-4 py-3 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all w-full">
-          <LogOut className="w-5 h-5" />
-          <span>ログアウト</span>
-        </button>
+      <div className="mt-auto p-6">
+        <div className="bg-gray-50 rounded-xl p-4 mb-4">
+          <div className="flex items-center gap-2 mb-1">
+            <Mail className="w-4 h-4 text-gray-500" />
+            <span className="text-xs font-bold text-gray-700">お問い合わせ</span>
+          </div>
+          <p className="text-[10px] text-gray-400 mb-1">24時間受付（返信: 2〜3営業日）</p>
+          <a href="mailto:media@pr-izm.com" className="text-xs text-pink-500 hover:underline">media@pr-izm.com</a>
+        </div>
+        <div className="border-t border-gray-100 pt-4">
+          <button onClick={handleLogout} className="flex items-center gap-3 px-4 py-3 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all w-full">
+            <LogOut className="w-5 h-5" />
+            <span>ログアウト</span>
+          </button>
+        </div>
       </div>
     </aside>
   );

@@ -1,6 +1,6 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
-  LayoutDashboard, FileEdit, Users, MessageCircle, Settings, LogOut, PlusCircle, Wallet,
+  LayoutDashboard, FileEdit, Users, MessageCircle, Settings, LogOut, PlusCircle, Wallet, Mail,
 } from "lucide-react";
 import { useExternalCompany } from "@/hooks/useExternalCompanies";
 
@@ -63,7 +63,16 @@ export function ClientSidebar() {
         </nav>
       </div>
 
-      <div className="mt-auto p-6 border-t border-gray-100">
+      <div className="mt-auto p-6">
+        <div className="bg-gray-50 rounded-xl p-4 mb-4">
+          <div className="flex items-center gap-2 mb-1">
+            <Mail className="w-4 h-4 text-gray-500" />
+            <span className="text-xs font-bold text-gray-700">お問い合わせ</span>
+          </div>
+          <p className="text-[10px] text-gray-400 mb-1">24時間受付（返信: 2〜3営業日）</p>
+          <a href="mailto:media@pr-izm.com" className="text-xs text-blue-500 hover:underline">media@pr-izm.com</a>
+        </div>
+        <div className="border-t border-gray-100 pt-4">
         <Link to="/client/settings">
           <div className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group text-sm
             ${location.pathname === "/client/settings" ? "bg-blue-50 text-blue-600 font-bold" : "text-gray-500 hover:bg-gray-50 hover:text-gray-900"}`}>
@@ -75,6 +84,7 @@ export function ClientSidebar() {
           <LogOut className="w-5 h-5" />
           <span>ログアウト</span>
         </button>
+        </div>
       </div>
     </aside>
   );
