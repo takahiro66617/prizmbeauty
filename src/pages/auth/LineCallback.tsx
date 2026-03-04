@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
 
 const SUPABASE_PROJECT_ID = import.meta.env.VITE_SUPABASE_PROJECT_ID;
 
@@ -17,8 +16,6 @@ export default function LineCallback() {
       return;
     }
 
-    // Clean up stored state (no longer validated client-side;
-    // server-side code exchange provides sufficient CSRF protection)
     localStorage.removeItem("line_oauth_state");
 
     const exchangeCode = async () => {
@@ -41,15 +38,75 @@ export default function LineCallback() {
           return;
         }
 
-        // Block registration if not friends with LINE Official Account
+        // Block if not friends with LINE Official Account
         if (!data.isFriend) {
           setError("PRizmのLINE公式アカウント（@616jfxwh）を友だち追加してからログインしてください。ログイン画面の同意画面で「友だち追加」にチェックを入れてください。");
           return;
         }
 
-        // Use line-auth response directly (it queries with service role key, bypassing RLS)
+        // Check for pending registration data (new registration flow)
+        const pendingReg = sessionStorage.getItem("pendingRegistration");
+
+        if (pendingReg && data.isNewUser) {
+          // New user with profile data → complete registration
+          const profileData = JSON.parse(pendingReg);
+          const lineProfile = data.lineProfile || {
+            userId: data.user?.line_user_id,
+            displayName: data.user?.name,
+            pictureUrl: data.user?.image_url,
+          };
+
+          const regRes = await fetch(
+            `https://${SUPABASE_PROJECT_ID}.supabase.co/functions/v1/register-influencer`,
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                lineProfile: {
+                  userId: lineProfile.userId,
+                  displayName: lineProfile.displayName,
+                  pictureUrl: lineProfile.pictureUrl,
+                },
+                nickname: profileData.nickname,
+                name: profileData.name,
+                category: profileData.category,
+                bio: profileData.bio || "",
+                gender: profileData.gender,
+                birthDate: profileData.birthDate,
+                prefecture: profileData.prefecture,
+              }),
+            }
+          );
+
+          const regResult = await regRes.json();
+
+          if (!regRes.ok || !regResult.success) {
+            console.error("Register error:", regResult);
+            setError(regResult.details || "登録に失敗しました。もう一度お試しください。");
+            return;
+          }
+
+          const regData = regResult.data;
+          const mockUser = {
+            id: regData.id,
+            lastName: profileData.lastName,
+            firstName: profileData.firstName,
+            name: profileData.name,
+            email: "",
+            profileImagePreview:
+              lineProfile.pictureUrl ||
+              `https://ui-avatars.com/api/?name=${encodeURIComponent(profileData.lastName)}&background=FFD6E8&color=333`,
+            type: "influencer",
+          };
+          sessionStorage.setItem("currentUser", JSON.stringify(mockUser));
+          sessionStorage.removeItem("pendingRegistration");
+          sessionStorage.removeItem("lineFriendAdded");
+          navigate("/mypage");
+          return;
+        }
+
+        // Existing user login (or new user without pending data — fallback)
         if (!data.isNewUser && data.user) {
-          // Existing user - store session and go to dashboard
           const existing = data.user;
           const mockUser = {
             id: existing.id,
@@ -63,12 +120,13 @@ export default function LineCallback() {
             type: "influencer",
           };
           sessionStorage.setItem("currentUser", JSON.stringify(mockUser));
+          sessionStorage.removeItem("pendingRegistration");
+          sessionStorage.removeItem("lineFriendAdded");
           navigate("/mypage");
           return;
         }
 
-        // New user - proceed directly to profile registration
-        // Friend-add is requested during LINE OAuth via bot_prompt=aggressive
+        // New user without pending registration data — send to profile page via old flow
         const lineProfile = data.lineProfile || {
           userId: data.user?.line_user_id,
           displayName: data.user?.name,
