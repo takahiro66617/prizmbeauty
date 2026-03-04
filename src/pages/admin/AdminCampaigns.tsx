@@ -1,15 +1,15 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { Search, X, Save, AlertTriangle, Image as ImageIcon } from "lucide-react";
-import { CampaignImageGallery } from "@/components/campaign/CampaignImageGallery";
+import { Search, AlertTriangle, Image as ImageIcon } from "lucide-react";
 import HelpGuideModal from "@/components/admin/HelpGuideModal";
-import { useAdminCampaigns, useAdminUpdateCampaign, useAdminDeleteCampaign, useAdminApplications } from "@/hooks/useAdminData";
+import { useAdminCampaigns, useAdminUpdateCampaign, useAdminApplications } from "@/hooks/useAdminData";
 import { CATEGORIES, PLATFORMS, CAMPAIGN_STATUSES } from "@/lib/constants";
 import { toast } from "sonner";
 
 export default function AdminCampaignsPage() {
+  const navigate = useNavigate();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [categoryFilter, setCategoryFilter] = useState("all");
@@ -18,16 +18,13 @@ export default function AdminCampaignsPage() {
   const [deadlineTo, setDeadlineTo] = useState("");
   const [budgetMin, setBudgetMin] = useState("");
   const [budgetMax, setBudgetMax] = useState("");
-  const [selectedCampaign, setSelectedCampaign] = useState<any>(null);
-  const [editForm, setEditForm] = useState<any>({});
   const { data: campaigns = [], isLoading } = useAdminCampaigns();
   const { data: applications = [] } = useAdminApplications();
   const updateCampaign = useAdminUpdateCampaign();
-  const deleteCampaign = useAdminDeleteCampaign();
 
   const now = new Date();
 
-  const filteredCampaigns = campaigns.filter((campaign) => {
+  const filteredCampaigns = campaigns.filter((campaign: any) => {
     const matchesSearch = !search || campaign.title.toLowerCase().includes(search.toLowerCase()) || (campaign.companies?.name || "").toLowerCase().includes(search.toLowerCase());
     const matchesStatus = statusFilter === "all" || campaign.status === statusFilter;
     const matchesCategory = categoryFilter === "all" || campaign.category === categoryFilter;
@@ -40,42 +37,12 @@ export default function AdminCampaignsPage() {
   });
 
   const isOverdue = (deadline: string | null) => deadline && new Date(deadline) < now;
-
-  const openDetail = (campaign: any) => {
-    setSelectedCampaign(campaign);
-    setEditForm({
-      title: campaign.title, description: campaign.description || "", category: campaign.category || "",
-      budget_min: campaign.budget_min || 0, budget_max: campaign.budget_max || 0,
-      max_applicants: campaign.max_applicants || 0,
-      deadline: campaign.deadline ? campaign.deadline.split("T")[0] : "",
-      payment_date: (campaign as any).payment_date ? (campaign as any).payment_date.split("T")[0] : "",
-      requirements: campaign.requirements || "", platform: campaign.platform || "", status: campaign.status,
-      deliverables: campaign.deliverables || "",
-    });
-  };
-
-  const handleSave = () => {
-    if (!selectedCampaign) return;
-    updateCampaign.mutate({ id: selectedCampaign.id, updates: editForm }, {
-      onSuccess: () => { toast.success("保存しました"); setSelectedCampaign(null); },
-      onError: () => toast.error("保存に失敗しました"),
-    });
-  };
-
-  const handleDelete = (id: string) => {
-    if (!window.confirm("この案件を削除しますか？")) return;
-    deleteCampaign.mutate(id, {
-      onSuccess: () => { toast.success("削除しました"); setSelectedCampaign(null); },
-      onError: () => toast.error("削除に失敗しました"),
-    });
-  };
+  const statusObj = (s: string) => CAMPAIGN_STATUSES.find(x => x.id === s);
 
   const clearFilters = () => {
     setSearch(""); setStatusFilter("all"); setCategoryFilter("all"); setPlatformFilter("all");
     setDeadlineFrom(""); setDeadlineTo(""); setBudgetMin(""); setBudgetMax("");
   };
-
-  const statusObj = (s: string) => CAMPAIGN_STATUSES.find(x => x.id === s);
 
   return (
     <div className="space-y-6">
@@ -88,16 +55,10 @@ export default function AdminCampaignsPage() {
           title="案件管理の使い方"
           description="企業が作成した案件を一覧で確認し、承認・却下・編集を行えます。"
           sections={[
-            { title: "承認フロー", content: ["企業が作成した案件は「承認待ち」で登録されます", "内容を確認し「承認」→承認済みに、「却下」→却下に変更", "承認済みの案件のみインフルエンサーに公開されます"] },
+            { title: "承認フロー", content: ["企業が作成した案件は「承認待ち」で登録されます", "内容を確認し「承認」→承認済みに変更", "承認済みの案件のみインフルエンサーに公開されます"] },
             { title: "絞り込み検索", content: ["企業名・案件名・ステータス・カテゴリ・プラットフォームで絞り込み", "締切日・報酬額での範囲指定も可能"] },
-            { title: "案件編集", content: ["「編集」ボタンで案件の詳細情報を修正可能", "ステータス変更・応募一覧の確認もモーダル内で実行"] },
           ]}
-          workflow={[
-            "「承認待ち」の案件を確認し、内容をチェック",
-            "問題なければ「承認」、修正が必要なら「却下」",
-            "承認後、募集中に変更してインフルエンサーに公開",
-            "応募が集まったら応募管理で選考を進める",
-          ]}
+          workflow={["「承認待ち」の案件を確認し、内容をチェック", "問題なければ「承認」、修正が必要なら「却下」", "行をクリックで詳細・編集ページへ移動"]}
         />
       </div>
 
@@ -155,19 +116,18 @@ export default function AdminCampaignsPage() {
           <tbody className="divide-y divide-gray-200">
             {isLoading ? (
               <tr><td colSpan={8} className="px-6 py-12 text-center text-gray-500">読み込み中...</td></tr>
-            ) : filteredCampaigns.length > 0 ? filteredCampaigns.map((campaign) => {
-              const appCount = applications.filter(a => a.campaign_id === campaign.id).length;
+            ) : filteredCampaigns.length > 0 ? filteredCampaigns.map((campaign: any) => {
+              const appCount = applications.filter((a: any) => a.campaign_id === campaign.id).length;
               const overdue = isOverdue(campaign.deadline) && campaign.status === "recruiting";
               return (
-                <tr key={campaign.id} className={`hover:bg-gray-50 transition-colors ${overdue ? "bg-red-50" : ""}`}>
+                <tr key={campaign.id} className={`hover:bg-gray-50 transition-colors cursor-pointer ${overdue ? "bg-red-50" : ""}`}
+                  onClick={() => navigate(`/admin/campaigns/${campaign.id}`)}>
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-3">
                       {campaign.image_url ? (
                         <img src={campaign.image_url} alt="" className="w-10 h-10 rounded-lg object-cover shrink-0" />
                       ) : (
-                        <div className="w-10 h-10 rounded-lg bg-gray-200 flex items-center justify-center shrink-0">
-                          <ImageIcon className="w-4 h-4 text-gray-400" />
-                        </div>
+                        <div className="w-10 h-10 rounded-lg bg-gray-200 flex items-center justify-center shrink-0"><ImageIcon className="w-4 h-4 text-gray-400" /></div>
                       )}
                       <div>
                         <span className="font-medium text-gray-900">{campaign.title}</span>
@@ -182,12 +142,12 @@ export default function AdminCampaignsPage() {
                   <td className="px-6 py-4"><Badge className={statusObj(campaign.status)?.color || ""}>{statusObj(campaign.status)?.label || campaign.status}</Badge></td>
                   <td className="px-6 py-4 text-gray-600">{appCount}</td>
                   <td className="px-6 py-4">
-                    <div className="flex gap-1">
+                    <div className="flex gap-1" onClick={e => e.stopPropagation()}>
                       {campaign.status === "pending_approval" && (
                         <>
                           <Button variant="ghost" size="sm" className="text-green-600 hover:text-green-800 hover:bg-green-50"
                             onClick={() => { updateCampaign.mutate({ id: campaign.id, updates: { status: "recruiting" } }, { onSuccess: () => toast.success("承認して公開しました"), onError: () => toast.error("失敗しました") }); }}>
-                            承認・公開
+                            承認
                           </Button>
                           <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-800 hover:bg-red-50"
                             onClick={() => { updateCampaign.mutate({ id: campaign.id, updates: { status: "rejected" } }, { onSuccess: () => toast.success("却下しました"), onError: () => toast.error("失敗しました") }); }}>
@@ -195,7 +155,7 @@ export default function AdminCampaignsPage() {
                           </Button>
                         </>
                       )}
-                      <Button variant="ghost" size="sm" className="text-purple-600 hover:text-purple-800" onClick={() => openDetail(campaign)}>編集</Button>
+                      <Button variant="ghost" size="sm" className="text-purple-600 hover:text-purple-800" onClick={() => navigate(`/admin/campaigns/${campaign.id}`)}>詳細</Button>
                     </div>
                   </td>
                 </tr>
@@ -207,95 +167,6 @@ export default function AdminCampaignsPage() {
         </table>
         <div className="p-4 border-t border-gray-200 text-center text-gray-500 text-sm">全 {filteredCampaigns.length} 件</div>
       </div>
-
-      {selectedCampaign && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" onClick={() => setSelectedCampaign(null)}>
-          <div className="bg-white rounded-2xl w-full max-w-2xl shadow-xl" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between p-6 border-b">
-              <h3 className="font-bold text-lg">案件編集</h3>
-              <button onClick={() => setSelectedCampaign(null)}><X className="w-5 h-5 text-gray-400" /></button>
-            </div>
-            <div className="p-6 space-y-5 max-h-[70vh] overflow-y-auto">
-              {/* Campaign Images */}
-              {(selectedCampaign.image_urls?.length > 0 || selectedCampaign.image_url) && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">案件画像</label>
-                  <CampaignImageGallery
-                    imageUrls={selectedCampaign.image_urls?.length > 0 ? selectedCampaign.image_urls : [selectedCampaign.image_url]}
-                    title={selectedCampaign.title}
-                  />
-                </div>
-              )}
-              <div><label className="block text-sm font-medium text-gray-700 mb-1">タイトル</label>
-                <Input value={editForm.title} onChange={e => setEditForm({ ...editForm, title: e.target.value })} /></div>
-              <div><label className="block text-sm font-medium text-gray-700 mb-1">説明</label>
-                <textarea value={editForm.description} onChange={e => setEditForm({ ...editForm, description: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm min-h-[100px]" /></div>
-              <div className="grid grid-cols-2 gap-4">
-                <div><label className="block text-sm font-medium text-gray-700 mb-1">カテゴリ</label>
-                  <select value={editForm.category} onChange={e => setEditForm({ ...editForm, category: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm">
-                    <option value="">未選択</option>
-                    {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
-                  </select></div>
-                <div><label className="block text-sm font-medium text-gray-700 mb-1">プラットフォーム</label>
-                  <select value={editForm.platform} onChange={e => setEditForm({ ...editForm, platform: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm">
-                    <option value="">未選択</option>
-                    {PLATFORMS.map(p => <option key={p} value={p}>{p}</option>)}
-                  </select></div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div><label className="block text-sm font-medium text-gray-700 mb-1">報酬 (最小)</label>
-                  <Input type="number" value={editForm.budget_min} onChange={e => setEditForm({ ...editForm, budget_min: Number(e.target.value) })} /></div>
-                <div><label className="block text-sm font-medium text-gray-700 mb-1">報酬 (最大)</label>
-                  <Input type="number" value={editForm.budget_max} onChange={e => setEditForm({ ...editForm, budget_max: Number(e.target.value) })} /></div>
-              </div>
-              <div><label className="block text-sm font-medium text-gray-700 mb-1">募集人数</label>
-                <Input type="number" value={editForm.max_applicants} onChange={e => setEditForm({ ...editForm, max_applicants: Number(e.target.value) })} placeholder="0 = 制限なし" /></div>
-              <div className="grid grid-cols-2 gap-4">
-                <div><label className="block text-sm font-medium text-gray-700 mb-1">応募締切日</label>
-                  <Input type="date" value={editForm.deadline} onChange={e => setEditForm({ ...editForm, deadline: e.target.value })} /></div>
-                <div><label className="block text-sm font-medium text-gray-700 mb-1">振込予定日</label>
-                  <Input type="date" value={editForm.payment_date} onChange={e => setEditForm({ ...editForm, payment_date: e.target.value })} /></div>
-              </div>
-              <div><label className="block text-sm font-medium text-gray-700 mb-1">ステータス</label>
-                <select value={editForm.status} onChange={e => setEditForm({ ...editForm, status: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm">
-                  {CAMPAIGN_STATUSES.map(s => <option key={s.id} value={s.id}>{s.label}</option>)}
-                </select></div>
-              <div><label className="block text-sm font-medium text-gray-700 mb-1">応募条件</label>
-                <textarea value={editForm.requirements} onChange={e => setEditForm({ ...editForm, requirements: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm min-h-[80px]" /></div>
-              <div><label className="block text-sm font-medium text-gray-700 mb-1">納品物・依頼内容</label>
-                <textarea value={editForm.deliverables} onChange={e => setEditForm({ ...editForm, deliverables: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm min-h-[80px]" /></div>
-
-              <div>
-                <h4 className="font-bold text-gray-800 mb-2">この案件への応募 ({applications.filter(a => a.campaign_id === selectedCampaign.id).length}件)</h4>
-                <div className="space-y-2">
-                  {applications.filter(a => a.campaign_id === selectedCampaign.id).map(a => (
-                    <div key={a.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                      <div className="flex items-center gap-2">
-                        <img src={a.influencer_profiles?.image_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(a.influencer_profiles?.name || "?")}`} alt="" className="w-7 h-7 rounded-full" />
-                        <span className="text-sm font-medium">{a.influencer_profiles?.name || "-"}</span>
-                      </div>
-                      <Badge className={a.status === "approved" ? "bg-green-100 text-green-700" : a.status === "applied" ? "bg-blue-100 text-blue-700" : "bg-gray-100 text-gray-700"}>
-                        {a.status === "applied" ? "新規" : a.status === "approved" ? "採用" : a.status === "rejected" ? "不採用" : a.status}
-                      </Badge>
-                    </div>
-                  ))}
-                  {applications.filter(a => a.campaign_id === selectedCampaign.id).length === 0 && <p className="text-sm text-gray-400">応募なし</p>}
-                </div>
-              </div>
-            </div>
-            <div className="p-6 border-t flex justify-between">
-              <Button variant="outline" className="text-red-600 border-red-200" onClick={() => handleDelete(selectedCampaign.id)}>削除</Button>
-              <div className="flex gap-3">
-                <Button variant="outline" onClick={() => setSelectedCampaign(null)}>キャンセル</Button>
-                <Button className="bg-purple-600 hover:bg-purple-700" onClick={handleSave} disabled={updateCampaign.isPending}><Save className="w-4 h-4 mr-2" />保存</Button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
