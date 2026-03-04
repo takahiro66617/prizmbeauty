@@ -7,6 +7,7 @@ import { useToggleFavorite, useIsFavorite } from "@/hooks/useFavorites";
 import { useExternalApplications } from "@/hooks/useExternalApplications";
 import { Heart, Clock, Users, CheckCircle, Instagram, ArrowLeft, FileText, Send } from "lucide-react";
 import { CampaignImageGallery } from "@/components/campaign/CampaignImageGallery";
+import { ApplicationProgressTimeline } from "@/components/ApplicationProgressTimeline";
 import { toast } from "sonner";
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
