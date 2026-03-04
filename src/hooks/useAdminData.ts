@@ -130,3 +130,20 @@ export function useAdminDeleteCompany() {
     },
   });
 }
+
+// ---- Admin Notifications ----
+
+export function useAdminSendNotification() {
+  return useMutation({
+    mutationFn: async (params: {
+      targetType: "influencer" | "company" | "all_influencers" | "all_companies" | "all";
+      targetIds?: string[];
+      title: string;
+      message: string;
+      type?: string;
+      link?: string;
+    }) => {
+      return adminInvoke("send_admin_notification", params);
+    },
+  });
+}

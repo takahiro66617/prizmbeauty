@@ -185,6 +185,49 @@ Deno.serve(async (req) => {
         return jsonOk(enriched);
       }
 
+      case "send_admin_notification": {
+        const { targetType, targetIds, title, message, type, link } = body;
+        // targetType: "influencer" | "company" | "all_influencers" | "all_companies" | "all"
+        let userIds: string[] = [];
+
+        if (targetType === "influencer" && targetIds?.length) {
+          // Get user_ids from influencer_profiles
+          const { data: profiles } = await supabase.from("influencer_profiles").select("user_id").in("id", targetIds);
+          userIds = (profiles || []).map((p: any) => p.user_id).filter(Boolean);
+        } else if (targetType === "company" && targetIds?.length) {
+          const { data: comps } = await supabase.from("companies").select("user_id").in("id", targetIds);
+          userIds = (comps || []).map((c: any) => c.user_id).filter(Boolean);
+        } else if (targetType === "all_influencers") {
+          const { data: profiles } = await supabase.from("influencer_profiles").select("user_id").not("user_id", "is", null);
+          userIds = (profiles || []).map((p: any) => p.user_id).filter(Boolean);
+        } else if (targetType === "all_companies") {
+          const { data: comps } = await supabase.from("companies").select("user_id");
+          userIds = (comps || []).map((c: any) => c.user_id).filter(Boolean);
+        } else if (targetType === "all") {
+          const { data: profiles } = await supabase.from("influencer_profiles").select("user_id").not("user_id", "is", null);
+          const { data: comps } = await supabase.from("companies").select("user_id");
+          userIds = [
+            ...(profiles || []).map((p: any) => p.user_id),
+            ...(comps || []).map((c: any) => c.user_id),
+          ].filter(Boolean);
+        }
+
+        if (userIds.length === 0) return jsonError("送信対象が見つかりません");
+
+        const notifications = userIds.map((uid: string) => ({
+          user_id: uid,
+          title: title || "お知らせ",
+          message: message || "",
+          type: type || "info",
+          link: link || null,
+          read: false,
+        }));
+
+        const { error: insertErr } = await supabase.from("notifications").insert(notifications);
+        if (insertErr) return jsonError(insertErr.message);
+        return jsonOk({ sent: userIds.length });
+      }
+
       default:
         return jsonError("Unknown action: " + action, 400);
     }
