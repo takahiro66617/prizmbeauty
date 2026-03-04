@@ -370,10 +370,41 @@ export default function ClientApplicants() {
                   <div key={s.label} className={`text-center p-3 ${s.color} rounded-lg`}><p className={`text-xs ${s.textColor}`}>{s.label}</p><p className="font-bold">{(s.val || 0).toLocaleString()}</p></div>
                 ))}
               </div>
-              <div className="bg-gray-50 p-3 rounded-lg">
-                <p className="text-sm font-medium text-gray-700 mb-1">案件名</p>
-                <p className="text-sm font-semibold">{selectedApp.campaigns?.title || "-"}</p>
-              </div>
+              {/* Campaign Detail Section */}
+              {selectedApp.campaigns && (
+                <div className="bg-blue-50/50 border border-blue-100 rounded-xl p-4 space-y-3">
+                  <p className="text-sm font-bold text-gray-800 flex items-center gap-2">📋 案件詳細</p>
+                  <div className="flex items-start gap-3">
+                    {selectedApp.campaigns.image_url && (
+                      <img src={selectedApp.campaigns.image_url} alt="" className="w-20 h-20 rounded-lg object-cover shrink-0" />
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <p className="font-bold text-base text-gray-900">{selectedApp.campaigns.title}</p>
+                      {selectedApp.campaigns.category && <Badge variant="outline" className="text-xs mt-1">{selectedApp.campaigns.category}</Badge>}
+                    </div>
+                  </div>
+                  {selectedApp.campaigns.description && (
+                    <div><p className="text-xs font-medium text-gray-500 mb-1">案件概要</p><p className="text-sm text-gray-700 whitespace-pre-wrap">{selectedApp.campaigns.description}</p></div>
+                  )}
+                  {selectedApp.campaigns.deliverables && (
+                    <div><p className="text-xs font-medium text-gray-500 mb-1">📦 納品物・依頼内容</p><p className="text-sm text-gray-700 whitespace-pre-wrap">{selectedApp.campaigns.deliverables}</p></div>
+                  )}
+                  {selectedApp.campaigns.requirements && (
+                    <div><p className="text-xs font-medium text-gray-500 mb-1">✅ 応募条件・注意事項</p><p className="text-sm text-gray-700 whitespace-pre-wrap">{selectedApp.campaigns.requirements}</p></div>
+                  )}
+                  <div className="grid grid-cols-2 gap-2 text-sm">
+                    {selectedApp.campaigns.platform && (
+                      <div className="bg-white rounded-lg p-2"><span className="text-xs text-gray-500">プラットフォーム</span><p className="font-medium">{selectedApp.campaigns.platform}</p></div>
+                    )}
+                    {selectedApp.campaigns.deadline && (
+                      <div className="bg-white rounded-lg p-2"><span className="text-xs text-gray-500">締切</span><p className="font-medium">{new Date(selectedApp.campaigns.deadline).toLocaleDateString("ja-JP")}</p></div>
+                    )}
+                    {(selectedApp.campaigns.budget_min || selectedApp.campaigns.budget_max) && (
+                      <div className="bg-white rounded-lg p-2"><span className="text-xs text-gray-500">報酬</span><p className="font-medium">¥{(selectedApp.campaigns.budget_min || 0).toLocaleString()} 〜 ¥{(selectedApp.campaigns.budget_max || 0).toLocaleString()}</p></div>
+                    )}
+                  </div>
+                </div>
+              )}
               <div className="bg-gray-50 p-3 rounded-lg">
                 <p className="text-sm font-medium text-gray-700 mb-1">現在のステータス</p>
                 {getStatusBadge(selectedApp.status)}
