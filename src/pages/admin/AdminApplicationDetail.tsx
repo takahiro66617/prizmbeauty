@@ -7,6 +7,7 @@ import { useAdminApplications, useAdminUpdateApplicationStatus } from "@/hooks/u
 import { APPLICATION_STATUSES } from "@/lib/constants";
 import { toast } from "sonner";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from "recharts";
+import { ApplicationProgressTimeline } from "@/components/ApplicationProgressTimeline";
 
 const SNS_COLORS: Record<string, string> = { Instagram: "#E1306C", TikTok: "#010101", YouTube: "#FF0000", X: "#1DA1F2" };
 
