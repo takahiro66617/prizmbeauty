@@ -297,7 +297,7 @@ export default function AdminClientDetail() {
               const overdue = p.status === "pending" && isOverdue(p.campaigns?.payment_date ?? null);
               const near = p.status === "pending" && isNear(p.campaigns?.payment_date ?? null);
               return (
-                <div key={p.id} className={`p-4 rounded-xl border ${overdue ? "bg-red-50 border-red-200" : near ? "bg-yellow-50 border-yellow-200" : "bg-gray-50 border-gray-200"}`}>
+                <div key={p.id} className={`p-4 rounded-xl border space-y-3 ${overdue ? "bg-red-50 border-red-200" : near ? "bg-yellow-50 border-yellow-200" : "bg-gray-50 border-gray-200"}`}>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3 min-w-0">
                       {p.campaigns?.image_url ? (
@@ -313,7 +313,8 @@ export default function AdminClientDetail() {
                         </div>
                         <div className="flex items-center gap-2 mt-0.5">
                           {p.influencer_profiles?.image_url && <img src={p.influencer_profiles.image_url} alt="" className="w-5 h-5 rounded-full" />}
-                          <p className="text-xs text-gray-500">{p.influencer_profiles?.name || "不明"}</p>
+                          <p className="text-xs text-gray-500 font-medium">{p.influencer_profiles?.name || "不明"}</p>
+                          <span className="text-xs text-gray-400">@{p.influencer_profiles?.username || "-"}</span>
                           {p.campaigns?.payment_date && (
                             <span className={`text-xs ${overdue ? "text-red-600 font-medium" : near ? "text-yellow-600 font-medium" : "text-gray-400"}`}>
                               · 期日: {new Date(p.campaigns.payment_date).toLocaleDateString("ja-JP")}
@@ -329,12 +330,38 @@ export default function AdminClientDetail() {
                       <span className="font-bold text-gray-900">¥{p.amount.toLocaleString()}</span>
                     </div>
                   </div>
+                  {/* Bank account details */}
                   {p.bank_account ? (
-                    <div className="mt-2 p-2 bg-white rounded-md border border-gray-100 text-xs text-gray-600">
-                      <span className="font-medium">振込先:</span> {p.bank_account.bank_name} {p.bank_account.branch_name} ({p.bank_account.account_type === "ordinary" ? "普通" : p.bank_account.account_type}) {p.bank_account.account_number} {p.bank_account.account_holder}
+                    <div className="bg-blue-50 rounded-xl p-4 border border-blue-100">
+                      <p className="text-xs font-bold text-blue-700 mb-2 flex items-center gap-1">🏦 振込先口座情報</p>
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-sm">
+                        <div>
+                          <span className="text-xs text-gray-500">銀行名</span>
+                          <p className="font-medium text-gray-900">{p.bank_account.bank_name}</p>
+                        </div>
+                        <div>
+                          <span className="text-xs text-gray-500">支店名</span>
+                          <p className="font-medium text-gray-900">{p.bank_account.branch_name}</p>
+                        </div>
+                        <div>
+                          <span className="text-xs text-gray-500">口座種別</span>
+                          <p className="font-medium text-gray-900">{p.bank_account.account_type === "ordinary" ? "普通" : p.bank_account.account_type === "current" ? "当座" : p.bank_account.account_type}</p>
+                        </div>
+                        <div>
+                          <span className="text-xs text-gray-500">口座番号</span>
+                          <p className="font-medium text-gray-900">{p.bank_account.account_number}</p>
+                        </div>
+                        <div className="sm:col-span-2">
+                          <span className="text-xs text-gray-500">口座名義</span>
+                          <p className="font-medium text-gray-900">{p.bank_account.account_holder}</p>
+                        </div>
+                      </div>
                     </div>
                   ) : (
-                    <div className="mt-2 p-2 bg-red-50 rounded-md border border-red-100 text-xs text-red-600">⚠ 振込先口座が未登録です</div>
+                    <div className="bg-red-50 rounded-xl p-3 border border-red-100 flex items-center gap-2">
+                      <AlertTriangle className="w-4 h-4 text-red-500 shrink-0" />
+                      <p className="text-sm text-red-600 font-medium">⚠ 振込先口座が未登録です</p>
+                    </div>
                   )}
                 </div>
               );
