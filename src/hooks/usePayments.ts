@@ -28,19 +28,43 @@ export interface Payment {
   companies?: { id: string; name: string } | null;
 }
 
+// Helper to get LINE influencer profile ID from localStorage
+function getLineInfluencerProfileId(): string | null {
+  try {
+    const stored = localStorage.getItem("line_user");
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      return parsed.influencerProfileId || parsed.id || null;
+    }
+  } catch {}
+  return null;
+}
+
 export function useBankAccount() {
   return useQuery({
     queryKey: ["bank-account"],
     queryFn: async () => {
+      // Try auth session first
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return null;
-      const { data, error } = await supabase
-        .from("bank_accounts")
-        .select("*")
-        .eq("user_id", session.user.id)
-        .maybeSingle();
+      if (session) {
+        const { data, error } = await supabase
+          .from("bank_accounts")
+          .select("*")
+          .eq("user_id", session.user.id)
+          .maybeSingle();
+        if (error) throw error;
+        return data as BankAccount | null;
+      }
+
+      // LINE user fallback
+      const profileId = getLineInfluencerProfileId();
+      if (!profileId) return null;
+
+      const { data: res, error } = await supabase.functions.invoke("get-my-bank-account", {
+        body: { influencerProfileId: profileId },
+      });
       if (error) throw error;
-      return data as BankAccount | null;
+      return (res?.data as BankAccount | null) ?? null;
     },
   });
 }
@@ -49,32 +73,43 @@ export function useUpsertBankAccount() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (account: Omit<BankAccount, "id" | "created_at" | "updated_at" | "user_id">) => {
+      // Try auth session first
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) throw new Error("Not authenticated");
-      // Try update first, then insert
-      const { data: existing } = await supabase
-        .from("bank_accounts")
-        .select("id")
-        .eq("user_id", session.user.id)
-        .maybeSingle();
-      if (existing) {
-        const { data, error } = await supabase
+      if (session) {
+        const { data: existing } = await supabase
           .from("bank_accounts")
-          .update(account)
+          .select("id")
           .eq("user_id", session.user.id)
-          .select()
-          .single();
-        if (error) throw error;
-        return data;
-      } else {
-        const { data, error } = await supabase
-          .from("bank_accounts")
-          .insert({ ...account, user_id: session.user.id })
-          .select()
-          .single();
-        if (error) throw error;
-        return data;
+          .maybeSingle();
+        if (existing) {
+          const { data, error } = await supabase
+            .from("bank_accounts")
+            .update(account)
+            .eq("user_id", session.user.id)
+            .select()
+            .single();
+          if (error) throw error;
+          return data;
+        } else {
+          const { data, error } = await supabase
+            .from("bank_accounts")
+            .insert({ ...account, user_id: session.user.id })
+            .select()
+            .single();
+          if (error) throw error;
+          return data;
+        }
       }
+
+      // LINE user fallback
+      const profileId = getLineInfluencerProfileId();
+      if (!profileId) throw new Error("Not authenticated");
+
+      const { data: res, error } = await supabase.functions.invoke("upsert-my-bank-account", {
+        body: { influencerProfileId: profileId, ...account },
+      });
+      if (error) throw error;
+      return res?.data;
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["bank-account"] });
@@ -86,15 +121,27 @@ export function usePayments() {
   return useQuery({
     queryKey: ["payments"],
     queryFn: async () => {
+      // Try auth session first
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return [];
-      const { data, error } = await supabase
-        .from("payments")
-        .select("*, campaigns(id, title), companies(id, name)")
-        .eq("influencer_user_id", session.user.id)
-        .order("created_at", { ascending: false });
+      if (session) {
+        const { data, error } = await supabase
+          .from("payments")
+          .select("*, campaigns(id, title), companies(id, name)")
+          .eq("influencer_user_id", session.user.id)
+          .order("created_at", { ascending: false });
+        if (error) throw error;
+        return data as Payment[];
+      }
+
+      // LINE user fallback
+      const profileId = getLineInfluencerProfileId();
+      if (!profileId) return [];
+
+      const { data: res, error } = await supabase.functions.invoke("get-my-payments", {
+        body: { influencerProfileId: profileId },
+      });
       if (error) throw error;
-      return data as Payment[];
+      return (res?.data as Payment[]) ?? [];
     },
   });
 }
