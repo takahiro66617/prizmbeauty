@@ -2,7 +2,8 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Search, X, Save, AlertTriangle } from "lucide-react";
+import { Search, X, Save, AlertTriangle, Image as ImageIcon } from "lucide-react";
+import { CampaignImageGallery } from "@/components/campaign/CampaignImageGallery";
 import HelpGuideModal from "@/components/admin/HelpGuideModal";
 import { useExternalCampaigns } from "@/hooks/useExternalCampaigns";
 import { useAdminUpdateCampaign, useAdminDeleteCampaign, useAdminApplications } from "@/hooks/useAdminData";
@@ -208,6 +209,16 @@ export default function AdminCampaignsPage() {
               <button onClick={() => setSelectedCampaign(null)}><X className="w-5 h-5 text-gray-400" /></button>
             </div>
             <div className="p-6 space-y-5 max-h-[70vh] overflow-y-auto">
+              {/* Campaign Images */}
+              {(selectedCampaign.image_urls?.length > 0 || selectedCampaign.image_url) && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">案件画像</label>
+                  <CampaignImageGallery
+                    imageUrls={selectedCampaign.image_urls?.length > 0 ? selectedCampaign.image_urls : [selectedCampaign.image_url]}
+                    title={selectedCampaign.title}
+                  />
+                </div>
+              )}
               <div><label className="block text-sm font-medium text-gray-700 mb-1">タイトル</label>
                 <Input value={editForm.title} onChange={e => setEditForm({ ...editForm, title: e.target.value })} /></div>
               <div><label className="block text-sm font-medium text-gray-700 mb-1">説明</label>
