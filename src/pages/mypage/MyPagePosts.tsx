@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { Link } from "react-router-dom";
-import { PenTool, Clock, CheckCircle, Send, FileText, ArrowRight, MessageSquare, Filter, Search, CalendarIcon } from "lucide-react";
+import { PenTool, Clock, CheckCircle, Send, FileText, ArrowRight, MessageSquare, Filter, Search, CalendarIcon, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -37,7 +37,7 @@ export default function MyPagePosts() {
   const [userId, setUserId] = useState("");
   const [showSubmitDialog, setShowSubmitDialog] = useState(false);
   const [selectedApp, setSelectedApp] = useState<any>(null);
-  const [postUrl, setPostUrl] = useState("");
+  const [postUrls, setPostUrls] = useState<string[]>([""]);
   const [postCaption, setPostCaption] = useState("");
   const [activeTab, setActiveTab] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
@@ -97,7 +97,8 @@ export default function MyPagePosts() {
   }, [activeApps, activeTab, searchQuery, categoryFilter, dateFrom, dateTo]);
 
   const handleSubmitPost = async () => {
-    if (!selectedApp || !postUrl) {
+    const validUrls = postUrls.filter(u => u.trim());
+    if (!selectedApp || validUrls.length === 0) {
       toast.error("投稿URLを入力してください");
       return;
     }
@@ -105,7 +106,7 @@ export default function MyPagePosts() {
     if (error) { toast.error("送信に失敗しました"); return; }
     toast.success("投稿を報告しました！企業の確認をお待ちください。");
     setShowSubmitDialog(false);
-    setPostUrl("");
+    setPostUrls([""])
     setPostCaption("");
     setSelectedApp(null);
     window.location.reload();
@@ -246,8 +247,20 @@ export default function MyPagePosts() {
               </div>
             )}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">投稿URL（必須）</label>
-              <Input placeholder="https://instagram.com/p/..." value={postUrl} onChange={e => setPostUrl(e.target.value)} />
+              <label className="block text-sm font-medium text-gray-700 mb-1">投稿URL（必須・複数可）</label>
+              <div className="space-y-2">
+                {postUrls.map((url, i) => (
+                  <div key={i} className="flex items-center gap-2">
+                    <Input placeholder="https://instagram.com/p/..." value={url} onChange={e => { const next = [...postUrls]; next[i] = e.target.value; setPostUrls(next); }} className="flex-1" />
+                    {postUrls.length > 1 && (
+                      <Button variant="ghost" size="icon" onClick={() => setPostUrls(postUrls.filter((_, j) => j !== i))} className="shrink-0 text-gray-400 hover:text-red-500">
+                        <X className="w-4 h-4" />
+                      </Button>
+                    )}
+                  </div>
+                ))}
+                <button onClick={() => setPostUrls([...postUrls, ""])} className="text-xs text-pink-500 hover:text-pink-700">+ URLを追加</button>
+              </div>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">コメント（任意）</label>
