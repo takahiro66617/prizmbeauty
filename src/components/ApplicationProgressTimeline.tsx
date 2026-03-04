@@ -33,6 +33,10 @@ export function ApplicationProgressTimeline({ status, appliedAt, updatedAt, infl
   const deadlineDays = campaign?.deadline ? Math.ceil((new Date(campaign.deadline).getTime() - now.getTime()) / 86400000) : null;
   const paymentDays = campaign?.payment_date ? Math.ceil((new Date(campaign.payment_date).getTime() - now.getTime()) / 86400000) : null;
 
+  // 7-day response deadline for approved status
+  const approvedDeadline = status === "approved" ? new Date(new Date(updatedAt).getTime() + 7 * 24 * 60 * 60 * 1000) : null;
+  const approvedDaysLeft = approvedDeadline ? Math.ceil((approvedDeadline.getTime() - now.getTime()) / 86400000) : null;
+
   const appSt = APPLICATION_STATUSES.find(s => s.id === status);
 
   return (
@@ -106,9 +110,20 @@ export function ApplicationProgressTimeline({ status, appliedAt, updatedAt, infl
             )}
           </div>
         )}
+        {approvedDeadline && approvedDaysLeft !== null && (
+          <div className={`rounded-xl p-3 text-center ${approvedDaysLeft <= 2 ? "bg-red-50 border border-red-200" : "bg-yellow-50 border border-yellow-200"}`}>
+            <p className="text-xs text-gray-400 mb-0.5 flex items-center justify-center gap-1">
+              <CalendarDays className="w-3 h-3" />返信期限
+            </p>
+            <p className={`font-bold text-sm ${approvedDaysLeft <= 2 ? "text-red-600" : "text-yellow-700"}`}>
+              {approvedDeadline.toLocaleDateString("ja-JP")}
+            </p>
+            <p className={`text-xs mt-0.5 font-bold ${approvedDaysLeft <= 0 ? "text-red-500" : approvedDaysLeft <= 2 ? "text-red-500" : "text-yellow-600"}`}>
+              {approvedDaysLeft <= 0 ? "⚠️ 期限切れ" : `あと${approvedDaysLeft}日`}
+            </p>
+          </div>
+        )}
       </div>
-
-      {/* Special status alert */}
       {isSpecial && (
         <div className={`flex items-center gap-3 p-4 rounded-xl border ${
           status === "rejected" ? "bg-red-50 border-red-200" :

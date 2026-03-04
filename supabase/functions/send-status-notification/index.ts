@@ -80,7 +80,7 @@ serve(async (req) => {
       }
     }
 
-    // 4. Auto-close campaign when influencer is approved
+    // 4. Auto-close campaign when influencer is approved + send 7-day deadline notice
     if (newStatus === "approved") {
       try {
         await supabaseAdmin.from("campaigns")
@@ -89,6 +89,45 @@ serve(async (req) => {
         console.log("Campaign auto-closed:", updatedApp.campaign_id);
       } catch (e) {
         console.error("Failed to auto-close campaign:", e);
+      }
+
+      // Send 7-day response deadline notification to the influencer
+      if (influencer) {
+        const targetUserId = influencer.user_id || influencer.id;
+        const campaignTitle = updatedApp.campaigns?.title || "案件";
+        const deadlineDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+        const deadlineStr = deadlineDate.toLocaleDateString("ja-JP", { year: "numeric", month: "long", day: "numeric" });
+
+        try {
+          // Notification about 7-day deadline
+          await supabaseAdmin.from("notifications").insert({
+            user_id: targetUserId,
+            title: "🎉 案件に採用されました！（7日以内に返信が必要です）",
+            message: `「${campaignTitle}」に採用されました！おめでとうございます🎊\n\n⚠️ 重要：${deadlineStr}までにメッセージで返信がない場合、アサインは自動的に取り消されます。お早めにご確認・ご返信をお願いします。`,
+            type: "success",
+            link: "/mypage/applications",
+          });
+
+          // Also send a thread message about the deadline
+          const companyData2 = await supabaseAdmin
+            .from("companies")
+            .select("user_id")
+            .eq("id", updatedApp.company_id)
+            .single();
+
+          if (companyData2.data?.user_id) {
+            await supabaseAdmin.from("messages").insert({
+              sender_id: companyData2.data.user_id,
+              receiver_id: targetUserId,
+              content: `🎉 「${campaignTitle}」に採用されました！\n\n📌 重要なお知らせ：\n採用承認から7日以内（${deadlineStr}まで）にこのスレッドでご返信をお願いします。\n\n期限内にご返信がない場合、アサインは自動的に取り消され、案件は再募集となります。\n\nご不明な点がございましたら、お気軽にメッセージでご連絡ください。`,
+              application_id: applicationId,
+              message_type: "system",
+              visibility: "all",
+            });
+          }
+        } catch (e) {
+          console.error("Failed to send approval deadline notice:", e);
+        }
       }
     }
 
