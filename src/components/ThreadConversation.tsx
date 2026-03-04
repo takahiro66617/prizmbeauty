@@ -161,16 +161,18 @@ export default function ThreadConversation({ applicationId, userType, senderId, 
       const content = `📱 投稿報告\n\n${urlLines ? `${urlLines}\n` : ""}${postCaption ? `説明: ${postCaption}` : ""}`;
       await handleSendMessage(content, imageUrls[0] || undefined, imageUrls.length > 1 ? imageUrls : undefined, "post_report", "all");
       
-      // Auto-update status back to post_submitted when resubmitting after revision
-      if (app?.status === "revision_requested") {
+      // Auto-update status to post_submitted
+      if (app?.status === "in_progress" || app?.status === "revision_requested") {
         try {
           await supabase.functions.invoke("send-status-notification", {
             body: {
               applicationId: app.id,
               newStatus: "post_submitted",
-              message: "修正後の投稿報告が再提出されました。確認をお願いします。",
-              notificationTitle: "再投稿報告",
-              notificationMessage: `「${app.campaigns?.title || "案件"}」の修正後の投稿報告が届きました。`,
+              message: app.status === "revision_requested"
+                ? "修正後の投稿報告が再提出されました。確認をお願いします。"
+                : "投稿報告が提出されました。確認をお願いします。",
+              notificationTitle: app.status === "revision_requested" ? "再投稿報告" : "投稿報告",
+              notificationMessage: `「${app.campaigns?.title || "案件"}」の投稿報告が届きました。`,
             },
           });
         } catch (e) {
