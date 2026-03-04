@@ -39,9 +39,8 @@ export function HeroSection() {
               isTextVisible ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-8"
             }`}
           >
-            <Badge className="bg-pastel-pink/50 text-foreground border-pastel-pink/30 hover:bg-pastel-pink/60">
-              ✨ インフルエンサー登録数 10,000人突破！
-            </Badge>
+
+
 
             <h1 className="text-3xl md:text-4xl lg:text-5xl font-extrabold leading-tight text-card-foreground">
               美容案件で輝く、
