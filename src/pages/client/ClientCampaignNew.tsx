@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { ArrowLeft, Upload, X, GripVertical } from "lucide-react";
 import { useCreateCampaign } from "@/hooks/useExternalCampaigns";
-import { CATEGORIES, PLATFORMS } from "@/lib/constants";
+import { CATEGORIES, PLATFORMS, PREFECTURES } from "@/lib/constants";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -19,6 +19,7 @@ export default function ClientCampaignNew() {
   const [form, setForm] = useState({
     title: "", description: "", category: "スキンケア", budgetMin: "", budgetMax: "",
     maxApplicants: "", deadline: "", paymentDate: "", requirements: "", platforms: [] as string[], deliverables: "",
+    prefecture: "",
   });
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -72,7 +73,8 @@ export default function ClientCampaignNew() {
       budget_min: Number(form.budgetMin), budget_max: Number(form.budgetMax || form.budgetMin),
       deadline: form.deadline, requirements: form.requirements, platform: form.platforms.join(","),
       status: "pending_approval", image_url: imageUrls[0] || undefined, image_urls: imageUrls,
-    }, {
+      prefecture: form.prefecture || undefined,
+    } as any, {
       onSuccess: () => { toast.success("案件を作成しました。事務局の承認後に公開されます。"); navigate("/client/campaigns"); },
       onError: () => { toast.error("案件の作成に失敗しました"); setIsUploading(false); },
     });
@@ -140,6 +142,16 @@ export default function ClientCampaignNew() {
                 {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
               </select>
             </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">都道府県</label>
+              <select value={form.prefecture} onChange={e => setForm({ ...form, prefecture: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <option value="">指定なし</option>
+                {PREFECTURES.map(p => <option key={p} value={p}>{p}</option>)}
+              </select>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-6">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">募集人数</label>
               <Input type="number" value={form.maxApplicants} onChange={e => setForm({ ...form, maxApplicants: e.target.value })} placeholder="10" />
