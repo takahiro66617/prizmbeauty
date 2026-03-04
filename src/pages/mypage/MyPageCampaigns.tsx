@@ -24,8 +24,13 @@ export default function MyPageCampaigns() {
   const [deadlineFrom, setDeadlineFrom] = useState<Date | undefined>();
   const [deadlineTo, setDeadlineTo] = useState<Date | undefined>();
   const [sortBy, setSortBy] = useState("newest");
+  const [statusFilter, setStatusFilter] = useState<"all" | "recruiting" | "closed">("recruiting");
 
-  const recruitingCampaigns = campaigns.filter(c => c.status === "recruiting");
+  const visibleCampaigns = campaigns.filter(c => {
+    if (statusFilter === "recruiting") return c.status === "recruiting";
+    if (statusFilter === "closed") return ["closed", "completed"].includes(c.status);
+    return ["recruiting", "closed", "completed"].includes(c.status);
+  });
 
   const activeFilterCount = useMemo(() => {
     let c = 0;
@@ -48,7 +53,7 @@ export default function MyPageCampaigns() {
   };
 
   const filtered = useMemo(() => {
-    let result = recruitingCampaigns.filter(c => {
+    let result = visibleCampaigns.filter(c => {
       const matchesSearch = !searchQuery || c.title.toLowerCase().includes(searchQuery.toLowerCase()) || (c.companies?.name || "").toLowerCase().includes(searchQuery.toLowerCase());
       const matchesCategory = categoryFilter === "all" || c.category === categoryFilter;
       const matchesPlatform = platformFilter === "all" || (c.platform || "").toLowerCase().includes(platformFilter.toLowerCase());
@@ -74,13 +79,32 @@ export default function MyPageCampaigns() {
     });
 
     return result;
-  }, [recruitingCampaigns, searchQuery, categoryFilter, platformFilter, budgetMin, budgetMax, deadlineFrom, deadlineTo, sortBy]);
+  }, [visibleCampaigns, searchQuery, categoryFilter, platformFilter, budgetMin, budgetMax, deadlineFrom, deadlineTo, sortBy]);
 
   return (
     <div className="space-y-6 pb-20">
       <div>
         <h1 className="text-2xl font-bold text-gray-900">案件を探す</h1>
         <p className="text-gray-500 mt-1">現在募集中の案件一覧です。気になる案件に応募してみましょう。</p>
+      </div>
+
+      {/* Status tabs */}
+      <div className="flex gap-2">
+        {([
+          { value: "recruiting" as const, label: "募集中" },
+          { value: "closed" as const, label: "募集終了" },
+          { value: "all" as const, label: "すべて" },
+        ]).map(tab => (
+          <Button
+            key={tab.value}
+            variant={statusFilter === tab.value ? "default" : "outline"}
+            size="sm"
+            onClick={() => setStatusFilter(tab.value)}
+            className={cn(statusFilter === tab.value && "bg-pink-500 hover:bg-pink-600 text-white")}
+          >
+            {tab.label}
+          </Button>
+        ))}
       </div>
 
       <div className="flex flex-col md:flex-row gap-3">
@@ -177,11 +201,16 @@ export default function MyPageCampaigns() {
             <Link key={campaign.id} to={`/mypage/campaigns/${campaign.id}`}>
               <Card className="group hover:shadow-lg transition-all border-gray-100 h-full">
                 <CardContent className="p-0">
-                  <div className="h-40 bg-gray-100 overflow-hidden rounded-t-lg">
+                  <div className="h-40 bg-gray-100 overflow-hidden rounded-t-lg relative">
                     {campaign.image_url ? (
                       <img src={campaign.image_url} alt={campaign.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center text-gray-300"><FileText className="w-12 h-12" /></div>
+                    )}
+                    {["closed", "completed"].includes(campaign.status) && (
+                      <div className="absolute top-2 right-2">
+                        <Badge className="bg-gray-800 text-white text-xs">募集終了</Badge>
+                      </div>
                     )}
                   </div>
                   <div className="p-4 space-y-3">
