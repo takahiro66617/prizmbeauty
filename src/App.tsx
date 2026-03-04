@@ -27,13 +27,17 @@ import AdminInfluencersPage from "./pages/admin/AdminInfluencers";
 import AdminInfluencerDetail from "./pages/admin/AdminInfluencerDetail";
 import AdminApplications from "./pages/admin/AdminApplications";
 import AdminMessages from "./pages/admin/AdminMessages";
+import AdminCampaignDetail from "./pages/admin/AdminCampaignDetail";
+import AdminApplicationDetail from "./pages/admin/AdminApplicationDetail";
 import { AdminLayout } from "./components/admin/AdminLayout";
 import { ClientLayout } from "./components/client/ClientLayout";
 import ClientLogin from "./pages/client/ClientLogin";
 import ClientDashboard from "./pages/client/ClientDashboard";
 import ClientCampaigns from "./pages/client/ClientCampaigns";
 import ClientCampaignNew from "./pages/client/ClientCampaignNew";
+import ClientCampaignDetail from "./pages/client/ClientCampaignDetail";
 import ClientApplicants from "./pages/client/ClientApplicants";
+import ClientApplicantDetail from "./pages/client/ClientApplicantDetail";
 import ClientMessages from "./pages/client/ClientMessages";
 import ClientSettings from "./pages/client/ClientSettings";
 import ClientPayments from "./pages/client/ClientPayments";
@@ -92,7 +96,9 @@ const App = () => (
             <Route path="dashboard" element={<ClientDashboard />} />
             <Route path="campaigns" element={<ClientCampaigns />} />
             <Route path="campaigns/new" element={<ClientCampaignNew />} />
+            <Route path="campaigns/:id" element={<ClientCampaignDetail />} />
             <Route path="applicants" element={<ClientApplicants />} />
+            <Route path="applicants/:id" element={<ClientApplicantDetail />} />
             <Route path="messages" element={<ClientMessages />} />
             <Route path="settings" element={<ClientSettings />} />
             <Route path="payments" element={<ClientPayments />} />
@@ -102,11 +108,13 @@ const App = () => (
           <Route path="/admin" element={<AdminLayout />}>
             <Route path="dashboard" element={<AdminDashboard />} />
             <Route path="campaigns" element={<AdminCampaignsPage />} />
+            <Route path="campaigns/:id" element={<AdminCampaignDetail />} />
             <Route path="clients" element={<AdminClientsPage />} />
             <Route path="clients/:id" element={<AdminClientDetail />} />
             <Route path="influencers" element={<AdminInfluencersPage />} />
             <Route path="influencers/:id" element={<AdminInfluencerDetail />} />
             <Route path="applications" element={<AdminApplications />} />
+            <Route path="applications/:id" element={<AdminApplicationDetail />} />
             <Route path="messages" element={<AdminMessages />} />
             <Route path="debug-reports" element={<DebugReportsPage />} />
           </Route>

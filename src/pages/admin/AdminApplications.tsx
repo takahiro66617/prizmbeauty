@@ -1,15 +1,16 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Search, X } from "lucide-react";
+import { Search } from "lucide-react";
 import HelpGuideModal from "@/components/admin/HelpGuideModal";
-import { useAdminApplications, useAdminUpdateApplicationStatus } from "@/hooks/useAdminData";
+import { useAdminApplications } from "@/hooks/useAdminData";
 import { useExternalCampaigns } from "@/hooks/useExternalCampaigns";
 import { useExternalCompanies } from "@/hooks/useExternalCompanies";
-import { APPLICATION_STATUSES, CATEGORIES, PLATFORMS } from "@/lib/constants";
-import { toast } from "sonner";
+import { APPLICATION_STATUSES, CATEGORIES } from "@/lib/constants";
 
 export default function AdminApplications() {
+  const navigate = useNavigate();
   const [statusFilter, setStatusFilter] = useState("all");
   const [search, setSearch] = useState("");
   const [companyFilter, setCompanyFilter] = useState("all");
@@ -17,14 +18,12 @@ export default function AdminApplications() {
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
-  const [selectedApp, setSelectedApp] = useState<any>(null);
 
   const { data: applications = [], isLoading } = useAdminApplications();
   const { data: campaigns = [] } = useExternalCampaigns();
   const { data: companies = [] } = useExternalCompanies();
-  const updateStatus = useAdminUpdateApplicationStatus();
 
-  const filtered = applications.filter(a => {
+  const filtered = applications.filter((a: any) => {
     const matchesStatus = statusFilter === "all" || a.status === statusFilter;
     const matchesSearch = !search || (a.influencer_profiles?.name || "").toLowerCase().includes(search.toLowerCase()) || (a.campaigns?.title || "").toLowerCase().includes(search.toLowerCase());
     const matchesCompany = companyFilter === "all" || a.campaigns?.companies?.id === companyFilter;
@@ -40,13 +39,6 @@ export default function AdminApplications() {
     return <Badge className={s?.color || ""}>{s?.label || status}</Badge>;
   };
 
-  const handleStatusChange = (id: string, status: string) => {
-    updateStatus.mutate({ id, status }, {
-      onSuccess: () => { toast.success("ステータスを更新しました"); setSelectedApp(null); },
-      onError: () => toast.error("更新に失敗しました"),
-    });
-  };
-
   const clearFilters = () => {
     setSearch(""); setStatusFilter("all"); setCompanyFilter("all"); setCampaignFilter("all");
     setCategoryFilter("all"); setDateFrom(""); setDateTo("");
@@ -57,22 +49,16 @@ export default function AdminApplications() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-800">応募管理</h1>
-          <p className="text-gray-500 mt-1">全応募の横断一覧です。マッチング状況を確認できます。</p>
+          <p className="text-gray-500 mt-1">全応募の横断一覧です。行クリックで詳細ページへ。</p>
         </div>
         <HelpGuideModal
           title="応募管理の使い方"
           description="インフルエンサーからの応募を一元管理し、選考・ステータス変更を行います。"
           sections={[
-            { title: "応募一覧", content: ["全案件への応募を横断的に確認", "企業・案件・ステータス・カテゴリ・期間で絞り込み", "IF名・案件名のキーワード検索も可能"] },
-            { title: "ステータス管理", content: ["応募ステータスを段階的に進行（応募→選考中→採用→進行中…）", "各ステータスの詳細はクリックで確認", "ステータス変更時にIF・企業へ自動通知"] },
-            { title: "詳細確認", content: ["応募者のプロフィール・応募動機を確認", "案件情報と照合してマッチング判断", "応募モーダルからステータスを直接変更可能"] },
+            { title: "応募一覧", content: ["全案件への応募を横断的に確認", "企業・案件・ステータス・カテゴリ・期間で絞り込み"] },
+            { title: "詳細ページ", content: ["行をクリックで応募詳細ページへ移動", "IF情報・案件情報・ステータス変更を専用ページで実行"] },
           ]}
-          workflow={[
-            "新規応募（applied）を確認し内容を精査",
-            "適切なIFを「選考中」→「採用」に変更",
-            "採用後、案件スレッドで進行管理を開始",
-            "投稿確認後、報酬処理へ進む",
-          ]}
+          workflow={["新規応募を確認", "行クリックで詳細ページへ", "ステータスを変更"]}
         />
       </div>
 
@@ -121,14 +107,13 @@ export default function AdminApplications() {
               <th className="px-6 py-4">カテゴリ</th>
               <th className="px-6 py-4">応募日</th>
               <th className="px-6 py-4">ステータス</th>
-              <th className="px-6 py-4">操作</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200">
             {isLoading ? (
-              <tr><td colSpan={7} className="px-6 py-12 text-center text-gray-500">読み込み中...</td></tr>
-            ) : filtered.length > 0 ? filtered.map(app => (
-              <tr key={app.id} className="hover:bg-gray-50">
+              <tr><td colSpan={6} className="px-6 py-12 text-center text-gray-500">読み込み中...</td></tr>
+            ) : filtered.length > 0 ? filtered.map((app: any) => (
+              <tr key={app.id} className="hover:bg-gray-50 cursor-pointer transition-colors" onClick={() => navigate(`/admin/applications/${app.id}`)}>
                 <td className="px-6 py-4">
                   <div className="flex items-center gap-2">
                     {app.influencer_profiles && <img src={app.influencer_profiles.image_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(app.influencer_profiles.name)}`} alt="" className="w-7 h-7 rounded-full" />}
@@ -143,9 +128,7 @@ export default function AdminApplications() {
                     {app.campaigns?.image_url ? (
                       <img src={app.campaigns.image_url} alt="" className="w-8 h-8 rounded-lg object-cover shrink-0" />
                     ) : (
-                      <div className="w-8 h-8 rounded-lg bg-gray-200 flex items-center justify-center shrink-0">
-                        <span className="text-xs text-gray-400">📋</span>
-                      </div>
+                      <div className="w-8 h-8 rounded-lg bg-gray-200 flex items-center justify-center shrink-0"><span className="text-xs text-gray-400">📋</span></div>
                     )}
                     <span className="text-gray-700">{app.campaigns?.title || "-"}</span>
                   </div>
@@ -154,110 +137,14 @@ export default function AdminApplications() {
                 <td className="px-6 py-4"><Badge variant="outline" className="text-xs">{app.campaigns?.category || "-"}</Badge></td>
                 <td className="px-6 py-4 text-gray-500">{new Date(app.applied_at).toLocaleDateString("ja-JP")}</td>
                 <td className="px-6 py-4">{getStatusBadge(app.status)}</td>
-                <td className="px-6 py-4">
-                  <Button variant="ghost" size="sm" className="text-purple-600 hover:text-purple-800" onClick={() => setSelectedApp(app)}>詳細</Button>
-                </td>
               </tr>
             )) : (
-              <tr><td colSpan={7} className="px-6 py-12 text-center text-gray-500">応募がありません</td></tr>
+              <tr><td colSpan={6} className="px-6 py-12 text-center text-gray-500">応募がありません</td></tr>
             )}
           </tbody>
         </table>
         <div className="p-4 border-t border-gray-200 text-center text-gray-500 text-sm">全 {filtered.length} 件</div>
       </div>
-
-      {selectedApp && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" onClick={() => setSelectedApp(null)}>
-          <div className="bg-white rounded-2xl w-full max-w-2xl shadow-xl" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between p-6 border-b">
-              <h3 className="font-bold text-lg">応募詳細</h3>
-              <button onClick={() => setSelectedApp(null)}><X className="w-5 h-5 text-gray-400" /></button>
-            </div>
-            <div className="p-6 space-y-6 max-h-[70vh] overflow-y-auto">
-              {selectedApp.influencer_profiles && (
-                <div className="bg-gray-50 rounded-xl p-4">
-                  <h4 className="font-bold text-gray-800 mb-3">インフルエンサー情報</h4>
-                  <div className="flex items-center gap-4">
-                    <img src={selectedApp.influencer_profiles.image_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(selectedApp.influencer_profiles.name)}`} alt="" className="w-16 h-16 rounded-full" />
-                    <div>
-                      <p className="font-bold text-gray-900">{selectedApp.influencer_profiles.name}</p>
-                      <p className="text-sm text-gray-500">@{selectedApp.influencer_profiles.username}</p>
-                      <p className="text-xs text-gray-500 mt-1">{selectedApp.influencer_profiles.category || "未設定"}</p>
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-4 gap-3 mt-3">
-                    {[
-                      { label: "Instagram", val: selectedApp.influencer_profiles.instagram_followers, color: "text-pink-600" },
-                      { label: "TikTok", val: selectedApp.influencer_profiles.tiktok_followers, color: "" },
-                      { label: "YouTube", val: selectedApp.influencer_profiles.youtube_followers, color: "text-red-600" },
-                      { label: "X", val: selectedApp.influencer_profiles.twitter_followers, color: "" },
-                    ].map(s => (
-                      <div key={s.label} className="text-center p-2 bg-white rounded-lg">
-                        <p className={`text-xs ${s.color}`}>{s.label}</p>
-                        <p className="font-bold">{(s.val || 0).toLocaleString()}</p>
-                      </div>
-                    ))}
-                  </div>
-                  {selectedApp.influencer_profiles.bio && <p className="text-sm text-gray-600 mt-3">{selectedApp.influencer_profiles.bio}</p>}
-                </div>
-              )}
-              {selectedApp.campaigns && (
-                <div className="bg-blue-50/50 border border-blue-100 rounded-xl p-4 space-y-3">
-                  <h4 className="font-bold text-gray-800 flex items-center gap-2">📋 案件詳細</h4>
-                  <div className="flex items-start gap-3">
-                    {selectedApp.campaigns.image_url && (
-                      <img src={selectedApp.campaigns.image_url} alt="" className="w-20 h-20 rounded-lg object-cover shrink-0" />
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <p className="font-bold text-base text-gray-900">{selectedApp.campaigns.title}</p>
-                      <p className="text-sm text-gray-500 mt-0.5">{selectedApp.campaigns.companies?.name || ""}</p>
-                      {selectedApp.campaigns.category && <Badge variant="outline" className="text-xs mt-1">{selectedApp.campaigns.category}</Badge>}
-                    </div>
-                  </div>
-                  {selectedApp.campaigns.description && (
-                    <div><p className="text-xs font-medium text-gray-500 mb-1">案件概要</p><p className="text-sm text-gray-700 whitespace-pre-wrap">{selectedApp.campaigns.description}</p></div>
-                  )}
-                  {selectedApp.campaigns.deliverables && (
-                    <div><p className="text-xs font-medium text-gray-500 mb-1">📦 納品物・依頼内容</p><p className="text-sm text-gray-700 whitespace-pre-wrap">{selectedApp.campaigns.deliverables}</p></div>
-                  )}
-                  {selectedApp.campaigns.requirements && (
-                    <div><p className="text-xs font-medium text-gray-500 mb-1">✅ 応募条件・注意事項</p><p className="text-sm text-gray-700 whitespace-pre-wrap">{selectedApp.campaigns.requirements}</p></div>
-                  )}
-                  <div className="grid grid-cols-2 gap-2 text-sm">
-                    {selectedApp.campaigns.platform && (
-                      <div className="bg-white rounded-lg p-2"><span className="text-xs text-gray-500">プラットフォーム</span><p className="font-medium">{selectedApp.campaigns.platform}</p></div>
-                    )}
-                    {selectedApp.campaigns.deadline && (
-                      <div className="bg-white rounded-lg p-2"><span className="text-xs text-gray-500">締切</span><p className="font-medium">{new Date(selectedApp.campaigns.deadline).toLocaleDateString("ja-JP")}</p></div>
-                    )}
-                    {(selectedApp.campaigns.budget_min || selectedApp.campaigns.budget_max) && (
-                      <div className="bg-white rounded-lg p-2"><span className="text-xs text-gray-500">報酬</span><p className="font-medium">¥{(selectedApp.campaigns.budget_min || 0).toLocaleString()} 〜 ¥{(selectedApp.campaigns.budget_max || 0).toLocaleString()}</p></div>
-                    )}
-                  </div>
-                </div>
-              )}
-              {selectedApp.motivation && (
-                <div>
-                  <h4 className="font-bold text-gray-800 mb-2">応募動機</h4>
-                  <p className="bg-gray-50 p-4 rounded-lg text-sm text-gray-700 italic">"{selectedApp.motivation}"</p>
-                </div>
-              )}
-              <div>
-                <h4 className="font-bold text-gray-800 mb-3">ステータス変更</h4>
-                <div className="flex gap-2 flex-wrap">
-                  {APPLICATION_STATUSES.map(s => (
-                    <Button key={s.id} size="sm" variant={selectedApp.status === s.id ? "default" : "outline"}
-                      onClick={() => handleStatusChange(selectedApp.id, s.id)} disabled={updateStatus.isPending}
-                      className={selectedApp.status === s.id ? "bg-purple-600" : ""}>
-                      {s.label}
-                    </Button>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
