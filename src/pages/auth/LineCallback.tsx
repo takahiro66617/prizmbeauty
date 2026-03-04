@@ -95,16 +95,48 @@ export default function LineCallback() {
   }, [searchParams, navigate]);
 
   if (error) {
+    const isFriendshipError = error.includes("友だち追加");
     return (
       <div className="min-h-screen flex items-center justify-center bg-background p-4">
-        <div className="text-center space-y-4">
-          <p className="text-destructive font-medium">{error}</p>
-          <button
-            onClick={() => navigate("/auth/login")}
-            className="text-primary underline text-sm"
-          >
-            ログインページに戻る
-          </button>
+        <div className="w-full max-w-sm text-center space-y-6">
+          {isFriendshipError ? (
+            <>
+              <div className="w-16 h-16 mx-auto rounded-full bg-destructive/10 flex items-center justify-center">
+                <span className="text-3xl">⚠️</span>
+              </div>
+              <div className="space-y-2">
+                <h2 className="text-lg font-bold text-foreground">友だち追加が必要です</h2>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  PRizmをご利用いただくには、LINE公式アカウントの友だち追加が必須です。
+                </p>
+              </div>
+              <div className="bg-muted rounded-xl p-4 text-left space-y-2">
+                <p className="text-sm font-semibold text-foreground">手順：</p>
+                <ol className="text-sm text-muted-foreground space-y-1 list-decimal list-inside">
+                  <li>下のボタンからもう一度ログイン</li>
+                  <li>LINEの同意画面で<span className="font-bold text-foreground">「友だち追加」にチェック</span>を入れる</li>
+                  <li>「許可する」をタップ</li>
+                </ol>
+              </div>
+              <button
+                onClick={() => navigate("/auth/login")}
+                className="w-full h-12 rounded-full text-base font-bold text-white shadow-md"
+                style={{ backgroundColor: "#06C755" }}
+              >
+                もう一度LINEでログインする
+              </button>
+            </>
+          ) : (
+            <>
+              <p className="text-destructive font-medium">{error}</p>
+              <button
+                onClick={() => navigate("/auth/login")}
+                className="text-primary underline text-sm"
+              >
+                ログインページに戻る
+              </button>
+            </>
+          )}
         </div>
       </div>
     );
