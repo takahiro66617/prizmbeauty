@@ -1,14 +1,13 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle, XCircle, Eye, X, Search, MessageCircle, ArrowRight, Send, Wallet } from "lucide-react";
+import { CheckCircle, XCircle, Eye, X, Search, MessageCircle, Send, Wallet, ChevronDown, ChevronRight, Users } from "lucide-react";
 import { useExternalApplications } from "@/hooks/useExternalApplications";
 import { useExternalCampaigns } from "@/hooks/useExternalCampaigns";
 import { useQueryClient } from "@tanstack/react-query";
 import { APPLICATION_STATUSES, CATEGORIES } from "@/lib/constants";
 import { toast } from "sonner";
-import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import ThreadConversation from "@/components/ThreadConversation";
 
@@ -34,7 +33,6 @@ export default function ClientApplicants() {
   const { data: applications = [], isLoading } = useExternalApplications({ companyId });
   const { data: campaigns = [] } = useExternalCampaigns(companyId);
   const queryClient = useQueryClient();
-  const navigate = useNavigate();
   const [isUpdating, setIsUpdating] = useState(false);
   const [statusFilter, setStatusFilter] = useState("all");
   const [campaignFilter, setCampaignFilter] = useState("all");
@@ -43,11 +41,11 @@ export default function ClientApplicants() {
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [selectedApp, setSelectedApp] = useState<any>(null);
-  const [msgModal, setMsgModal] = useState<any>(null);
-  const [msgText, setMsgText] = useState("");
   const [bankInfo, setBankInfo] = useState<any>(null);
   const [threadAppId, setThreadAppId] = useState<string | null>(null);
+  const [expandedCampaigns, setExpandedCampaigns] = useState<Set<string>>(new Set());
   const companyUserId = sessionStorage.getItem("client_user_id") || "";
+
   const filtered = applications.filter(a => {
     const matchesStatus = statusFilter === "all" || a.status === statusFilter;
     const matchesCampaign = campaignFilter === "all" || a.campaign_id === campaignFilter;
@@ -57,6 +55,31 @@ export default function ClientApplicants() {
     const matchesDateTo = !dateTo || new Date(a.applied_at) <= new Date(dateTo + "T23:59:59");
     return matchesStatus && matchesCampaign && matchesCategory && matchesSearch && matchesDateFrom && matchesDateTo;
   });
+
+  // Group applications by campaign
+  const groupedByCampaign = useMemo(() => {
+    const groups: Record<string, { campaign: any; applications: any[] }> = {};
+    for (const app of filtered) {
+      const cid = app.campaign_id;
+      if (!groups[cid]) {
+        groups[cid] = {
+          campaign: app.campaigns || { id: cid, title: "不明な案件" },
+          applications: [],
+        };
+      }
+      groups[cid].applications.push(app);
+    }
+    return Object.values(groups);
+  }, [filtered]);
+
+  const toggleCampaign = (campaignId: string) => {
+    setExpandedCampaigns(prev => {
+      const next = new Set(prev);
+      if (next.has(campaignId)) next.delete(campaignId);
+      else next.add(campaignId);
+      return next;
+    });
+  };
 
   const invokeStatusUpdate = async (app: any, newStatus: string, message?: string, notification?: { title: string; message: string; type?: string; link?: string }) => {
     setIsUpdating(true);
@@ -118,53 +141,11 @@ export default function ClientApplicants() {
       await invokeStatusUpdate(
         app, "rejected",
         `「${app.campaigns?.title || "案件"}」について、慎重に検討させていただきましたが、今回はご期待に沿えない結果となりました。またの機会にぜひご応募ください。`,
-        { title: "選考結果のお知らせ", message: `「${app.campaigns?.title || "案件"}」の選考結果をお知らせします。` }
+        { title: "選考結果のお知らせ", message: `「${app.campaigns?.title || "案件"}」の選考結果をお知らせします。`, type: "info" }
       );
-      toast.success("不採用にしました");
+      toast.success("不採用通知を送信しました");
     } catch {
       toast.error("更新に失敗しました");
-    }
-  };
-
-  const handleAdvanceStatus = async (app: any) => {
-    const nextStatus = STATUS_FLOW[app.status];
-    if (!nextStatus) return;
-    const statusLabel = APPLICATION_STATUSES.find(s => s.id === nextStatus)?.label || nextStatus;
-    try {
-      await invokeStatusUpdate(
-        app, nextStatus,
-        `「${app.campaigns?.title || "案件"}」のステータスが「${statusLabel}」に更新されました。`,
-      );
-      toast.success(`ステータスを「${statusLabel}」に更新しました`);
-    } catch {
-      toast.error("更新に失敗しました");
-    }
-  };
-
-  const handleSendDirectMessage = async () => {
-    if (!msgText.trim() || !msgModal) return;
-    const inf = msgModal.influencer_profiles;
-    const receiverId = inf?.user_id || inf?.id;
-    if (!receiverId) { toast.error("このインフルエンサーにはメッセージを送信できません"); return; }
-    setIsUpdating(true);
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      const senderId = session?.user?.id;
-      if (!senderId) { toast.error("ログインが必要です"); return; }
-      await supabase.functions.invoke("send-status-notification", {
-        body: {
-          applicationId: msgModal.id,
-          newStatus: msgModal.status, // keep same status
-          message: msgText,
-        },
-      });
-      toast.success("送信しました");
-      setMsgText("");
-      setMsgModal(null);
-    } catch {
-      toast.error("送信に失敗しました");
-    } finally {
-      setIsUpdating(false);
     }
   };
 
@@ -192,9 +173,10 @@ export default function ClientApplicants() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-gray-800">応募者管理</h1>
-        <p className="text-gray-500 mt-1">案件への応募を確認・選考・進行管理します。</p>
+        <p className="text-gray-500 mt-1">案件ごとに応募者を確認・選考・進行管理します。</p>
       </div>
 
+      {/* Filters */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 space-y-3">
         <div className="flex gap-3 flex-wrap">
           <div className="relative flex-1 min-w-[200px] max-w-md">
@@ -226,64 +208,120 @@ export default function ClientApplicants() {
         </div>
       </div>
 
+      {/* Campaign-grouped applicants */}
       {isLoading ? (
         <div className="text-center py-12 text-gray-500">読み込み中...</div>
+      ) : groupedByCampaign.length === 0 ? (
+        <div className="text-center py-12 text-gray-500">該当する応募はありません</div>
       ) : (
         <div className="space-y-4">
-          {filtered.map(app => {
-            const inf = app.influencer_profiles;
-            const campaign = app.campaigns;
-            const nextStatus = STATUS_FLOW[app.status];
-            const nextLabel = nextStatus ? STATUS_ACTION_LABELS[app.status] : null;
+          {groupedByCampaign.map(group => {
+            const cid = group.campaign.id;
+            const isExpanded = expandedCampaigns.has(cid);
+            const appliedCount = group.applications.filter(a => a.status === "applied" || a.status === "reviewing").length;
+            const approvedCount = group.applications.filter(a => !["applied", "reviewing", "rejected"].includes(a.status)).length;
+
             return (
-              <Card key={app.id} className="p-6 border-0 shadow-sm hover:shadow-md transition-shadow">
-                <div className="flex items-start gap-4">
-                  <img src={inf?.image_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(inf?.name || "?")}`} alt="" className="w-12 h-12 rounded-full bg-gray-200" />
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-3 mb-1">
-                      <h3 className="font-bold text-gray-900">{inf?.name || "-"}</h3>
-                      <span className="text-sm text-gray-500">@{inf?.username || "-"}</span>
-                      {getStatusBadge(app.status)}
-                    </div>
-                    <p className="text-sm text-gray-600 mb-2">案件: <span className="font-medium">{campaign?.title || "-"}</span></p>
-                    <div className="flex items-center gap-4 text-xs text-gray-500 flex-wrap">
-                      <span>応募日: {new Date(app.applied_at).toLocaleDateString("ja-JP")}</span>
-                      {inf?.instagram_followers ? <span className="text-pink-600">IG: {inf.instagram_followers.toLocaleString()}</span> : null}
-                      {inf?.tiktok_followers ? <span>TT: {inf.tiktok_followers.toLocaleString()}</span> : null}
-                      {inf?.youtube_followers ? <span className="text-red-600">YT: {inf.youtube_followers.toLocaleString()}</span> : null}
-                    </div>
-                    {app.motivation && <p className="text-sm text-gray-600 mt-2 bg-gray-50 p-3 rounded-lg italic">"{app.motivation}"</p>}
-                  </div>
-                  <div className="flex flex-col gap-2 shrink-0">
-                    {(app.status === "applied" || app.status === "reviewing") && (
-                      <>
-                        <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white" onClick={() => handleApprove(app)} disabled={isUpdating}>
-                          <CheckCircle className="w-3 h-3 mr-1" />採用
-                        </Button>
-                        <Button size="sm" variant="outline" className="text-red-600 border-red-200" onClick={() => handleReject(app)} disabled={isUpdating}>
-                          <XCircle className="w-3 h-3 mr-1" />不採用
-                        </Button>
-                      </>
+              <Card key={cid} className="border-0 shadow-sm overflow-hidden">
+                {/* Campaign header */}
+                <button
+                  className="w-full flex items-center justify-between p-5 hover:bg-gray-50 transition-colors text-left"
+                  onClick={() => toggleCampaign(cid)}
+                >
+                  <div className="flex items-center gap-4">
+                    {group.campaign.image_url && (
+                      <img src={group.campaign.image_url} alt="" className="w-12 h-12 rounded-lg object-cover" />
                     )}
-                    {app.status !== "applied" && app.status !== "reviewing" && app.status !== "rejected" && (
-                      <Button size="sm" className="bg-purple-600 hover:bg-purple-700 text-white" onClick={() => setThreadAppId(app.id)}>
-                        <MessageCircle className="w-3 h-3 mr-1" />スレッドを開く
-                      </Button>
-                    )}
-                    <Button size="sm" variant="ghost" className="text-gray-500" onClick={async () => {
-                      setSelectedApp(app);
-                      setBankInfo(null);
-                      if (app.influencer_profiles?.user_id) {
-                        const { data } = await supabase.from("bank_accounts").select("*").eq("user_id", app.influencer_profiles.user_id).maybeSingle();
-                        setBankInfo(data);
-                      }
-                    }}><Eye className="w-3 h-3 mr-1" />詳細</Button>
+                    <div>
+                      <h3 className="font-bold text-gray-900 text-base">{group.campaign.title}</h3>
+                      <div className="flex items-center gap-3 mt-1 text-xs text-gray-500">
+                        {group.campaign.category && <Badge variant="outline" className="text-xs">{group.campaign.category}</Badge>}
+                        {group.campaign.deadline && <span>締切: {new Date(group.campaign.deadline).toLocaleDateString("ja-JP")}</span>}
+                        {(group.campaign.budget_max || group.campaign.budget_min) && (
+                          <span>報酬: ¥{(group.campaign.budget_max || group.campaign.budget_min || 0).toLocaleString()}</span>
+                        )}
+                      </div>
+                    </div>
                   </div>
-                </div>
+                  <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2 text-sm">
+                      <Users className="w-4 h-4 text-gray-400" />
+                      <span className="text-gray-600">{group.applications.length}名</span>
+                      {appliedCount > 0 && (
+                        <Badge className="bg-blue-100 text-blue-700 text-xs">{appliedCount}件 未選考</Badge>
+                      )}
+                      {approvedCount > 0 && (
+                        <Badge className="bg-green-100 text-green-700 text-xs">{approvedCount}件 採用済</Badge>
+                      )}
+                    </div>
+                    {isExpanded ? <ChevronDown className="w-5 h-5 text-gray-400" /> : <ChevronRight className="w-5 h-5 text-gray-400" />}
+                  </div>
+                </button>
+
+                {/* Applicant list */}
+                {isExpanded && (
+                  <div className="border-t border-gray-100">
+                    {group.applications.map(app => {
+                      const inf = app.influencer_profiles;
+                      const isNew = app.status === "applied" || app.status === "reviewing";
+                      const isRejected = app.status === "rejected";
+                      const isActive = !isNew && !isRejected;
+
+                      return (
+                        <div key={app.id} className={`flex items-center gap-4 px-6 py-4 border-b border-gray-50 last:border-b-0 hover:bg-gray-50/50 transition-colors ${isRejected ? "opacity-50" : ""}`}>
+                          <img
+                            src={inf?.image_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(inf?.name || "?")}`}
+                            alt="" className="w-10 h-10 rounded-full bg-gray-200 shrink-0"
+                          />
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-0.5">
+                              <span className="font-semibold text-gray-900 text-sm">{inf?.name || "-"}</span>
+                              <span className="text-xs text-gray-400">@{inf?.username || "-"}</span>
+                              {getStatusBadge(app.status)}
+                            </div>
+                            <div className="flex items-center gap-3 text-xs text-gray-500">
+                              <span>応募日: {new Date(app.applied_at).toLocaleDateString("ja-JP")}</span>
+                              {inf?.instagram_followers ? <span className="text-pink-600">IG: {inf.instagram_followers.toLocaleString()}</span> : null}
+                              {inf?.tiktok_followers ? <span>TT: {inf.tiktok_followers.toLocaleString()}</span> : null}
+                              {inf?.youtube_followers ? <span className="text-red-600">YT: {inf.youtube_followers.toLocaleString()}</span> : null}
+                            </div>
+                            {app.motivation && <p className="text-xs text-gray-500 mt-1 truncate max-w-md italic">"{app.motivation}"</p>}
+                          </div>
+                          <div className="flex items-center gap-2 shrink-0">
+                            {isNew && (
+                              <>
+                                <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white" onClick={() => handleApprove(app)} disabled={isUpdating}>
+                                  <CheckCircle className="w-3 h-3 mr-1" />採用
+                                </Button>
+                                <Button size="sm" variant="outline" className="text-red-600 border-red-200 hover:bg-red-50" onClick={() => handleReject(app)} disabled={isUpdating}>
+                                  <XCircle className="w-3 h-3 mr-1" />不採用
+                                </Button>
+                              </>
+                            )}
+                            {isActive && (
+                              <Button size="sm" className="bg-purple-600 hover:bg-purple-700 text-white" onClick={() => setThreadAppId(app.id)}>
+                                <MessageCircle className="w-3 h-3 mr-1" />スレッドを開く
+                              </Button>
+                            )}
+                            <Button size="sm" variant="ghost" className="text-gray-400 hover:text-gray-600" onClick={async () => {
+                              setSelectedApp(app);
+                              setBankInfo(null);
+                              if (inf?.user_id) {
+                                const { data } = await supabase.from("bank_accounts").select("*").eq("user_id", inf.user_id).maybeSingle();
+                                setBankInfo(data);
+                              }
+                            }}>
+                              <Eye className="w-3 h-3 mr-1" />詳細
+                            </Button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </Card>
             );
           })}
-          {filtered.length === 0 && <div className="text-center py-12 text-gray-500">該当する応募はありません</div>}
         </div>
       )}
 
@@ -307,28 +345,19 @@ export default function ClientApplicants() {
                 </div>
               )}
               {selectedApp.influencer_profiles?.bio && <p className="text-sm text-gray-600 bg-gray-50 p-3 rounded-lg">{selectedApp.influencer_profiles.bio}</p>}
-              {/* SNS URLs */}
               {selectedApp.influencer_profiles && (
                 <div className="flex flex-wrap gap-2">
                   {selectedApp.influencer_profiles.instagram_url && (
-                    <a href={selectedApp.influencer_profiles.instagram_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 px-3 py-1.5 bg-pink-50 text-pink-600 rounded-lg text-xs hover:bg-pink-100 transition-colors">
-                      📷 Instagram
-                    </a>
+                    <a href={selectedApp.influencer_profiles.instagram_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 px-3 py-1.5 bg-pink-50 text-pink-600 rounded-lg text-xs hover:bg-pink-100 transition-colors">📷 Instagram</a>
                   )}
                   {selectedApp.influencer_profiles.tiktok_url && (
-                    <a href={selectedApp.influencer_profiles.tiktok_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 px-3 py-1.5 bg-gray-50 text-gray-700 rounded-lg text-xs hover:bg-gray-100 transition-colors">
-                      🎵 TikTok
-                    </a>
+                    <a href={selectedApp.influencer_profiles.tiktok_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 px-3 py-1.5 bg-gray-50 text-gray-700 rounded-lg text-xs hover:bg-gray-100 transition-colors">🎵 TikTok</a>
                   )}
                   {selectedApp.influencer_profiles.youtube_url && (
-                    <a href={selectedApp.influencer_profiles.youtube_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 px-3 py-1.5 bg-red-50 text-red-600 rounded-lg text-xs hover:bg-red-100 transition-colors">
-                      ▶️ YouTube
-                    </a>
+                    <a href={selectedApp.influencer_profiles.youtube_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 px-3 py-1.5 bg-red-50 text-red-600 rounded-lg text-xs hover:bg-red-100 transition-colors">▶️ YouTube</a>
                   )}
                   {selectedApp.influencer_profiles.twitter_url && (
-                    <a href={selectedApp.influencer_profiles.twitter_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 px-3 py-1.5 bg-blue-50 text-blue-600 rounded-lg text-xs hover:bg-blue-100 transition-colors">
-                      𝕏 Twitter/X
-                    </a>
+                    <a href={selectedApp.influencer_profiles.twitter_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 px-3 py-1.5 bg-blue-50 text-blue-600 rounded-lg text-xs hover:bg-blue-100 transition-colors">𝕏 Twitter/X</a>
                   )}
                 </div>
               )}
@@ -342,20 +371,16 @@ export default function ClientApplicants() {
                 ))}
               </div>
               <div className="bg-gray-50 p-3 rounded-lg">
+                <p className="text-sm font-medium text-gray-700 mb-1">案件名</p>
+                <p className="text-sm font-semibold">{selectedApp.campaigns?.title || "-"}</p>
+              </div>
+              <div className="bg-gray-50 p-3 rounded-lg">
                 <p className="text-sm font-medium text-gray-700 mb-1">現在のステータス</p>
-                <div className="flex items-center gap-2">
-                  {APPLICATION_STATUSES.map((s, i) => (
-                    <div key={s.id} className="flex items-center gap-1">
-                      <span className={`text-xs px-2 py-1 rounded ${selectedApp.status === s.id ? s.color + " font-bold" : "text-gray-400"}`}>{s.label}</span>
-                      {i < APPLICATION_STATUSES.length - 1 && <span className="text-gray-300">→</span>}
-                    </div>
-                  ))}
-                </div>
+                {getStatusBadge(selectedApp.status)}
               </div>
               {selectedApp.motivation && (
                 <div><p className="text-sm font-medium text-gray-700 mb-1">応募動機</p><p className="text-sm bg-gray-50 p-3 rounded-lg italic">"{selectedApp.motivation}"</p></div>
               )}
-              {/* Bank Info */}
               {(selectedApp.status === "payment_pending" || selectedApp.status === "post_confirmed" || selectedApp.status === "approved" || selectedApp.status === "in_progress") && (
                 <div className="bg-blue-50 p-4 rounded-lg">
                   <p className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-2"><Wallet className="w-4 h-4" />振込先情報</p>
@@ -374,29 +399,6 @@ export default function ClientApplicants() {
               )}
             </div>
             <div className="p-6 border-t flex justify-end"><Button variant="outline" onClick={() => setSelectedApp(null)}>閉じる</Button></div>
-          </div>
-        </div>
-      )}
-
-      {/* Message Modal */}
-      {msgModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" onClick={() => setMsgModal(null)}>
-          <div className="bg-white rounded-2xl w-full max-w-md shadow-xl" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between p-6 border-b">
-              <h3 className="font-bold text-lg">{msgModal.influencer_profiles?.name}にメッセージ</h3>
-              <button onClick={() => setMsgModal(null)}><X className="w-5 h-5 text-gray-400" /></button>
-            </div>
-            <div className="p-6 space-y-4">
-              <p className="text-sm text-gray-500">案件: {msgModal.campaigns?.title}</p>
-              <textarea value={msgText} onChange={e => setMsgText(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm min-h-[120px] focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="メッセージを入力..." />
-            </div>
-            <div className="p-6 border-t flex justify-end gap-3">
-              <Button variant="outline" onClick={() => setMsgModal(null)}>キャンセル</Button>
-              <Button className="bg-blue-600 hover:bg-blue-700" onClick={handleSendDirectMessage} disabled={isUpdating}>
-                <Send className="w-4 h-4 mr-2" />送信
-              </Button>
-            </div>
           </div>
         </div>
       )}
