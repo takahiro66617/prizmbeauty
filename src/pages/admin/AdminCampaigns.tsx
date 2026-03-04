@@ -47,6 +47,7 @@ export default function AdminCampaignsPage() {
     setEditForm({
       title: campaign.title, description: campaign.description || "", category: campaign.category || "",
       budget_min: campaign.budget_min || 0, budget_max: campaign.budget_max || 0,
+      max_applicants: campaign.max_applicants || 0,
       deadline: campaign.deadline ? campaign.deadline.split("T")[0] : "",
       payment_date: (campaign as any).payment_date ? (campaign as any).payment_date.split("T")[0] : "",
       requirements: campaign.requirements || "", platform: campaign.platform || "", status: campaign.status,
@@ -242,6 +243,8 @@ export default function AdminCampaignsPage() {
                 <div><label className="block text-sm font-medium text-gray-700 mb-1">報酬 (最大)</label>
                   <Input type="number" value={editForm.budget_max} onChange={e => setEditForm({ ...editForm, budget_max: Number(e.target.value) })} /></div>
               </div>
+              <div><label className="block text-sm font-medium text-gray-700 mb-1">募集人数</label>
+                <Input type="number" value={editForm.max_applicants} onChange={e => setEditForm({ ...editForm, max_applicants: Number(e.target.value) })} placeholder="0 = 制限なし" /></div>
               <div className="grid grid-cols-2 gap-4">
                 <div><label className="block text-sm font-medium text-gray-700 mb-1">応募締切日</label>
                   <Input type="date" value={editForm.deadline} onChange={e => setEditForm({ ...editForm, deadline: e.target.value })} /></div>
