@@ -108,11 +108,13 @@ const App = () => (
           <Route path="/admin" element={<AdminLayout />}>
             <Route path="dashboard" element={<AdminDashboard />} />
             <Route path="campaigns" element={<AdminCampaignsPage />} />
+            <Route path="campaigns/:id" element={<AdminCampaignDetail />} />
             <Route path="clients" element={<AdminClientsPage />} />
             <Route path="clients/:id" element={<AdminClientDetail />} />
             <Route path="influencers" element={<AdminInfluencersPage />} />
             <Route path="influencers/:id" element={<AdminInfluencerDetail />} />
             <Route path="applications" element={<AdminApplications />} />
+            <Route path="applications/:id" element={<AdminApplicationDetail />} />
             <Route path="messages" element={<AdminMessages />} />
             <Route path="debug-reports" element={<DebugReportsPage />} />
           </Route>
