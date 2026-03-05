@@ -11,9 +11,9 @@ export default function LoginPage() {
 
   const handleLineLogin = () => {
     // Clear stale registration session data to prevent mis-routing
-    sessionStorage.removeItem("pendingRegistration");
-    sessionStorage.removeItem("lineFriendAdded");
-    sessionStorage.removeItem("lineProfile");
+    localStorage.removeItem("pendingRegistration");
+    localStorage.removeItem("lineFriendAdded");
+    localStorage.removeItem("lineProfile");
     window.location.href = buildLineOAuthUrl();
   };
 

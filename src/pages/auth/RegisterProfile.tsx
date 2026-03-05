@@ -31,7 +31,7 @@ export default function RegisterProfile() {
 
   useEffect(() => {
     // Check if user came through the add-friend flow
-    const friendAdded = sessionStorage.getItem("lineFriendAdded");
+    const friendAdded = localStorage.getItem("lineFriendAdded");
     if (!friendAdded) {
       navigate("/auth/login");
       return;
@@ -64,7 +64,7 @@ export default function RegisterProfile() {
         birthDate,
         prefecture,
       };
-      sessionStorage.setItem("pendingRegistration", JSON.stringify(profileData));
+      localStorage.setItem("pendingRegistration", JSON.stringify(profileData));
 
       // Redirect to LINE OAuth (aggressive bot_prompt for friend-add)
       window.location.href = buildLineOAuthUrl("aggressive");

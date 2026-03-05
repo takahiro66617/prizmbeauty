@@ -39,7 +39,7 @@ export default function LineCallback() {
         }
 
         // Check for pending registration data (new registration flow)
-        const pendingReg = sessionStorage.getItem("pendingRegistration");
+        const pendingReg = localStorage.getItem("pendingRegistration");
 
         // NEW USER without pending registration (clicked "Login" by mistake)
         // → Skip friendship check entirely, redirect to add-friend page
@@ -49,7 +49,7 @@ export default function LineCallback() {
             displayName: data.user?.name,
             pictureUrl: data.user?.image_url,
           };
-          sessionStorage.setItem("lineProfile", JSON.stringify(lineProfile));
+          localStorage.setItem("lineProfile", JSON.stringify(lineProfile));
           navigate("/auth/register/add-friend");
           return;
         }
@@ -112,8 +112,8 @@ export default function LineCallback() {
             type: "influencer",
           };
           sessionStorage.setItem("currentUser", JSON.stringify(mockUser));
-          sessionStorage.removeItem("pendingRegistration");
-          sessionStorage.removeItem("lineFriendAdded");
+          localStorage.removeItem("pendingRegistration");
+          localStorage.removeItem("lineFriendAdded");
           navigate("/mypage");
           return;
         }
@@ -133,8 +133,8 @@ export default function LineCallback() {
             type: "influencer",
           };
           sessionStorage.setItem("currentUser", JSON.stringify(mockUser));
-          sessionStorage.removeItem("pendingRegistration");
-          sessionStorage.removeItem("lineFriendAdded");
+          localStorage.removeItem("pendingRegistration");
+          localStorage.removeItem("lineFriendAdded");
           navigate("/mypage");
           return;
         }
