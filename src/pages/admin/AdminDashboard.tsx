@@ -9,11 +9,9 @@ import {
   Send, AlertTriangle, CheckCircle, Clock, Wallet, MessageCircle, X,
 } from "lucide-react";
 import HelpGuideModal from "@/components/admin/HelpGuideModal";
-import { useExternalCampaigns } from "@/hooks/useExternalCampaigns";
 import { useExternalCompanies } from "@/hooks/useExternalCompanies";
 import { useExternalInfluencers } from "@/hooks/useExternalInfluencers";
-import { useExternalApplications } from "@/hooks/useExternalApplications";
-import { useAdminSendNotification } from "@/hooks/useAdminData";
+import { useAdminCampaigns, useAdminApplications, useAdminSendNotification } from "@/hooks/useAdminData";
 import { APPLICATION_STATUSES, CATEGORIES } from "@/lib/constants";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from "recharts";
 import { toast } from "sonner";
@@ -21,10 +19,10 @@ import { toast } from "sonner";
 const COLORS = ["#8b5cf6", "#ec4899", "#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#6366f1", "#14b8a6", "#f97316"];
 
 export default function AdminDashboard() {
-  const { data: campaigns = [] } = useExternalCampaigns();
+  const { data: campaigns = [] } = useAdminCampaigns();
   const { data: companies = [] } = useExternalCompanies();
   const { data: influencers = [] } = useExternalInfluencers();
-  const { data: applications = [] } = useExternalApplications();
+  const { data: applications = [] } = useAdminApplications();
   const sendNotification = useAdminSendNotification();
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
