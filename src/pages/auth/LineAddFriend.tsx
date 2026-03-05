@@ -18,7 +18,7 @@ export default function LineAddFriend() {
 
   const handleNext = () => {
     // Go to profile registration (LINE OAuth will happen after profile input)
-    sessionStorage.setItem("lineFriendAdded", "true");
+    localStorage.setItem("lineFriendAdded", "true");
     navigate("/auth/register/profile");
   };
 
