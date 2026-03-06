@@ -27,6 +27,7 @@ export default function CampaignDetail() {
   const toggleFav = useToggleFavorite();
   const { data: isFav } = useIsFavorite(id);
   const applyMutation = useApplyToCampaign();
+  const readiness = useInfluencerReadiness();
 
   useEffect(() => {
     // Check sessionStorage for influencer user
