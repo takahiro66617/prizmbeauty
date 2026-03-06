@@ -28,6 +28,7 @@ export default function MyPageDashboard() {
   const userId = user?.id || "";
   const { data: applications = [] } = useExternalApplications({ influencerId: userId });
   const { data: messages = [] } = useExternalMessages(userId);
+  const readiness = useInfluencerReadiness();
 
   if (!user) return <div className="text-center py-12 text-gray-500">ログインしてください</div>;
 
