@@ -7,6 +7,8 @@ import { Card } from "@/components/ui/card";
 import { GENRES } from "@/lib/constants";
 import { buildLineOAuthUrl } from "@/lib/lineAuth";
 
+const SUPABASE_PROJECT_ID = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+
 const PREFECTURES = [
   "北海道","青森県","岩手県","宮城県","秋田県","山形県","福島県",
   "茨城県","栃木県","群馬県","埼玉県","千葉県","東京都","神奈川県",
@@ -30,7 +32,6 @@ export default function RegisterProfile() {
   const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
 
   useEffect(() => {
-    // Check if user came through the add-friend flow
     const friendAdded = localStorage.getItem("lineFriendAdded");
     if (!friendAdded) {
       navigate("/auth/login");
@@ -52,7 +53,6 @@ export default function RegisterProfile() {
     setIsSubmitting(true);
 
     try {
-      // Save profile data to sessionStorage, then redirect to LINE OAuth
       const profileData = {
         lastName,
         firstName,
@@ -64,9 +64,67 @@ export default function RegisterProfile() {
         birthDate,
         prefecture,
       };
-      localStorage.setItem("pendingRegistration", JSON.stringify(profileData));
 
-      // Redirect to LINE OAuth (aggressive bot_prompt for friend-add)
+      // Check if lineProfile already exists (user already went through OAuth in this browser context)
+      const savedLineProfile = localStorage.getItem("lineProfile");
+
+      if (savedLineProfile) {
+        // Direct registration — skip OAuth redirect
+        const lineProfile = JSON.parse(savedLineProfile);
+
+        const regRes = await fetch(
+          `https://${SUPABASE_PROJECT_ID}.supabase.co/functions/v1/register-influencer`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              lineProfile: {
+                userId: lineProfile.userId,
+                displayName: lineProfile.displayName,
+                pictureUrl: lineProfile.pictureUrl,
+              },
+              nickname: profileData.nickname,
+              name: profileData.name,
+              category: profileData.category,
+              bio: profileData.bio,
+              gender: profileData.gender,
+              birthDate: profileData.birthDate,
+              prefecture: profileData.prefecture,
+            }),
+          }
+        );
+
+        const regResult = await regRes.json();
+
+        if (!regRes.ok || !regResult.success) {
+          console.error("Register error:", regResult);
+          alert(regResult.details || "登録に失敗しました。もう一度お試しください。");
+          setIsSubmitting(false);
+          return;
+        }
+
+        const regData = regResult.data;
+        const mockUser = {
+          id: regData.id,
+          lastName: profileData.lastName,
+          firstName: profileData.firstName,
+          name: profileData.name,
+          email: "",
+          profileImagePreview:
+            lineProfile.pictureUrl ||
+            `https://ui-avatars.com/api/?name=${encodeURIComponent(profileData.lastName)}&background=FFD6E8&color=333`,
+          type: "influencer",
+        };
+        sessionStorage.setItem("currentUser", JSON.stringify(mockUser));
+        localStorage.removeItem("pendingRegistration");
+        localStorage.removeItem("lineFriendAdded");
+        localStorage.removeItem("lineProfile");
+        navigate("/mypage");
+        return;
+      }
+
+      // No lineProfile yet — first-time flow, need OAuth
+      localStorage.setItem("pendingRegistration", JSON.stringify(profileData));
       window.location.href = buildLineOAuthUrl("aggressive");
     } catch {
       alert("エラーが発生しました");
