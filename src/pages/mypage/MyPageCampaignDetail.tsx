@@ -33,6 +33,7 @@ export default function MyPageCampaignDetail() {
   const applyMutation = useApplyToCampaign();
   const toggleFav = useToggleFavorite();
   const { data: isFav } = useIsFavorite(id);
+  const readiness = useInfluencerReadiness();
 
   const handleApply = () => {
     if (!campaign || !user) return;
