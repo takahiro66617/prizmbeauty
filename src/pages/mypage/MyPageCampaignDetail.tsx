@@ -35,6 +35,17 @@ export default function MyPageCampaignDetail() {
   const { data: isFav } = useIsFavorite(id);
   const readiness = useInfluencerReadiness();
 
+  const handleApplyClick = () => {
+    if (!readiness.isReady && !readiness.isLoading) {
+      toast.error(
+        `案件に応募するには${readiness.missingItems.join("と")}の登録が必要です。\n設定画面から登録してください。`,
+        { duration: 5000 }
+      );
+      return;
+    }
+    setShowApplyDialog(true);
+  };
+
   const handleApply = () => {
     if (!campaign || !user) return;
     applyMutation.mutate(
