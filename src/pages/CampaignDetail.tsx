@@ -49,8 +49,14 @@ export default function CampaignDetail() {
 
   const handleApplyClick = () => {
     if (!currentUser && !influencerProfile) {
-      // Not logged in - redirect to LINE registration
       navigate("/auth/login");
+      return;
+    }
+    if (!readiness.isReady && !readiness.isLoading) {
+      toast.error(
+        `案件に応募するには${readiness.missingItems.join("と")}の登録が必要です。\n設定画面から登録してください。`,
+        { duration: 5000 }
+      );
       return;
     }
     setShowApplyDialog(true);
