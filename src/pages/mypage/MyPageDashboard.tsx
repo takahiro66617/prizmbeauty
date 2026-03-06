@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { FileText, Clock, CheckCircle, Circle, ArrowRight, Megaphone, Calendar, DollarSign, MessageCircle, AlertCircle } from "lucide-react";
+import { FileText, Clock, CheckCircle, Circle, ArrowRight, Megaphone, Calendar, DollarSign, MessageCircle, AlertCircle, AlertTriangle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useExternalApplications } from "@/hooks/useExternalApplications";
 import { useExternalMessages } from "@/hooks/useExternalMessages";
+import { useInfluencerReadiness } from "@/hooks/useInfluencerReadiness";
 import { supabase } from "@/integrations/supabase/client";
 
 const formatDate = (date: Date) =>
@@ -27,6 +28,7 @@ export default function MyPageDashboard() {
   const userId = user?.id || "";
   const { data: applications = [] } = useExternalApplications({ influencerId: userId });
   const { data: messages = [] } = useExternalMessages(userId);
+  const readiness = useInfluencerReadiness();
 
   if (!user) return <div className="text-center py-12 text-gray-500">ログインしてください</div>;
 
@@ -97,6 +99,32 @@ export default function MyPageDashboard() {
             <div>
               <h3 className="font-bold text-yellow-800 mb-1">現在、事務局にて審査中です</h3>
               <p className="text-sm text-yellow-700">承認後に案件への応募やメッセージなどの全機能をご利用いただけます。プロフィール設定は引き続きご利用いただけます。</p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {!readiness.isLoading && !readiness.isReady && (
+        <Card className="border-amber-200 bg-amber-50 shadow-sm animate-in fade-in slide-in-from-top-2 duration-500">
+          <CardContent className="p-5 flex items-start gap-4">
+            <div className="p-2 bg-amber-100 rounded-full shrink-0">
+              <AlertTriangle className="w-6 h-6 text-amber-600" />
+            </div>
+            <div className="flex-1">
+              <h3 className="font-bold text-amber-800 mb-1">案件応募に必要な情報が未登録です</h3>
+              <p className="text-sm text-amber-700 mb-1">
+                案件に応募するには以下の情報を登録してください：
+              </p>
+              <ul className="text-sm text-amber-700 mb-3 space-y-0.5">
+                {readiness.missingItems.map(item => (
+                  <li key={item}>• {item}</li>
+                ))}
+              </ul>
+              <Link to="/mypage/settings">
+                <Button size="sm" className="bg-amber-600 hover:bg-amber-700 text-white shadow-sm">
+                  設定画面で登録する <ArrowRight className="w-4 h-4 ml-1" />
+                </Button>
+              </Link>
             </div>
           </CardContent>
         </Card>
