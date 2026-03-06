@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { FileText, Clock, CheckCircle, Circle, ArrowRight, Megaphone, Calendar, DollarSign, MessageCircle, AlertCircle } from "lucide-react";
+import { FileText, Clock, CheckCircle, Circle, ArrowRight, Megaphone, Calendar, DollarSign, MessageCircle, AlertCircle, AlertTriangle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useExternalApplications } from "@/hooks/useExternalApplications";
 import { useExternalMessages } from "@/hooks/useExternalMessages";
+import { useInfluencerReadiness } from "@/hooks/useInfluencerReadiness";
 import { supabase } from "@/integrations/supabase/client";
 
 const formatDate = (date: Date) =>
