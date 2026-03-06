@@ -114,6 +114,7 @@ export default function LineCallback() {
           sessionStorage.setItem("currentUser", JSON.stringify(mockUser));
           localStorage.removeItem("pendingRegistration");
           localStorage.removeItem("lineFriendAdded");
+          localStorage.removeItem("lineProfile");
           navigate("/mypage");
           return;
         }
