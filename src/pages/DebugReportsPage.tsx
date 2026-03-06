@@ -1,11 +1,12 @@
 import { useState } from "react";
-import { useAdminDebugReports, useAdminUpdateDebugReportStatus } from "@/hooks/useAdminData";
+import { useAdminDebugReports, useAdminUpdateDebugReportStatus, useAppSetting, useAdminUpdateAppSetting } from "@/hooks/useAdminData";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Switch } from "@/components/ui/switch";
 import { Eye, ExternalLink, Bug } from "lucide-react";
 import { format } from "date-fns";
 import { ja } from "date-fns/locale";
@@ -37,17 +38,35 @@ export default function DebugReportsPage() {
   const [filter, setFilter] = useState("all");
   const [selectedReport, setSelectedReport] = useState<Report | null>(null);
   const { data: reports = [], isLoading } = useAdminDebugReports();
-
+  const { data: debugEnabled, isLoading: settingLoading } = useAppSetting("debug_button_enabled");
+  const updateSetting = useAdminUpdateAppSetting();
   const updateStatus = useAdminUpdateDebugReportStatus();
 
   const filtered = filter === "all" ? reports : reports.filter(r => r.status === filter);
 
+  const handleToggle = (checked: boolean) => {
+    updateSetting.mutate({ key: "debug_button_enabled", value: checked });
+  };
+
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-3">
-        <Bug className="w-6 h-6 text-destructive" />
-        <h1 className="text-2xl font-bold">バグレポート管理</h1>
-        <Badge variant="secondary">{reports.length}件</Badge>
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <Bug className="w-6 h-6 text-destructive" />
+          <h1 className="text-2xl font-bold">バグレポート管理</h1>
+          <Badge variant="secondary">{reports.length}件</Badge>
+        </div>
+        <div className="flex items-center gap-3 bg-muted/50 rounded-lg px-4 py-2">
+          <span className="text-sm font-medium">バグ報告ボタン:</span>
+          <Switch
+            checked={debugEnabled === true}
+            onCheckedChange={handleToggle}
+            disabled={settingLoading || updateSetting.isPending}
+          />
+          <span className={`text-sm font-medium ${debugEnabled === true ? "text-green-600" : "text-muted-foreground"}`}>
+            {debugEnabled === true ? "表示中" : "非表示"}
+          </span>
+        </div>
       </div>
 
       <Tabs value={filter} onValueChange={setFilter}>
