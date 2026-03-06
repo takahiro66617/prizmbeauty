@@ -209,6 +209,26 @@ export default function CampaignDetail() {
                   </div>
                 )}
                 <div className="space-y-3 pt-4">
+                  {isLoggedIn && !readiness.isLoading && !readiness.isReady && (
+                    <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 space-y-2">
+                      <div className="flex items-start gap-2">
+                        <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                        <div>
+                          <p className="text-xs font-bold text-amber-800">応募するには以下の登録が必要です</p>
+                          <ul className="text-xs text-amber-700 mt-1 space-y-0.5">
+                            {readiness.missingItems.map(item => (
+                              <li key={item}>• {item}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      </div>
+                      <Link to="/mypage/settings">
+                        <Button size="sm" variant="outline" className="w-full text-xs border-amber-300 text-amber-700 hover:bg-amber-100">
+                          設定画面で登録する
+                        </Button>
+                      </Link>
+                    </div>
+                  )}
                   {alreadyApplied ? (
                     <Button className="w-full h-12 text-lg" disabled>応募済み</Button>
                   ) : (
