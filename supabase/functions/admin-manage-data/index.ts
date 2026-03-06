@@ -231,6 +231,30 @@ Deno.serve(async (req) => {
         return jsonOk({ sent: userIds.length });
       }
 
+      case "get_app_setting": {
+        const { key } = body;
+        if (!key) return jsonError("key is required");
+        const { data, error } = await supabase
+          .from("app_settings")
+          .select("value")
+          .eq("key", key)
+          .single();
+        if (error) return jsonError(error.message);
+        return jsonOk(data?.value);
+      }
+
+      case "update_app_setting": {
+        const { key, value } = body;
+        if (!key) return jsonError("key is required");
+        const { data, error } = await supabase
+          .from("app_settings")
+          .upsert({ key, value, updated_at: new Date().toISOString() }, { onConflict: "key" })
+          .select()
+          .single();
+        if (error) return jsonError(error.message);
+        return jsonOk(data);
+      }
+
       default:
         return jsonError("Unknown action: " + action, 400);
     }

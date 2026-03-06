@@ -3,10 +3,15 @@ import { createPortal } from "react-dom";
 import { Bug, Square } from "lucide-react";
 import { useDebugMode } from "./DebugModeProvider";
 import { DebugReportModal } from "./DebugReportModal";
+import { useAppSetting } from "@/hooks/useAdminData";
 
 export function DebugFloatingButton() {
   const { isActive, startSession, stopSession, errorCount } = useDebugMode();
   const [modalOpen, setModalOpen] = useState(false);
+  const { data: enabled, isLoading } = useAppSetting("debug_button_enabled");
+
+  // Hide button if setting is false or still loading
+  if (isLoading || enabled !== true) return null;
 
   const handleClick = () => {
     if (!isActive) {

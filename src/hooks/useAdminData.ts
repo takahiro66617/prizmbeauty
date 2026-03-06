@@ -10,6 +10,29 @@ async function adminInvoke(action: string, params: Record<string, unknown> = {})
   return data?.data;
 }
 
+// ---- App Settings ----
+
+export function useAppSetting(key: string) {
+  return useQuery({
+    queryKey: ["app-setting", key],
+    queryFn: async () => {
+      return adminInvoke("get_app_setting", { key });
+    },
+  });
+}
+
+export function useAdminUpdateAppSetting() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ key, value }: { key: string; value: unknown }) => {
+      return adminInvoke("update_app_setting", { key, value });
+    },
+    onSuccess: (_data, variables) => {
+      qc.invalidateQueries({ queryKey: ["app-setting", variables.key] });
+    },
+  });
+}
+
 export function useAdminCampaigns(filters?: { companyId?: string; statuses?: string[] }) {
   return useQuery({
     queryKey: ["admin-campaigns", filters],
