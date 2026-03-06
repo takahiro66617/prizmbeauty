@@ -104,6 +104,32 @@ export default function MyPageDashboard() {
         </Card>
       )}
 
+      {!readiness.isLoading && !readiness.isReady && (
+        <Card className="border-amber-200 bg-amber-50 shadow-sm animate-in fade-in slide-in-from-top-2 duration-500">
+          <CardContent className="p-5 flex items-start gap-4">
+            <div className="p-2 bg-amber-100 rounded-full shrink-0">
+              <AlertTriangle className="w-6 h-6 text-amber-600" />
+            </div>
+            <div className="flex-1">
+              <h3 className="font-bold text-amber-800 mb-1">案件応募に必要な情報が未登録です</h3>
+              <p className="text-sm text-amber-700 mb-1">
+                案件に応募するには以下の情報を登録してください：
+              </p>
+              <ul className="text-sm text-amber-700 mb-3 space-y-0.5">
+                {readiness.missingItems.map(item => (
+                  <li key={item}>• {item}</li>
+                ))}
+              </ul>
+              <Link to="/mypage/settings">
+                <Button size="sm" className="bg-amber-600 hover:bg-amber-700 text-white shadow-sm">
+                  設定画面で登録する <ArrowRight className="w-4 h-4 ml-1" />
+                </Button>
+              </Link>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       <div>
         <h1 className="text-2xl font-bold text-gray-800">おかえりなさい、{user.lastName || ""} {user.firstName || user.name || ""}さん！</h1>
         <p className="text-gray-500 mt-1 flex items-center gap-2"><Calendar className="w-4 h-4" />{formatDate(new Date())}</p>
