@@ -63,6 +63,7 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
+        <ScrollToTop />
         <DebugModeWrapper>
         <Routes>
           <Route path="/" element={<Index />} />
