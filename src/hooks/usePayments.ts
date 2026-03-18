@@ -64,7 +64,7 @@ export function useBankAccount() {
       }
 
       // LINE user fallback
-      const profileId = getLineInfluencerProfileId();
+      const profileId = getInfluencerProfileId();
       if (!profileId) return null;
 
       const { data: res, error } = await supabase.functions.invoke("get-my-bank-account", {
