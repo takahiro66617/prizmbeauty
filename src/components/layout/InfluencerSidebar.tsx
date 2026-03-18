@@ -50,7 +50,7 @@ export default function InfluencerSidebar() {
             )}
             <span className="absolute bottom-0 right-0 w-5 h-5 bg-green-500 border-2 border-white rounded-full"></span>
           </div>
-          <h2 className="font-bold text-gray-800">{user.lastName || ""} {user.firstName || user.name || ""}</h2>
+          <h2 className="font-bold text-gray-800">{user.lastName && user.firstName ? `${user.lastName} ${user.firstName}` : user.name || ""}</h2>
           <p className="text-xs text-gray-400">PRizm ID: {user.id}</p>
           <div className="mt-2 flex gap-1">
             <span className="text-[10px] px-2 py-0.5 bg-yellow-100 text-yellow-700 rounded-full font-medium">審査中</span>
