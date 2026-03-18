@@ -28,12 +28,19 @@ export interface Payment {
   companies?: { id: string; name: string } | null;
 }
 
-// Helper to get LINE influencer profile ID from localStorage
-function getLineInfluencerProfileId(): string | null {
+// Unified helper: resolve influencer profile ID from all sources
+function getInfluencerProfileId(): string | null {
   try {
-    const stored = localStorage.getItem("line_user");
-    if (stored) {
-      const parsed = JSON.parse(stored);
+    // Priority 1: sessionStorage currentUser (used by LINE login flow)
+    const currentUser = sessionStorage.getItem("currentUser");
+    if (currentUser) {
+      const parsed = JSON.parse(currentUser);
+      if (parsed.id) return parsed.id;
+    }
+    // Priority 2: localStorage line_user (legacy fallback)
+    const lineUser = localStorage.getItem("line_user");
+    if (lineUser) {
+      const parsed = JSON.parse(lineUser);
       return parsed.influencerProfileId || parsed.id || null;
     }
   } catch {}
