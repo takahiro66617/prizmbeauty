@@ -28,22 +28,23 @@ export interface Payment {
   companies?: { id: string; name: string } | null;
 }
 
-// Unified helper: resolve influencer profile ID from all sources
 function getInfluencerProfileId(): string | null {
   try {
-    // Priority 1: sessionStorage currentUser (used by LINE login flow)
     const currentUser = sessionStorage.getItem("currentUser");
     if (currentUser) {
       const parsed = JSON.parse(currentUser);
       if (parsed.id) return parsed.id;
     }
-    // Priority 2: localStorage line_user (legacy fallback)
+
     const lineUser = localStorage.getItem("line_user");
     if (lineUser) {
       const parsed = JSON.parse(lineUser);
       return parsed.influencerProfileId || parsed.id || null;
     }
-  } catch {}
+  } catch {
+    // noop
+  }
+
   return null;
 }
 
@@ -51,20 +52,23 @@ export function useBankAccount() {
   return useQuery({
     queryKey: ["bank-account"],
     queryFn: async () => {
-      // Try auth session first
       const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
+      const userId = session?.user?.id ?? null;
+      const profileId = getInfluencerProfileId();
+
+      // 1) Authユーザーの正規経路（RLS準拠）
+      if (userId) {
         const { data, error } = await supabase
           .from("bank_accounts")
           .select("*")
-          .eq("user_id", session.user.id)
+          .eq("user_id", userId)
           .maybeSingle();
+
         if (error) throw error;
-        return data as BankAccount | null;
+        if (data) return data as BankAccount;
       }
 
-      // LINE user fallback
-      const profileId = getInfluencerProfileId();
+      // 2) フォールバック（LINE/legacy ID）
       if (!profileId) return null;
 
       const { data: res, error } = await supabase.functions.invoke("get-my-bank-account", {
@@ -78,20 +82,21 @@ export function useBankAccount() {
 
 export function useUpsertBankAccount() {
   const qc = useQueryClient();
+
   return useMutation({
     mutationFn: async (account: Omit<BankAccount, "id" | "created_at" | "updated_at" | "user_id">) => {
       const { data: { session } } = await supabase.auth.getSession();
       const userId = session?.user?.id ?? null;
       const profileId = getInfluencerProfileId();
 
-      // Auth user path: always use session.user.id (matches RLS: user_id = auth.uid())
+      // Authユーザー: 必ず auth.uid() に保存（RLS整合）
       if (userId) {
         const { data: existing } = await supabase
           .from("bank_accounts")
           .select("id")
           .eq("user_id", userId)
           .maybeSingle();
-        
+
         if (existing) {
           const { data, error } = await supabase
             .from("bank_accounts")
@@ -99,34 +104,40 @@ export function useUpsertBankAccount() {
             .eq("user_id", userId)
             .select()
             .single();
+
           if (error) {
             console.error("Bank account update error (auth user):", error);
             throw error;
           }
-          return data;
-        } else {
-          const { data, error } = await supabase
-            .from("bank_accounts")
-            .insert({ ...account, user_id: userId })
-            .select()
-            .single();
-          if (error) {
-            console.error("Bank account insert error (auth user):", error);
-            throw error;
-          }
+
           return data;
         }
+
+        const { data, error } = await supabase
+          .from("bank_accounts")
+          .insert({ ...account, user_id: userId })
+          .select()
+          .single();
+
+        if (error) {
+          console.error("Bank account insert error (auth user):", error);
+          throw error;
+        }
+
+        return data;
       }
 
-      // LINE user path (no auth session): use edge function
+      // LINEユーザー: Edge Function経由
       if (profileId) {
         const { data: res, error } = await supabase.functions.invoke("upsert-my-bank-account", {
           body: { influencerProfileId: profileId, ...account },
         });
+
         if (error) {
           console.error("Bank account upsert error (LINE user):", error);
           throw error;
         }
+
         if (res?.error) throw new Error(res.error);
         return res?.data;
       }
@@ -134,7 +145,6 @@ export function useUpsertBankAccount() {
       throw new Error("認証情報が見つかりません。再ログインしてください。");
     },
     onSuccess: () => {
-      // Invalidate both caches so bank account display AND readiness banner update immediately
       qc.invalidateQueries({ queryKey: ["bank-account"] });
       qc.invalidateQueries({ queryKey: ["influencer-readiness"] });
     },
@@ -145,25 +155,31 @@ export function usePayments() {
   return useQuery({
     queryKey: ["payments"],
     queryFn: async () => {
-      // Try auth session first
       const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
+      const userId = session?.user?.id ?? null;
+      const profileId = getInfluencerProfileId();
+
+      // 1) Authユーザー経路
+      if (userId) {
         const { data, error } = await supabase
           .from("payments")
           .select("*, campaigns(id, title), companies(id, name)")
-          .eq("influencer_user_id", session.user.id)
+          .eq("influencer_user_id", userId)
           .order("created_at", { ascending: false });
+
         if (error) throw error;
-        return data as Payment[];
+        if ((data?.length ?? 0) > 0 || !profileId || profileId === userId) {
+          return (data as Payment[]) ?? [];
+        }
       }
 
-      // LINE user fallback
-      const profileId = getInfluencerProfileId();
+      // 2) LINE/legacy ID フォールバック
       if (!profileId) return [];
 
       const { data: res, error } = await supabase.functions.invoke("get-my-payments", {
         body: { influencerProfileId: profileId },
       });
+
       if (error) throw error;
       return (res?.data as Payment[]) ?? [];
     },

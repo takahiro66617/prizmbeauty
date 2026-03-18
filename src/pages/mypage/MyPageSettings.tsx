@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -23,6 +24,7 @@ type TabType = "basic" | "sns" | "activity" | "account" | "reward";
 
 export default function MyPageSettings() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<TabType>("basic");
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -64,18 +66,25 @@ export default function MyPageSettings() {
       const u = sessionStorage.getItem("currentUser");
       if (u) {
         const parsed = JSON.parse(u);
-        setProfile(parsed);
+        const { data: profileById } = await supabase
+          .from("influencer_profiles")
+          .select("*")
+          .eq("id", parsed.id)
+          .maybeSingle();
+
+        const source = profileById || parsed;
+        setProfile(source);
         setFormData({
-          name: parsed.name || "", username: parsed.username || "", bio: parsed.bio || "",
-          category: parsed.category || "", image_url: parsed.image_url || parsed.profileImagePreview || "",
-          email: parsed.email || "", phone: parsed.phone || "",
-          birth_date: parsed.birth_date || "", gender: parsed.gender || "",
-          prefecture: parsed.prefecture || "",
-          instagram_followers: parsed.instagram_followers || 0, tiktok_followers: parsed.tiktok_followers || 0,
-          youtube_followers: parsed.youtube_followers || 0, twitter_followers: parsed.twitter_followers || 0,
-          instagram_url: parsed.instagram_url || "", tiktok_url: parsed.tiktok_url || "",
-          youtube_url: parsed.youtube_url || "", twitter_url: parsed.twitter_url || "",
-          categories: parsed.category ? parsed.category.split(",").map((c: string) => c.trim()) : [],
+          name: source.name || "", username: source.username || "", bio: source.bio || "",
+          category: source.category || "", image_url: source.image_url || source.profileImagePreview || "",
+          email: source.email || "", phone: source.phone || "",
+          birth_date: source.birth_date || "", gender: source.gender || "",
+          prefecture: source.prefecture || "",
+          instagram_followers: source.instagram_followers || 0, tiktok_followers: source.tiktok_followers || 0,
+          youtube_followers: source.youtube_followers || 0, twitter_followers: source.twitter_followers || 0,
+          instagram_url: source.instagram_url || "", tiktok_url: source.tiktok_url || "",
+          youtube_url: source.youtube_url || "", twitter_url: source.twitter_url || "",
+          categories: source.category ? source.category.split(",").map((c: string) => c.trim()) : [],
         });
       } else {
         navigate("/auth/login");
@@ -102,17 +111,17 @@ export default function MyPageSettings() {
         });
         if (fnError) throw fnError;
         if (fnData?.error) throw new Error(fnData.error);
+
         const updatedProfile = { ...profile, ...updates, ...(fnData?.data || {}) };
         setProfile(updatedProfile);
+
         // Sync sessionStorage so other pages (dashboard, sidebar) reflect changes
         const u = sessionStorage.getItem("currentUser");
         if (u) {
           const current = JSON.parse(u);
           const synced = { ...current, ...updates };
-          // Also sync name-related fields for dashboard display
           if (updates.name) {
             synced.name = updates.name;
-            // Split name for lastName/firstName display if applicable
             const parts = updates.name.split(/\s+/);
             if (parts.length >= 2) {
               synced.lastName = parts[0];
@@ -121,6 +130,8 @@ export default function MyPageSettings() {
           }
           sessionStorage.setItem("currentUser", JSON.stringify(synced));
         }
+
+        queryClient.invalidateQueries({ queryKey: ["influencer-readiness"] });
         toast.success("保存しました");
       }
     } catch (e: any) {
