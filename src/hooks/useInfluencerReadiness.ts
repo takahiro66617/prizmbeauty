@@ -3,7 +3,8 @@ import { supabase } from "@/integrations/supabase/client";
 
 export interface ReadinessResult {
   hasBankAccount: boolean;
-  hasSnsInfo: boolean;
+  hasInstagram: boolean;
+  hasTwitter: boolean;
   isReady: boolean;
   isLoading: boolean;
   missingItems: string[];
@@ -11,14 +12,14 @@ export interface ReadinessResult {
 
 export function useInfluencerReadiness(): ReadinessResult {
   const [hasBankAccount, setHasBankAccount] = useState(false);
-  const [hasSnsInfo, setHasSnsInfo] = useState(false);
+  const [hasInstagram, setHasInstagram] = useState(false);
+  const [hasTwitter, setHasTwitter] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const check = async () => {
       setIsLoading(true);
       try {
-        // Get user ID
         const { data: { session } } = await supabase.auth.getSession();
         const stored = sessionStorage.getItem("currentUser");
         const profileId = stored ? JSON.parse(stored).id : null;
@@ -32,7 +33,6 @@ export function useInfluencerReadiness(): ReadinessResult {
           const bank = bankData?.data;
           setHasBankAccount(!!(bank && bank.bank_name && bank.account_number && bank.account_holder));
         } else {
-          // LINE-auth user: try via edge function
           const lineUser = localStorage.getItem("line_user");
           if (lineUser) {
             const parsed = JSON.parse(lineUser);
@@ -47,29 +47,28 @@ export function useInfluencerReadiness(): ReadinessResult {
           }
         }
 
-        // Check SNS info from influencer profile
+        // Check SNS info (Instagram & X individually)
+        const checkSns = (profile: any) => {
+          if (profile) {
+            setHasInstagram(!!(profile.instagram_url || (profile.instagram_followers || 0) > 0));
+            setHasTwitter(!!(profile.twitter_url || (profile.twitter_followers || 0) > 0));
+          }
+        };
+
         if (userId) {
           const { data: profile } = await supabase
             .from("influencer_profiles")
-            .select("instagram_url, tiktok_url, youtube_url, twitter_url, instagram_followers, tiktok_followers, youtube_followers, twitter_followers")
+            .select("instagram_url, twitter_url, instagram_followers, twitter_followers")
             .eq("user_id", userId)
             .maybeSingle();
-          if (profile) {
-            const hasAnySnsUrl = !!(profile.instagram_url || profile.tiktok_url || profile.youtube_url || profile.twitter_url);
-            const hasAnyFollowers = (profile.instagram_followers || 0) > 0 || (profile.tiktok_followers || 0) > 0 || (profile.youtube_followers || 0) > 0 || (profile.twitter_followers || 0) > 0;
-            setHasSnsInfo(hasAnySnsUrl || hasAnyFollowers);
-          }
+          checkSns(profile);
         } else if (profileId) {
           const { data: profile } = await supabase
             .from("influencer_profiles")
-            .select("instagram_url, tiktok_url, youtube_url, twitter_url, instagram_followers, tiktok_followers, youtube_followers, twitter_followers")
+            .select("instagram_url, twitter_url, instagram_followers, twitter_followers")
             .eq("id", profileId)
             .maybeSingle();
-          if (profile) {
-            const hasAnySnsUrl = !!(profile.instagram_url || profile.tiktok_url || profile.youtube_url || profile.twitter_url);
-            const hasAnyFollowers = (profile.instagram_followers || 0) > 0 || (profile.tiktok_followers || 0) > 0 || (profile.youtube_followers || 0) > 0 || (profile.twitter_followers || 0) > 0;
-            setHasSnsInfo(hasAnySnsUrl || hasAnyFollowers);
-          }
+          checkSns(profile);
         }
       } catch (e) {
         console.error("Readiness check error:", e);
@@ -81,12 +80,14 @@ export function useInfluencerReadiness(): ReadinessResult {
 
   const missingItems: string[] = [];
   if (!hasBankAccount) missingItems.push("振込先口座情報");
-  if (!hasSnsInfo) missingItems.push("SNSアカウント情報");
+  if (!hasInstagram) missingItems.push("Instagramアカウント情報");
+  if (!hasTwitter) missingItems.push("X（Twitter）アカウント情報");
 
   return {
     hasBankAccount,
-    hasSnsInfo,
-    isReady: hasBankAccount && hasSnsInfo,
+    hasInstagram,
+    hasTwitter,
+    isReady: hasBankAccount && hasInstagram && hasTwitter,
     isLoading,
     missingItems,
   };
