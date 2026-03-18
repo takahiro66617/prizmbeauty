@@ -147,7 +147,7 @@ export function usePayments() {
       }
 
       // LINE user fallback
-      const profileId = getLineInfluencerProfileId();
+      const profileId = getInfluencerProfileId();
       if (!profileId) return [];
 
       const { data: res, error } = await supabase.functions.invoke("get-my-payments", {

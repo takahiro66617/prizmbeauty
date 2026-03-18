@@ -27,7 +27,6 @@ export function useInfluencerReadiness(): ReadinessResult {
 
         // Check bank account
         if (userId) {
-          // Auth user: query directly via supabase client (matches RLS user_id = auth.uid())
           const { data: bank } = await supabase
             .from("bank_accounts")
             .select("bank_name, account_number, account_holder")
@@ -35,18 +34,19 @@ export function useInfluencerReadiness(): ReadinessResult {
             .maybeSingle();
           setHasBankAccount(!!(bank && bank.bank_name && bank.account_number && bank.account_holder));
         } else {
-          // LINE user: use edge function with correct param name
-          const lineUser = localStorage.getItem("line_user");
-          if (lineUser) {
-            const parsed = JSON.parse(lineUser);
-            const uid = parsed.influencerProfileId || parsed.id;
-            if (uid) {
-              const { data: bankData } = await supabase.functions.invoke("get-my-bank-account", {
-                body: { influencerProfileId: uid },
-              });
-              const bank = bankData?.data;
-              setHasBankAccount(!!(bank && bank.bank_name && bank.account_number && bank.account_holder));
-            }
+          // LINE user: resolve profile ID from sessionStorage first, then localStorage
+          const resolvedId = profileId || (() => {
+            try {
+              const lu = localStorage.getItem("line_user");
+              if (lu) { const p = JSON.parse(lu); return p.influencerProfileId || p.id || null; }
+            } catch {} return null;
+          })();
+          if (resolvedId) {
+            const { data: bankData } = await supabase.functions.invoke("get-my-bank-account", {
+              body: { influencerProfileId: resolvedId },
+            });
+            const bank = bankData?.data;
+            setHasBankAccount(!!(bank && bank.bank_name && bank.account_number && bank.account_holder));
           }
         }
 
