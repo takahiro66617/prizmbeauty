@@ -27,19 +27,22 @@ export function useInfluencerReadiness(): ReadinessResult {
 
         // Check bank account
         if (userId) {
-          const { data: bankData } = await supabase.functions.invoke("get-my-bank-account", {
-            body: { userId },
-          });
-          const bank = bankData?.data;
+          // Auth user: query directly via supabase client (matches RLS user_id = auth.uid())
+          const { data: bank } = await supabase
+            .from("bank_accounts")
+            .select("bank_name, account_number, account_holder")
+            .eq("user_id", userId)
+            .maybeSingle();
           setHasBankAccount(!!(bank && bank.bank_name && bank.account_number && bank.account_holder));
         } else {
+          // LINE user: use edge function with correct param name
           const lineUser = localStorage.getItem("line_user");
           if (lineUser) {
             const parsed = JSON.parse(lineUser);
             const uid = parsed.influencerProfileId || parsed.id;
             if (uid) {
               const { data: bankData } = await supabase.functions.invoke("get-my-bank-account", {
-                body: { userId: uid },
+                body: { influencerProfileId: uid },
               });
               const bank = bankData?.data;
               setHasBankAccount(!!(bank && bank.bank_name && bank.account_number && bank.account_holder));

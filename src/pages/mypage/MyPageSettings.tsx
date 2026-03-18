@@ -8,6 +8,16 @@ import { useBankAccount, useUpsertBankAccount, usePayments } from "@/hooks/usePa
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { GENRES } from "@/lib/constants";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 type TabType = "basic" | "sns" | "activity" | "account" | "reward";
 
