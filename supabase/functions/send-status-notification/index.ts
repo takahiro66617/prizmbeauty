@@ -135,10 +135,15 @@ serve(async (req) => {
     if (newStatus === "post_confirmed" && influencer) {
       const targetUserId = influencer.user_id || influencer.id;
       try {
+        // Search bank account by multiple possible IDs (user_id, influencer profile id)
+        const searchIds = [targetUserId];
+        if (influencer.id && influencer.id !== targetUserId) searchIds.push(influencer.id);
+        if (influencer.user_id && influencer.user_id !== targetUserId) searchIds.push(influencer.user_id);
+
         const { data: bankAccount } = await supabaseAdmin
           .from("bank_accounts")
           .select("*")
-          .eq("user_id", targetUserId)
+          .in("user_id", searchIds)
           .maybeSingle();
 
         // Get company user_id for receiver
@@ -204,7 +209,7 @@ serve(async (req) => {
       }
     }
 
-    // 5. Auto-create payment record when advancing to payment_pending
+    // 6. Auto-create payment record when advancing to payment_pending
     if (newStatus === "payment_pending" && influencer) {
       const amount = updatedApp.campaigns?.budget_max || updatedApp.campaigns?.budget_min || 0;
       const targetUserId = influencer.user_id || influencer.id;
@@ -222,7 +227,7 @@ serve(async (req) => {
       }
     }
 
-    // 5. Auto-mark payment as paid when completing
+    // 7. Auto-mark payment as paid when completing
     if (newStatus === "completed") {
       try {
         await supabaseAdmin.from("payments")

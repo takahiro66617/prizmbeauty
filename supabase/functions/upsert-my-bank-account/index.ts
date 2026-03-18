@@ -24,26 +24,33 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    // Verify the influencer profile exists
+    // Verify the influencer profile exists — search by both id and user_id for robustness
     const { data: profile } = await supabaseAdmin
       .from("influencer_profiles")
-      .select("id")
-      .eq("id", influencerProfileId)
-      .single();
+      .select("id, user_id")
+      .or(`id.eq.${influencerProfileId},user_id.eq.${influencerProfileId}`)
+      .maybeSingle();
 
     if (!profile) {
-      return new Response(JSON.stringify({ error: "Invalid influencer profile" }), {
+      console.error("Profile not found for:", influencerProfileId);
+      return new Response(JSON.stringify({ error: "インフルエンサープロフィールが見つかりません。再ログインしてください。" }), {
         status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
+    // Use the influencerProfileId as the bank_accounts.user_id (consistent with how it was stored)
+    const bankUserId = influencerProfileId;
     const accountData = { bank_name, branch_name, account_type, account_number, account_holder };
 
-    // Check if exists
+    // Check if exists — search by both the provided ID and the profile's user_id/id
+    const searchIds = [influencerProfileId];
+    if (profile.user_id && profile.user_id !== influencerProfileId) searchIds.push(profile.user_id);
+    if (profile.id && profile.id !== influencerProfileId) searchIds.push(profile.id);
+
     const { data: existing } = await supabaseAdmin
       .from("bank_accounts")
-      .select("id")
-      .eq("user_id", influencerProfileId)
+      .select("id, user_id")
+      .in("user_id", searchIds)
       .maybeSingle();
 
     let data, error;
@@ -51,23 +58,27 @@ serve(async (req) => {
       ({ data, error } = await supabaseAdmin
         .from("bank_accounts")
         .update(accountData)
-        .eq("user_id", influencerProfileId)
+        .eq("id", existing.id)
         .select()
         .single());
     } else {
       ({ data, error } = await supabaseAdmin
         .from("bank_accounts")
-        .insert({ ...accountData, user_id: influencerProfileId })
+        .insert({ ...accountData, user_id: bankUserId })
         .select()
         .single());
     }
 
-    if (error) throw error;
+    if (error) {
+      console.error("Bank account upsert DB error:", error);
+      throw error;
+    }
 
     return new Response(JSON.stringify({ data }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
+    console.error("upsert-my-bank-account error:", e);
     return new Response(JSON.stringify({ error: e.message }), {
       status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

@@ -99,7 +99,10 @@ export function useUpsertBankAccount() {
             .eq("user_id", userId)
             .select()
             .single();
-          if (error) throw error;
+          if (error) {
+            console.error("Bank account update error (auth user):", error);
+            throw error;
+          }
           return data;
         } else {
           const { data, error } = await supabase
@@ -107,7 +110,10 @@ export function useUpsertBankAccount() {
             .insert({ ...account, user_id: userId })
             .select()
             .single();
-          if (error) throw error;
+          if (error) {
+            console.error("Bank account insert error (auth user):", error);
+            throw error;
+          }
           return data;
         }
       }
@@ -117,7 +123,10 @@ export function useUpsertBankAccount() {
         const { data: res, error } = await supabase.functions.invoke("upsert-my-bank-account", {
           body: { influencerProfileId: profileId, ...account },
         });
-        if (error) throw error;
+        if (error) {
+          console.error("Bank account upsert error (LINE user):", error);
+          throw error;
+        }
         if (res?.error) throw new Error(res.error);
         return res?.data;
       }
@@ -125,7 +134,9 @@ export function useUpsertBankAccount() {
       throw new Error("認証情報が見つかりません。再ログインしてください。");
     },
     onSuccess: () => {
+      // Invalidate both caches so bank account display AND readiness banner update immediately
       qc.invalidateQueries({ queryKey: ["bank-account"] });
+      qc.invalidateQueries({ queryKey: ["influencer-readiness"] });
     },
   });
 }
