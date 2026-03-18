@@ -102,10 +102,25 @@ export default function MyPageSettings() {
         });
         if (fnError) throw fnError;
         if (fnData?.error) throw new Error(fnData.error);
-        const updatedProfile = fnData?.data || { ...profile, ...updates };
+        const updatedProfile = { ...profile, ...updates, ...(fnData?.data || {}) };
         setProfile(updatedProfile);
+        // Sync sessionStorage so other pages (dashboard, sidebar) reflect changes
         const u = sessionStorage.getItem("currentUser");
-        if (u) sessionStorage.setItem("currentUser", JSON.stringify({ ...JSON.parse(u), ...updates }));
+        if (u) {
+          const current = JSON.parse(u);
+          const synced = { ...current, ...updates };
+          // Also sync name-related fields for dashboard display
+          if (updates.name) {
+            synced.name = updates.name;
+            // Split name for lastName/firstName display if applicable
+            const parts = updates.name.split(/\s+/);
+            if (parts.length >= 2) {
+              synced.lastName = parts[0];
+              synced.firstName = parts.slice(1).join(" ");
+            }
+          }
+          sessionStorage.setItem("currentUser", JSON.stringify(synced));
+        }
         toast.success("保存しました");
       }
     } catch (e: any) {
