@@ -310,6 +310,7 @@ function RewardTab() {
   const { data: payments = [], isLoading: paymentsLoading } = usePayments();
   const upsertBank = useUpsertBankAccount();
   const [showBankForm, setShowBankForm] = useState(false);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [bankForm, setBankForm] = useState({
     bank_name: "", branch_name: "", account_type: "ordinary", account_number: "", account_holder: "",
   });
@@ -331,6 +332,11 @@ function RewardTab() {
     if (!bankForm.bank_name || !bankForm.branch_name || !bankForm.account_number || !bankForm.account_holder) {
       toast.error("すべての項目を入力してください"); return;
     }
+    setShowConfirmDialog(true);
+  };
+
+  const handleConfirmSaveBank = () => {
+    setShowConfirmDialog(false);
     upsertBank.mutate(bankForm, {
       onSuccess: () => { toast.success("振込先情報を保存しました"); setShowBankForm(false); },
       onError: () => toast.error("保存に失敗しました"),
