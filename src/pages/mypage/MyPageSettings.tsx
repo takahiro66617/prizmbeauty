@@ -8,6 +8,16 @@ import { useBankAccount, useUpsertBankAccount, usePayments } from "@/hooks/usePa
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { GENRES } from "@/lib/constants";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 type TabType = "basic" | "sns" | "activity" | "account" | "reward";
 
@@ -92,10 +102,25 @@ export default function MyPageSettings() {
         });
         if (fnError) throw fnError;
         if (fnData?.error) throw new Error(fnData.error);
-        const updatedProfile = fnData?.data || { ...profile, ...updates };
+        const updatedProfile = { ...profile, ...updates, ...(fnData?.data || {}) };
         setProfile(updatedProfile);
+        // Sync sessionStorage so other pages (dashboard, sidebar) reflect changes
         const u = sessionStorage.getItem("currentUser");
-        if (u) sessionStorage.setItem("currentUser", JSON.stringify({ ...JSON.parse(u), ...updates }));
+        if (u) {
+          const current = JSON.parse(u);
+          const synced = { ...current, ...updates };
+          // Also sync name-related fields for dashboard display
+          if (updates.name) {
+            synced.name = updates.name;
+            // Split name for lastName/firstName display if applicable
+            const parts = updates.name.split(/\s+/);
+            if (parts.length >= 2) {
+              synced.lastName = parts[0];
+              synced.firstName = parts.slice(1).join(" ");
+            }
+          }
+          sessionStorage.setItem("currentUser", JSON.stringify(synced));
+        }
         toast.success("保存しました");
       }
     } catch (e: any) {
@@ -285,6 +310,7 @@ function RewardTab() {
   const { data: payments = [], isLoading: paymentsLoading } = usePayments();
   const upsertBank = useUpsertBankAccount();
   const [showBankForm, setShowBankForm] = useState(false);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [bankForm, setBankForm] = useState({
     bank_name: "", branch_name: "", account_type: "ordinary", account_number: "", account_holder: "",
   });
@@ -306,6 +332,11 @@ function RewardTab() {
     if (!bankForm.bank_name || !bankForm.branch_name || !bankForm.account_number || !bankForm.account_holder) {
       toast.error("すべての項目を入力してください"); return;
     }
+    setShowConfirmDialog(true);
+  };
+
+  const handleConfirmSaveBank = () => {
+    setShowConfirmDialog(false);
     upsertBank.mutate(bankForm, {
       onSuccess: () => { toast.success("振込先情報を保存しました"); setShowBankForm(false); },
       onError: () => toast.error("保存に失敗しました"),
@@ -379,6 +410,30 @@ function RewardTab() {
           </div>
         ) : null}
       </div>
+
+      <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>振込先情報を保存しますか？</AlertDialogTitle>
+            <AlertDialogDescription>
+              以下の内容で保存します。入力内容に誤りがないかご確認ください。
+              <div className="mt-3 bg-gray-50 rounded-lg p-3 space-y-1 text-sm text-left">
+                <div><span className="text-gray-500">銀行名：</span><span className="font-medium text-gray-900">{bankForm.bank_name}</span></div>
+                <div><span className="text-gray-500">支店名：</span><span className="font-medium text-gray-900">{bankForm.branch_name}</span></div>
+                <div><span className="text-gray-500">口座種別：</span><span className="font-medium text-gray-900">{bankForm.account_type === "ordinary" ? "普通" : "当座"}</span></div>
+                <div><span className="text-gray-500">口座番号：</span><span className="font-medium text-gray-900">{bankForm.account_number}</span></div>
+                <div><span className="text-gray-500">口座名義：</span><span className="font-medium text-gray-900">{bankForm.account_holder}</span></div>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>戻って修正する</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmSaveBank} className="bg-pink-500 hover:bg-pink-400">
+              この内容で保存する
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <div>
         <h3 className="font-bold text-gray-800 mb-4 flex items-center gap-2"><Wallet className="w-5 h-5 text-gray-500" />報酬サマリー</h3>
