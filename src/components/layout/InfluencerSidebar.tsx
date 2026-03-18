@@ -40,16 +40,6 @@ export default function InfluencerSidebar() {
     <aside className="w-64 bg-white border-r border-gray-100 hidden md:flex flex-col h-screen sticky top-0">
       <div className="p-6">
         <div className="flex flex-col items-center mb-8">
-          <div className="w-20 h-20 rounded-full overflow-hidden border-2 border-pink-300 shadow-md mb-3 relative">
-            {user.profileImagePreview ? (
-              <img src={user.profileImagePreview} alt={user.name} className="w-full h-full object-cover" />
-            ) : (
-              <div className="w-full h-full bg-gray-100 flex items-center justify-center text-gray-400">
-                <User className="w-8 h-8" />
-              </div>
-            )}
-            <span className="absolute bottom-0 right-0 w-5 h-5 bg-green-500 border-2 border-white rounded-full"></span>
-          </div>
           <h2 className="font-bold text-gray-800">{user.lastName && user.firstName ? `${user.lastName} ${user.firstName}` : user.name || ""}</h2>
           <p className="text-xs text-gray-400">PRizm ID: {user.id}</p>
           <div className="mt-2 flex gap-1">
