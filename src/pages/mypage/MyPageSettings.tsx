@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -23,6 +24,7 @@ type TabType = "basic" | "sns" | "activity" | "account" | "reward";
 
 export default function MyPageSettings() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<TabType>("basic");
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -102,17 +104,17 @@ export default function MyPageSettings() {
         });
         if (fnError) throw fnError;
         if (fnData?.error) throw new Error(fnData.error);
+
         const updatedProfile = { ...profile, ...updates, ...(fnData?.data || {}) };
         setProfile(updatedProfile);
+
         // Sync sessionStorage so other pages (dashboard, sidebar) reflect changes
         const u = sessionStorage.getItem("currentUser");
         if (u) {
           const current = JSON.parse(u);
           const synced = { ...current, ...updates };
-          // Also sync name-related fields for dashboard display
           if (updates.name) {
             synced.name = updates.name;
-            // Split name for lastName/firstName display if applicable
             const parts = updates.name.split(/\s+/);
             if (parts.length >= 2) {
               synced.lastName = parts[0];
@@ -121,6 +123,8 @@ export default function MyPageSettings() {
           }
           sessionStorage.setItem("currentUser", JSON.stringify(synced));
         }
+
+        queryClient.invalidateQueries({ queryKey: ["influencer-readiness"] });
         toast.success("保存しました");
       }
     } catch (e: any) {
