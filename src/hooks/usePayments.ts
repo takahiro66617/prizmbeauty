@@ -75,41 +75,57 @@ export function useUpsertBankAccount() {
     mutationFn: async (account: Omit<BankAccount, "id" | "created_at" | "updated_at" | "user_id">) => {
       // Try auth session first
       const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        const { data: existing } = await supabase
-          .from("bank_accounts")
-          .select("id")
-          .eq("user_id", session.user.id)
-          .maybeSingle();
-        if (existing) {
-          const { data, error } = await supabase
-            .from("bank_accounts")
-            .update(account)
-            .eq("user_id", session.user.id)
-            .select()
-            .single();
-          if (error) throw error;
-          return data;
-        } else {
-          const { data, error } = await supabase
-            .from("bank_accounts")
-            .insert({ ...account, user_id: session.user.id })
-            .select()
-            .single();
-          if (error) throw error;
-          return data;
-        }
+      
+      // Determine user ID: auth session or LINE user
+      let userId: string | null = session?.user?.id ?? null;
+      const profileId = getLineInfluencerProfileId();
+
+      // For LINE users without auth session, use edge function
+      if (!userId && profileId) {
+        console.log("[bank-upsert] Using edge function for LINE user, profileId:", profileId);
+        const { data: res, error } = await supabase.functions.invoke("upsert-my-bank-account", {
+          body: { influencerProfileId: profileId, ...account },
+        });
+        console.log("[bank-upsert] Edge function result:", res, "error:", error);
+        if (error) throw error;
+        if (res?.error) throw new Error(res.error);
+        return res?.data;
       }
 
-      // LINE user fallback
-      const profileId = getLineInfluencerProfileId();
-      if (!profileId) throw new Error("Not authenticated");
+      // For auth users, also check if their influencer profile ID should be used as user_id
+      // (bank_accounts.user_id may reference influencer_profiles.id for LINE-registered users)
+      if (!userId && !profileId) throw new Error("Not authenticated");
 
-      const { data: res, error } = await supabase.functions.invoke("upsert-my-bank-account", {
-        body: { influencerProfileId: profileId, ...account },
-      });
-      if (error) throw error;
-      return res?.data;
+      // Auth user path: use influencer profile id if available, otherwise auth user id
+      const bankUserId = profileId || userId!;
+      console.log("[bank-upsert] Auth path, bankUserId:", bankUserId, "authUserId:", userId, "profileId:", profileId);
+
+      const { data: existing } = await supabase
+        .from("bank_accounts")
+        .select("id")
+        .eq("user_id", bankUserId)
+        .maybeSingle();
+      
+      if (existing) {
+        const { data, error } = await supabase
+          .from("bank_accounts")
+          .update(account)
+          .eq("user_id", bankUserId)
+          .select()
+          .single();
+        console.log("[bank-upsert] Update result:", data, "error:", error);
+        if (error) throw error;
+        return data;
+      } else {
+        const { data, error } = await supabase
+          .from("bank_accounts")
+          .insert({ ...account, user_id: bankUserId })
+          .select()
+          .single();
+        console.log("[bank-upsert] Insert result:", data, "error:", error);
+        if (error) throw error;
+        return data;
+      }
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["bank-account"] });
