@@ -131,7 +131,7 @@ export default function MyPageDashboard() {
       )}
 
       <div>
-        <h1 className="text-2xl font-bold text-gray-800">おかえりなさい、{user.lastName || ""} {user.firstName || user.name || ""}さん！</h1>
+        <h1 className="text-2xl font-bold text-gray-800">おかえりなさい、{user.lastName && user.firstName ? `${user.lastName} ${user.firstName}` : user.name || ""}さん！</h1>
         <p className="text-gray-500 mt-1 flex items-center gap-2"><Calendar className="w-4 h-4" />{formatDate(new Date())}</p>
       </div>
 
