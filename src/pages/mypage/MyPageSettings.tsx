@@ -339,7 +339,7 @@ function RewardTab() {
     setShowConfirmDialog(false);
     upsertBank.mutate(bankForm, {
       onSuccess: () => { toast.success("振込先情報を保存しました"); setShowBankForm(false); },
-      onError: () => toast.error("保存に失敗しました"),
+      onError: (e: any) => toast.error(e?.message || "保存に失敗しました。再ログインしてお試しください。"),
     });
   };
 
