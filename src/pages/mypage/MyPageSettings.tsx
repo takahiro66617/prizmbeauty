@@ -411,6 +411,30 @@ function RewardTab() {
         ) : null}
       </div>
 
+      <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>振込先情報を保存しますか？</AlertDialogTitle>
+            <AlertDialogDescription>
+              以下の内容で保存します。入力内容に誤りがないかご確認ください。
+              <div className="mt-3 bg-gray-50 rounded-lg p-3 space-y-1 text-sm text-left">
+                <div><span className="text-gray-500">銀行名：</span><span className="font-medium text-gray-900">{bankForm.bank_name}</span></div>
+                <div><span className="text-gray-500">支店名：</span><span className="font-medium text-gray-900">{bankForm.branch_name}</span></div>
+                <div><span className="text-gray-500">口座種別：</span><span className="font-medium text-gray-900">{bankForm.account_type === "ordinary" ? "普通" : "当座"}</span></div>
+                <div><span className="text-gray-500">口座番号：</span><span className="font-medium text-gray-900">{bankForm.account_number}</span></div>
+                <div><span className="text-gray-500">口座名義：</span><span className="font-medium text-gray-900">{bankForm.account_holder}</span></div>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>戻って修正する</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmSaveBank} className="bg-pink-500 hover:bg-pink-400">
+              この内容で保存する
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <div>
         <h3 className="font-bold text-gray-800 mb-4 flex items-center gap-2"><Wallet className="w-5 h-5 text-gray-500" />報酬サマリー</h3>
         <div className="grid grid-cols-3 gap-4">
