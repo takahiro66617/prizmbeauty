@@ -180,7 +180,7 @@ export default function RegisterProfile() {
           </div>
 
           <div className="space-y-1.5">
-            <Label className="text-xs font-semibold">生年月日 <span className="text-destructive">*</span></Label>
+            <Label className="text-sm font-semibold">生年月日 <span className="text-destructive">*</span></Label>
             <Input type="date" value={birthDate} onChange={(e) => setBirthDate(e.target.value)} />
           </div>
 
