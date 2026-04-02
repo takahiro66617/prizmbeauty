@@ -185,7 +185,7 @@ export default function RegisterProfile() {
           </div>
 
           <div className="space-y-1.5">
-            <Label className="text-xs font-semibold">居住地 <span className="text-destructive">*</span></Label>
+            <Label className="text-sm font-semibold">居住地 <span className="text-destructive">*</span></Label>
             <select
               value={prefecture}
               onChange={(e) => setPrefecture(e.target.value)}
