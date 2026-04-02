@@ -199,7 +199,7 @@ export default function RegisterProfile() {
           </div>
 
           <div className="space-y-1.5">
-            <Label className="text-xs font-semibold">
+            <Label className="text-sm font-semibold">
               主な投稿ジャンル <span className="text-destructive">*</span>
               <span className="text-muted-foreground font-normal ml-1">（複数選択可）</span>
             </Label>
