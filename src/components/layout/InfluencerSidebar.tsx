@@ -2,6 +2,8 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { LayoutDashboard, Search, MessageCircle, Heart, Bell, Settings, LogOut, ClipboardList, PenTool, User, Wallet, Mail } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useExternalApplications } from "@/hooks/useExternalApplications";
+import { useCurrentInfluencerStatus } from "@/hooks/useCurrentInfluencerStatus";
+import { INFLUENCER_STATUSES } from "@/lib/constants";
 
 export default function InfluencerSidebar() {
   const location = useLocation();
@@ -19,6 +21,8 @@ export default function InfluencerSidebar() {
   };
 
   const userId = user?.id || "";
+  const { status: influencerStatus, isLoading: isStatusLoading } = useCurrentInfluencerStatus();
+  const statusConfig = INFLUENCER_STATUSES.find((status) => status.id === influencerStatus);
   const { data: applications = [] } = useExternalApplications({ influencerId: userId });
   const approvedCount = applications.filter(a => a.status === "approved").length;
 
@@ -42,9 +46,13 @@ export default function InfluencerSidebar() {
         <div className="flex flex-col items-center mb-8">
           <h2 className="font-bold text-gray-800">{user.lastName && user.firstName ? `${user.lastName} ${user.firstName}` : user.name || ""}</h2>
           <p className="text-xs text-gray-400">PRizm ID: {user.id}</p>
-          <div className="mt-2 flex gap-1">
-            <span className="text-[10px] px-2 py-0.5 bg-yellow-100 text-yellow-700 rounded-full font-medium">審査中</span>
-          </div>
+          {!isStatusLoading && influencerStatus && (
+            <div className="mt-2 flex gap-1">
+              <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${statusConfig?.color || "bg-muted text-muted-foreground"}`}>
+                {statusConfig?.label || influencerStatus}
+              </span>
+            </div>
+          )}
         </div>
 
         <nav className="space-y-1">
