@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useLocation } from "react-router-dom";
 import { Search as SearchIcon, Briefcase } from "lucide-react";
 import MyPageCampaigns from "./MyPageCampaigns";
 import MyPageMessages from "./MyPageMessages";
@@ -12,8 +12,11 @@ const tabs = [
 type TabId = (typeof tabs)[number]["id"];
 
 export default function MyPageCampaignHub() {
+  const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
-  const initialTab = (searchParams.get("tab") as TabId) || "browse";
+  const isMessagesRoute = location.pathname === "/mypage/messages";
+  const paramTab = searchParams.get("tab") as TabId | null;
+  const initialTab: TabId = paramTab || (isMessagesRoute ? "progress" : "browse");
   const [activeTab, setActiveTab] = useState<TabId>(initialTab);
 
   const handleTabChange = (tab: TabId) => {
