@@ -28,10 +28,9 @@ export default function MyPageLayout() {
 
   const mobileMenuItems = [
     { icon: LayoutDashboard, label: "ダッシュボード", href: "/mypage" },
-    { icon: Search, label: "案件を探す", href: "/mypage/campaigns" },
+    { icon: Briefcase, label: "案件管理", href: "/mypage/campaigns" },
     { icon: ClipboardList, label: "応募履歴", href: "/mypage/applications" },
     { icon: PenTool, label: "投稿管理", href: "/mypage/posts" },
-    { icon: MessageCircle, label: "案件進行管理", href: "/mypage/messages" },
     { icon: Wallet, label: "報酬管理", href: "/mypage/rewards" },
     { icon: Heart, label: "お気に入り", href: "/mypage/favorites" },
     { icon: Bell, label: "お知らせ", href: "/mypage/notifications" },
