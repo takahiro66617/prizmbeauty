@@ -28,10 +28,9 @@ export default function InfluencerSidebar() {
 
   const menuItems = [
     { icon: LayoutDashboard, label: "ダッシュボード", href: "/mypage", badge: approvedCount > 0 ? `${approvedCount}` : undefined, badgeColor: "bg-green-500" },
-    { icon: Search, label: "案件を探す", href: "/mypage/campaigns" },
+    { icon: Briefcase, label: "案件管理", href: "/mypage/campaigns", matchPaths: ["/mypage/campaigns", "/mypage/messages"] },
     { icon: ClipboardList, label: "応募履歴", href: "/mypage/applications", badge: approvedCount > 0 ? "新着" : undefined, badgeColor: "bg-green-500" },
     { icon: PenTool, label: "投稿管理", href: "/mypage/posts" },
-    { icon: MessageCircle, label: "案件進行管理", href: "/mypage/messages" },
     { icon: Wallet, label: "報酬管理", href: "/mypage/rewards" },
     { icon: Heart, label: "お気に入り", href: "/mypage/favorites" },
     { icon: Bell, label: "お知らせ", href: "/mypage/notifications" },
