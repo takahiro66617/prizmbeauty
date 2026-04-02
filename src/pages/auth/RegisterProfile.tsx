@@ -160,7 +160,7 @@ export default function RegisterProfile() {
           </div>
 
           <div className="space-y-1.5">
-            <Label className="text-xs font-semibold">性別 <span className="text-destructive">*</span></Label>
+            <Label className="text-sm font-semibold">性別 <span className="text-destructive">*</span></Label>
             <div className="flex gap-3">
               {["女性", "男性"].map((g) => (
                 <button
