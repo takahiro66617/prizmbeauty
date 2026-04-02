@@ -50,7 +50,7 @@ import MyPageMessages from "./pages/mypage/MyPageMessages";
 import MyPageNotifications from "./pages/mypage/MyPageNotifications";
 import MyPagePosts from "./pages/mypage/MyPagePosts";
 import MyPageSettings from "./pages/mypage/MyPageSettings";
-import MyPageCampaigns from "./pages/mypage/MyPageCampaigns";
+import MyPageCampaignHub from "./pages/mypage/MyPageCampaignHub";
 import MyPageCampaignDetail from "./pages/mypage/MyPageCampaignDetail";
 import MyPageRewards from "./pages/mypage/MyPageRewards";
 import DebugReportsPage from "./pages/DebugReportsPage";
