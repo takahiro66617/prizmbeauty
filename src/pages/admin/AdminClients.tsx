@@ -3,11 +3,11 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Plus, Search, Building2, User, Calendar, X, Trash2 } from "lucide-react";
+import { Plus, Search, Building2, User, Calendar, X, Trash2, Ban, CheckCircle } from "lucide-react";
 import HelpGuideModal from "@/components/admin/HelpGuideModal";
 import { useExternalCompanies } from "@/hooks/useExternalCompanies";
 import { useExternalCampaigns } from "@/hooks/useExternalCampaigns";
-import { useAdminApplications, useAdminDeleteCompany } from "@/hooks/useAdminData";
+import { useAdminApplications, useAdminDeleteCompany, useAdminUpdateCompany } from "@/hooks/useAdminData";
 import { COMPANY_STATUSES, INDUSTRIES } from "@/lib/constants";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -27,6 +27,17 @@ export default function AdminClientsPage() {
   const { data: campaigns = [] } = useExternalCampaigns();
   const { data: applications = [] } = useAdminApplications();
   const deleteCompany = useAdminDeleteCompany();
+  const updateCompany = useAdminUpdateCompany();
+
+  const handleStatusChange = (id: string, newStatus: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const label = newStatus === "suspended" ? "利用停止" : "利用再開";
+    if (!window.confirm(`この企業を${label}しますか？`)) return;
+    updateCompany.mutate({ id, updates: { status: newStatus } }, {
+      onSuccess: () => { toast.success(`${label}しました`); refetch(); },
+      onError: () => toast.error("更新に失敗しました"),
+    });
+  };
 
   const filtered = companies.filter(c => {
     const matchesSearch = !search || c.name.toLowerCase().includes(search.toLowerCase()) || (c.contact_name || "").toLowerCase().includes(search.toLowerCase()) || (c.contact_email || "").toLowerCase().includes(search.toLowerCase());
@@ -173,6 +184,15 @@ export default function AdminClientsPage() {
                     <td className="px-6 py-4 text-right">
                       <div className="flex gap-1 justify-end" onClick={e => e.stopPropagation()}>
                         <Button variant="ghost" size="sm" className="text-blue-600 hover:text-blue-800 hover:bg-blue-50" onClick={() => navigate(`/admin/clients/${company.id}`)}>詳細</Button>
+                        {company.status !== "suspended" ? (
+                          <Button variant="ghost" size="sm" className="text-orange-500 hover:text-orange-700 hover:bg-orange-50" onClick={(e) => handleStatusChange(company.id, "suspended", e)}>
+                            <Ban className="w-3 h-3 mr-1" />停止
+                          </Button>
+                        ) : (
+                          <Button variant="ghost" size="sm" className="text-green-600 hover:text-green-700 hover:bg-green-50" onClick={(e) => handleStatusChange(company.id, "active", e)}>
+                            <CheckCircle className="w-3 h-3 mr-1" />再開
+                          </Button>
+                        )}
                         <Button variant="ghost" size="sm" className="text-red-500 hover:text-red-700 hover:bg-red-50" onClick={() => handleDelete(company.id)}><Trash2 className="w-3 h-3" /></Button>
                       </div>
                     </td>
