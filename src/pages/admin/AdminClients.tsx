@@ -27,6 +27,17 @@ export default function AdminClientsPage() {
   const { data: campaigns = [] } = useExternalCampaigns();
   const { data: applications = [] } = useAdminApplications();
   const deleteCompany = useAdminDeleteCompany();
+  const updateCompany = useAdminUpdateCompany();
+
+  const handleStatusChange = (id: string, newStatus: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const label = newStatus === "suspended" ? "利用停止" : "利用再開";
+    if (!window.confirm(`この企業を${label}しますか？`)) return;
+    updateCompany.mutate({ id, updates: { status: newStatus } }, {
+      onSuccess: () => { toast.success(`${label}しました`); refetch(); },
+      onError: () => toast.error("更新に失敗しました"),
+    });
+  };
 
   const filtered = companies.filter(c => {
     const matchesSearch = !search || c.name.toLowerCase().includes(search.toLowerCase()) || (c.contact_name || "").toLowerCase().includes(search.toLowerCase()) || (c.contact_email || "").toLowerCase().includes(search.toLowerCase());
