@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Outlet, useNavigate, useLocation, Link } from "react-router-dom";
 import InfluencerSidebar from "./InfluencerSidebar";
-import { Clock, Menu, X, LayoutDashboard, Search, ClipboardList, PenTool, MessageCircle, Wallet, Heart, Bell, Settings, LogOut } from "lucide-react";
+import { Clock, Menu, X, LayoutDashboard, ClipboardList, PenTool, Wallet, Heart, Bell, Settings, LogOut, Briefcase } from "lucide-react";
 import logoImg from "@/assets/logo.png";
 import { useCurrentInfluencerStatus } from "@/hooks/useCurrentInfluencerStatus";
 
@@ -28,10 +28,9 @@ export default function MyPageLayout() {
 
   const mobileMenuItems = [
     { icon: LayoutDashboard, label: "ダッシュボード", href: "/mypage" },
-    { icon: Search, label: "案件を探す", href: "/mypage/campaigns" },
+    { icon: Briefcase, label: "案件管理", href: "/mypage/campaigns" },
     { icon: ClipboardList, label: "応募履歴", href: "/mypage/applications" },
     { icon: PenTool, label: "投稿管理", href: "/mypage/posts" },
-    { icon: MessageCircle, label: "案件進行管理", href: "/mypage/messages" },
     { icon: Wallet, label: "報酬管理", href: "/mypage/rewards" },
     { icon: Heart, label: "お気に入り", href: "/mypage/favorites" },
     { icon: Bell, label: "お知らせ", href: "/mypage/notifications" },

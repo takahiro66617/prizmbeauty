@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { LayoutDashboard, Search, MessageCircle, Heart, Bell, Settings, LogOut, ClipboardList, PenTool, User, Wallet, Mail } from "lucide-react";
+import { LayoutDashboard, Search, MessageCircle, Heart, Bell, Settings, LogOut, ClipboardList, PenTool, User, Wallet, Mail, Briefcase } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useExternalApplications } from "@/hooks/useExternalApplications";
 import { useCurrentInfluencerStatus } from "@/hooks/useCurrentInfluencerStatus";
@@ -28,10 +28,9 @@ export default function InfluencerSidebar() {
 
   const menuItems = [
     { icon: LayoutDashboard, label: "ダッシュボード", href: "/mypage", badge: approvedCount > 0 ? `${approvedCount}` : undefined, badgeColor: "bg-green-500" },
-    { icon: Search, label: "案件を探す", href: "/mypage/campaigns" },
+    { icon: Briefcase, label: "案件管理", href: "/mypage/campaigns", matchPaths: ["/mypage/campaigns", "/mypage/messages"] },
     { icon: ClipboardList, label: "応募履歴", href: "/mypage/applications", badge: approvedCount > 0 ? "新着" : undefined, badgeColor: "bg-green-500" },
     { icon: PenTool, label: "投稿管理", href: "/mypage/posts" },
-    { icon: MessageCircle, label: "案件進行管理", href: "/mypage/messages" },
     { icon: Wallet, label: "報酬管理", href: "/mypage/rewards" },
     { icon: Heart, label: "お気に入り", href: "/mypage/favorites" },
     { icon: Bell, label: "お知らせ", href: "/mypage/notifications" },
@@ -57,7 +56,10 @@ export default function InfluencerSidebar() {
 
         <nav className="space-y-1">
           {menuItems.map((item) => {
-            const isActive = location.pathname === item.href;
+            const matchPaths = (item as any).matchPaths as string[] | undefined;
+            const isActive = matchPaths
+              ? matchPaths.some(p => location.pathname === p || location.pathname.startsWith(p + "/"))
+              : location.pathname === item.href;
             return (
               <Link key={item.href} to={item.href}>
                 <div className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group

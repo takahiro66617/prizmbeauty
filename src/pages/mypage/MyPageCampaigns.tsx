@@ -13,7 +13,7 @@ import { format } from "date-fns";
 import { ja } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 
-export default function MyPageCampaigns() {
+export default function MyPageCampaigns({ embedded = false }: { embedded?: boolean }) {
   const { data: campaigns = [], isLoading } = useExternalCampaigns();
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
@@ -86,11 +86,13 @@ export default function MyPageCampaigns() {
   }, [visibleCampaigns, searchQuery, categoryFilter, platformFilter, prefectureFilter, budgetMin, budgetMax, deadlineFrom, deadlineTo, sortBy]);
 
   return (
-    <div className="space-y-6 pb-20">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">案件を探す</h1>
-        <p className="text-gray-500 mt-1">現在募集中の案件一覧です。気になる案件に応募してみましょう。</p>
-      </div>
+    <div className={embedded ? "space-y-6" : "space-y-6 pb-20"}>
+      {!embedded && (
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">案件を探す</h1>
+          <p className="text-gray-500 mt-1">現在募集中の案件一覧です。気になる案件に応募してみましょう。</p>
+        </div>
+      )}
 
       {/* Status tabs */}
       <div className="flex gap-2">
