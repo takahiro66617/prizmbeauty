@@ -7,7 +7,7 @@ import { useExternalApplications } from "@/hooks/useExternalApplications";
 import { APPLICATION_STATUSES, CATEGORIES } from "@/lib/constants";
 import ThreadConversation from "@/components/ThreadConversation";
 
-export default function MyPageMessages() {
+export default function MyPageMessages({ embedded = false }: { embedded?: boolean }) {
   const currentUser = JSON.parse(sessionStorage.getItem("currentUser") || "null");
   const userId = currentUser?.id || "";
   const { data: applications = [], isLoading } = useExternalApplications({ influencerId: userId });
@@ -48,7 +48,7 @@ export default function MyPageMessages() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-gray-800">案件進行管理</h1>
+      {!embedded && <h1 className="text-2xl font-bold text-gray-800">案件進行管理</h1>}
 
       {/* Filters */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 space-y-3">
