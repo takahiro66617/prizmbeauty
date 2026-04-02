@@ -184,6 +184,15 @@ export default function AdminClientsPage() {
                     <td className="px-6 py-4 text-right">
                       <div className="flex gap-1 justify-end" onClick={e => e.stopPropagation()}>
                         <Button variant="ghost" size="sm" className="text-blue-600 hover:text-blue-800 hover:bg-blue-50" onClick={() => navigate(`/admin/clients/${company.id}`)}>詳細</Button>
+                        {company.status !== "suspended" ? (
+                          <Button variant="ghost" size="sm" className="text-orange-500 hover:text-orange-700 hover:bg-orange-50" onClick={(e) => handleStatusChange(company.id, "suspended", e)}>
+                            <Ban className="w-3 h-3 mr-1" />停止
+                          </Button>
+                        ) : (
+                          <Button variant="ghost" size="sm" className="text-green-600 hover:text-green-700 hover:bg-green-50" onClick={(e) => handleStatusChange(company.id, "active", e)}>
+                            <CheckCircle className="w-3 h-3 mr-1" />再開
+                          </Button>
+                        )}
                         <Button variant="ghost" size="sm" className="text-red-500 hover:text-red-700 hover:bg-red-50" onClick={() => handleDelete(company.id)}><Trash2 className="w-3 h-3" /></Button>
                       </div>
                     </td>
