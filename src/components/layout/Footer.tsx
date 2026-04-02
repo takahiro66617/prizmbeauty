@@ -42,6 +42,11 @@ export function Footer() {
             <h4 className="font-bold text-sm mb-4 text-foreground">運営</h4>
             <ul className="space-y-2 text-sm text-muted-foreground">
               <li>
+                <a href="https://z-angle.com/" target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors">
+                  会社概要
+                </a>
+              </li>
+              <li>
                 <a href="https://pr-izm.com" target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors">
                   PRizmについて
                 </a>
