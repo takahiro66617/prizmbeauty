@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { LayoutDashboard, Search, MessageCircle, Heart, Bell, Settings, LogOut, ClipboardList, PenTool, User, Wallet, Mail } from "lucide-react";
+import { LayoutDashboard, Search, MessageCircle, Heart, Bell, Settings, LogOut, ClipboardList, PenTool, User, Wallet, Mail, Briefcase } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useExternalApplications } from "@/hooks/useExternalApplications";
 import { useCurrentInfluencerStatus } from "@/hooks/useCurrentInfluencerStatus";
