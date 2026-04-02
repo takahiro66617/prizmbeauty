@@ -56,7 +56,10 @@ export default function InfluencerSidebar() {
 
         <nav className="space-y-1">
           {menuItems.map((item) => {
-            const isActive = location.pathname === item.href;
+            const matchPaths = (item as any).matchPaths as string[] | undefined;
+            const isActive = matchPaths
+              ? matchPaths.some(p => location.pathname === p || location.pathname.startsWith(p + "/"))
+              : location.pathname === item.href;
             return (
               <Link key={item.href} to={item.href}>
                 <div className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group
