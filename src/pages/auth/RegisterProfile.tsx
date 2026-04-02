@@ -149,7 +149,7 @@ export default function RegisterProfile() {
               <Input value={lastName} onChange={(e) => setLastName(e.target.value)} placeholder="山田" />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs font-semibold">名 <span className="text-destructive">*</span></Label>
+              <Label className="text-sm font-semibold">名 <span className="text-destructive">*</span></Label>
               <Input value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder="花子" />
             </div>
           </div>
