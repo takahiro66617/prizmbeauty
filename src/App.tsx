@@ -82,11 +82,11 @@ const App = () => (
           {/* Influencer MyPage */}
           <Route path="/mypage" element={<MyPageLayout />}>
             <Route index element={<MyPageDashboard />} />
-            <Route path="campaigns" element={<MyPageCampaigns />} />
+            <Route path="campaigns" element={<MyPageCampaignHub />} />
             <Route path="campaigns/:id" element={<MyPageCampaignDetail />} />
             <Route path="applications" element={<MyPageApplications />} />
             <Route path="favorites" element={<MyPageFavorites />} />
-            <Route path="messages" element={<MyPageMessages />} />
+            <Route path="messages" element={<MyPageCampaignHub />} />
             <Route path="notifications" element={<MyPageNotifications />} />
             <Route path="posts" element={<MyPagePosts />} />
             <Route path="settings" element={<MyPageSettings />} />
