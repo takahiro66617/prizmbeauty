@@ -1,16 +1,16 @@
 import { useEffect, useState } from "react";
 import { Outlet, useNavigate, useLocation, Link } from "react-router-dom";
 import InfluencerSidebar from "./InfluencerSidebar";
-import { supabase } from "@/integrations/supabase/client";
 import { Clock, Menu, X, LayoutDashboard, Search, ClipboardList, PenTool, MessageCircle, Wallet, Heart, Bell, Settings, LogOut } from "lucide-react";
 import logoImg from "@/assets/logo.png";
+import { useCurrentInfluencerStatus } from "@/hooks/useCurrentInfluencerStatus";
 
 export default function MyPageLayout() {
   const navigate = useNavigate();
   const location = useLocation();
   const [isAuthorized, setIsAuthorized] = useState(false);
-  const [influencerStatus, setInfluencerStatus] = useState<string | null>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { status: influencerStatus } = useCurrentInfluencerStatus();
 
   useEffect(() => {
     const user = sessionStorage.getItem("currentUser");
@@ -19,38 +19,6 @@ export default function MyPageLayout() {
       return;
     }
     setIsAuthorized(true);
-    const parsed = JSON.parse(user);
-    const profileId = parsed.id;
-
-    const fetchStatus = async () => {
-      const { data } = await supabase.from("influencer_profiles").select("status").eq("id", profileId).maybeSingle();
-      if (data) setInfluencerStatus(data.status);
-    };
-    fetchStatus();
-
-    // リアルタイムでステータス変更を検知
-    const channel = supabase
-      .channel(`influencer-status-${profileId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'influencer_profiles',
-          filter: `id=eq.${profileId}`,
-        },
-        (payload) => {
-          const newStatus = (payload.new as any)?.status;
-          if (newStatus) {
-            setInfluencerStatus(newStatus);
-          }
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
   }, [navigate]);
 
   if (!isAuthorized) return null;

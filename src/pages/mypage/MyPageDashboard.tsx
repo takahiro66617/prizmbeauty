@@ -6,22 +6,19 @@ import { Button } from "@/components/ui/button";
 import { useExternalApplications } from "@/hooks/useExternalApplications";
 import { useExternalMessages } from "@/hooks/useExternalMessages";
 import { useInfluencerReadiness } from "@/hooks/useInfluencerReadiness";
-import { supabase } from "@/integrations/supabase/client";
+import { useCurrentInfluencerStatus } from "@/hooks/useCurrentInfluencerStatus";
 
 const formatDate = (date: Date) =>
   new Intl.DateTimeFormat("ja-JP", { year: "numeric", month: "long", day: "numeric", weekday: "short" }).format(date);
 
 export default function MyPageDashboard() {
   const [user, setUser] = useState<any>(null);
-  const [influencerStatus, setInfluencerStatus] = useState<string | null>(null);
+  const { status: influencerStatus } = useCurrentInfluencerStatus();
 
   useEffect(() => {
     const storedUser = sessionStorage.getItem("currentUser");
     if (storedUser) {
-      const parsed = JSON.parse(storedUser);
-      setUser(parsed);
-      supabase.from("influencer_profiles").select("status").eq("id", parsed.id).maybeSingle()
-        .then(({ data }) => { if (data) setInfluencerStatus(data.status); });
+      setUser(JSON.parse(storedUser));
     }
   }, []);
 
