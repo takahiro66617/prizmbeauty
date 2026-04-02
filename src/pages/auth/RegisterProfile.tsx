@@ -155,7 +155,7 @@ export default function RegisterProfile() {
           </div>
 
           <div className="space-y-1.5">
-            <Label className="text-xs font-semibold">ニックネーム <span className="text-destructive">*</span></Label>
+            <Label className="text-sm font-semibold">ニックネーム <span className="text-destructive">*</span></Label>
             <Input value={nickname} onChange={(e) => setNickname(e.target.value)} placeholder="はなちゃん" />
           </div>
 
