@@ -145,7 +145,7 @@ export default function RegisterProfile() {
         <Card className="p-6 shadow-xl border-0 bg-card/90 backdrop-blur-sm rounded-2xl space-y-5">
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <Label className="text-xs font-semibold">姓 <span className="text-destructive">*</span></Label>
+              <Label className="text-sm font-semibold">姓 <span className="text-destructive">*</span></Label>
               <Input value={lastName} onChange={(e) => setLastName(e.target.value)} placeholder="山田" />
             </div>
             <div className="space-y-1.5">
