@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Outlet, useNavigate, useLocation, Link } from "react-router-dom";
 import InfluencerSidebar from "./InfluencerSidebar";
-import { Clock, Menu, X, LayoutDashboard, Search, ClipboardList, PenTool, MessageCircle, Wallet, Heart, Bell, Settings, LogOut } from "lucide-react";
+import { Clock, Menu, X, LayoutDashboard, ClipboardList, PenTool, Wallet, Heart, Bell, Settings, LogOut, Briefcase } from "lucide-react";
 import logoImg from "@/assets/logo.png";
 import { useCurrentInfluencerStatus } from "@/hooks/useCurrentInfluencerStatus";
 
