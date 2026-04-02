@@ -20,11 +20,37 @@ export default function MyPageLayout() {
     }
     setIsAuthorized(true);
     const parsed = JSON.parse(user);
+    const profileId = parsed.id;
+
     const fetchStatus = async () => {
-      const { data } = await supabase.from("influencer_profiles").select("status").eq("id", parsed.id).maybeSingle();
+      const { data } = await supabase.from("influencer_profiles").select("status").eq("id", profileId).maybeSingle();
       if (data) setInfluencerStatus(data.status);
     };
     fetchStatus();
+
+    // リアルタイムでステータス変更を検知
+    const channel = supabase
+      .channel(`influencer-status-${profileId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'influencer_profiles',
+          filter: `id=eq.${profileId}`,
+        },
+        (payload) => {
+          const newStatus = (payload.new as any)?.status;
+          if (newStatus) {
+            setInfluencerStatus(newStatus);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [navigate]);
 
   if (!isAuthorized) return null;
