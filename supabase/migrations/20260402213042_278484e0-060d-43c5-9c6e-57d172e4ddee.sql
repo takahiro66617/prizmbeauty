@@ -1,0 +1,2 @@
+ALTER TABLE public.payments DROP CONSTRAINT payments_campaign_id_fkey;
+ALTER TABLE public.payments ADD CONSTRAINT payments_campaign_id_fkey FOREIGN KEY (campaign_id) REFERENCES public.campaigns(id) ON DELETE CASCADE;
