@@ -1,6 +1,6 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
-  LayoutDashboard, FileEdit, Users, MessageCircle, Settings, LogOut, PlusCircle, Wallet, Mail,
+  LayoutDashboard, FileEdit, Users, MessageCircle, Settings, LogOut, PlusCircle, Wallet, Mail, Bell,
 } from "lucide-react";
 import { useExternalCompany } from "@/hooks/useExternalCompanies";
 
@@ -10,6 +10,7 @@ const navItems = [
   { title: "応募者管理", href: "/client/applicants", icon: Users },
   { title: "案件進行管理", href: "/client/messages", icon: MessageCircle },
   { title: "振込管理", href: "/client/payments", icon: Wallet },
+  { title: "お知らせ", href: "/client/notifications", icon: Bell },
 ];
 
 export function ClientSidebar() {
