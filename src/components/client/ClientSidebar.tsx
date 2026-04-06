@@ -10,6 +10,7 @@ const navItems = [
   { title: "応募者管理", href: "/client/applicants", icon: Users },
   { title: "案件進行管理", href: "/client/messages", icon: MessageCircle },
   { title: "振込管理", href: "/client/payments", icon: Wallet },
+  { title: "お知らせ", href: "/client/notifications", icon: Bell },
 ];
 
 export function ClientSidebar() {
