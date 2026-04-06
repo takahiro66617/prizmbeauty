@@ -1,6 +1,6 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
-  LayoutDashboard, FileEdit, Users, MessageCircle, Settings, LogOut, PlusCircle, Wallet, Mail,
+  LayoutDashboard, FileEdit, Users, MessageCircle, Settings, LogOut, PlusCircle, Wallet, Mail, Bell,
 } from "lucide-react";
 import { useExternalCompany } from "@/hooks/useExternalCompanies";
 
