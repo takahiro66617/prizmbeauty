@@ -105,6 +105,7 @@ const App = () => (
             <Route path="messages" element={<ClientMessages />} />
             <Route path="settings" element={<ClientSettings />} />
             <Route path="payments" element={<ClientPayments />} />
+            <Route path="notifications" element={<ClientNotifications />} />
           </Route>
           {/* Admin Dashboard */}
           <Route path="/admin/login" element={<AdminLoginPage />} />
