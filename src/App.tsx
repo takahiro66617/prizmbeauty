@@ -42,6 +42,7 @@ import ClientApplicantDetail from "./pages/client/ClientApplicantDetail";
 import ClientMessages from "./pages/client/ClientMessages";
 import ClientSettings from "./pages/client/ClientSettings";
 import ClientPayments from "./pages/client/ClientPayments";
+import ClientNotifications from "./pages/client/ClientNotifications";
 import MyPageLayout from "./components/layout/MyPageLayout";
 import MyPageDashboard from "./pages/mypage/MyPageDashboard";
 import MyPageApplications from "./pages/mypage/MyPageApplications";
