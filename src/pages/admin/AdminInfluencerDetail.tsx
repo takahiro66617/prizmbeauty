@@ -373,6 +373,43 @@ export default function AdminInfluencerDetail() {
             </Button>
           </div>
 
+          {/* LINE Message Section */}
+          {inf.line_user_id && (
+            <div className="bg-green-50 rounded-xl p-4 border border-green-200 mt-4">
+              <h4 className="font-bold text-gray-800 mb-2 flex items-center gap-2">
+                <MessageCircle className="w-4 h-4 text-green-600" />
+                LINEメッセージ送信
+              </h4>
+              <p className="text-xs text-gray-500 mb-3">このインフルエンサーにLINEで直接メッセージを送信します。</p>
+              <Textarea
+                value={lineMessage}
+                onChange={e => setLineMessage(e.target.value)}
+                placeholder="メッセージを入力..."
+                rows={3}
+                className="mb-2 bg-white"
+              />
+              <div className="flex justify-end">
+                <Button
+                  size="sm"
+                  className="bg-green-600 hover:bg-green-700"
+                  onClick={handleSendLine}
+                  disabled={sendingLine || !lineMessage.trim()}
+                >
+                  <Send className="w-4 h-4 mr-1" />
+                  {sendingLine ? "送信中..." : "LINE送信"}
+                </Button>
+              </div>
+            </div>
+          )}
+          {!inf.line_user_id && (
+            <div className="bg-gray-50 rounded-xl p-4 border border-gray-200 mt-4">
+              <p className="text-sm text-gray-400 flex items-center gap-2">
+                <MessageCircle className="w-4 h-4" />
+                LINE未連携のためメッセージ送信はできません
+              </p>
+            </div>
+          )}
+
           {/* Contact Info */}
           <div className="bg-gray-50 rounded-xl p-4 border border-gray-200 mt-4">
             <h4 className="font-bold text-gray-800 mb-2">📩 お問い合わせ先</h4>
