@@ -33,6 +33,7 @@ import AdminApplicationDetail from "./pages/admin/AdminApplicationDetail";
 import AdminBilling from "./pages/admin/AdminBilling";
 import AdminBillingDetail from "./pages/admin/AdminBillingDetail";
 import AdminBillingSettings from "./pages/admin/AdminBillingSettings";
+import AdminLineSettings from "./pages/admin/AdminLineSettings";
 import { AdminLayout } from "./components/admin/AdminLayout";
 import { ClientLayout } from "./components/client/ClientLayout";
 import ClientLogin from "./pages/client/ClientLogin";
@@ -130,6 +131,7 @@ const App = () => (
             <Route path="billing" element={<AdminBilling />} />
             <Route path="billing/:id" element={<AdminBillingDetail />} />
             <Route path="billing/settings" element={<AdminBillingSettings />} />
+            <Route path="line-settings" element={<AdminLineSettings />} />
             <Route path="debug-reports" element={<DebugReportsPage />} />
           </Route>
           <Route path="*" element={<NotFound />} />
