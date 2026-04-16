@@ -141,6 +141,7 @@ export type Database = {
           platform: string | null
           prefecture: string | null
           requirements: string | null
+          reward_amount: number | null
           status: string
           title: string
           updated_at: string
@@ -162,6 +163,7 @@ export type Database = {
           platform?: string | null
           prefecture?: string | null
           requirements?: string | null
+          reward_amount?: number | null
           status?: string
           title: string
           updated_at?: string
@@ -183,6 +185,7 @@ export type Database = {
           platform?: string | null
           prefecture?: string | null
           requirements?: string | null
+          reward_amount?: number | null
           status?: string
           title?: string
           updated_at?: string
@@ -403,6 +406,95 @@ export type Database = {
           username?: string
           youtube_followers?: number | null
           youtube_url?: string | null
+        }
+        Relationships: []
+      }
+      invoice_items: {
+        Row: {
+          campaign_id: string
+          campaign_title: string
+          created_at: string
+          fee_amount: number
+          id: string
+          invoice_id: string
+          reward_amount: number
+        }
+        Insert: {
+          campaign_id: string
+          campaign_title?: string
+          created_at?: string
+          fee_amount?: number
+          id?: string
+          invoice_id: string
+          reward_amount?: number
+        }
+        Update: {
+          campaign_id?: string
+          campaign_title?: string
+          created_at?: string
+          fee_amount?: number
+          id?: string
+          invoice_id?: string
+          reward_amount?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoice_items_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      invoices: {
+        Row: {
+          billing_month: string
+          company_id: string
+          created_at: string
+          due_date: string | null
+          grand_total: number
+          id: string
+          invoice_number: string | null
+          issued_at: string | null
+          notes: string | null
+          status: string
+          system_fee_amount: number
+          tax_amount: number
+          total_reward_amount: number
+          updated_at: string
+        }
+        Insert: {
+          billing_month: string
+          company_id: string
+          created_at?: string
+          due_date?: string | null
+          grand_total?: number
+          id?: string
+          invoice_number?: string | null
+          issued_at?: string | null
+          notes?: string | null
+          status?: string
+          system_fee_amount?: number
+          tax_amount?: number
+          total_reward_amount?: number
+          updated_at?: string
+        }
+        Update: {
+          billing_month?: string
+          company_id?: string
+          created_at?: string
+          due_date?: string | null
+          grand_total?: number
+          id?: string
+          invoice_number?: string | null
+          issued_at?: string | null
+          notes?: string | null
+          status?: string
+          system_fee_amount?: number
+          tax_amount?: number
+          total_reward_amount?: number
+          updated_at?: string
         }
         Relationships: []
       }
