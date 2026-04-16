@@ -29,6 +29,31 @@ export default function AdminInfluencerDetail() {
 
   const [editForm, setEditForm] = useState<any>(null);
   const [saving, setSaving] = useState(false);
+  const [lineMessage, setLineMessage] = useState("");
+  const [sendingLine, setSendingLine] = useState(false);
+
+  const handleSendLine = async () => {
+    if (!inf?.line_user_id || !lineMessage.trim()) return;
+    setSendingLine(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("send-line-message", {
+        body: {
+          line_user_id: inf.line_user_id,
+          message: lineMessage.trim(),
+          influencer_id: inf.id,
+          message_type: "manual",
+          sent_by: "admin",
+        },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      toast.success("LINEメッセージを送信しました");
+      setLineMessage("");
+    } catch (e: any) {
+      toast.error(`送信失敗: ${e.message || "エラーが発生しました"}`);
+    }
+    setSendingLine(false);
+  };
 
   // Initialize edit form when inf loads
   if (inf && !editForm) {
