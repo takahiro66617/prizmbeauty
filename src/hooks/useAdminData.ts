@@ -220,3 +220,16 @@ export function useAdminUpdateInvoiceStatus() {
     },
   });
 }
+
+export function useAdminUpdateInvoiceDates() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ invoiceId, issued_at, due_date }: { invoiceId: string; issued_at: string | null; due_date: string | null }) => {
+      return adminInvoke("update_invoice_dates", { invoiceId, issued_at, due_date });
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["admin-invoices"] });
+      qc.invalidateQueries({ queryKey: ["admin-invoice-detail"] });
+    },
+  });
+}

@@ -2,14 +2,14 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { useAdminInvoices, useAdminGenerateInvoices, useAdminUpdateInvoiceStatus } from "@/hooks/useAdminData";
+import { useAdminInvoices, useAdminGenerateInvoices, useAdminUpdateInvoiceStatus, useAdminUpdateInvoiceDates } from "@/hooks/useAdminData";
 import { toast } from "sonner";
-import { Receipt, FileText, Settings, Loader2 } from "lucide-react";
+import { Receipt, FileText, Settings, Loader2, CalendarDays } from "lucide-react";
 
 const INVOICE_STATUSES = [
   { id: "pending", label: "未請求", color: "bg-gray-100 text-gray-700" },
-  { id: "issued", label: "請求済", color: "bg-blue-100 text-blue-700" },
-  { id: "paid", label: "入金確認済", color: "bg-green-100 text-green-700" },
+  { id: "issued", label: "請求済", color: "bg-gray-200 text-gray-800" },
+  { id: "paid", label: "入金確認済", color: "bg-gray-800 text-white" },
 ];
 
 export default function AdminBilling() {
@@ -17,11 +17,17 @@ export default function AdminBilling() {
   const { data: invoices = [], isLoading } = useAdminInvoices({ status: filterStatus });
   const generateInvoices = useAdminGenerateInvoices();
   const updateStatus = useAdminUpdateInvoiceStatus();
+  const updateDates = useAdminUpdateInvoiceDates();
 
   const [billingMonth, setBillingMonth] = useState(() => {
     const d = new Date();
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
   });
+
+  // Editing dates state
+  const [editingDates, setEditingDates] = useState<string | null>(null);
+  const [editIssuedAt, setEditIssuedAt] = useState("");
+  const [editDueDate, setEditDueDate] = useState("");
 
   const handleGenerate = () => {
     if (!window.confirm(`${billingMonth} の請求書を一括生成しますか？\n完了済みの案件が対象です。`)) return;
@@ -36,6 +42,22 @@ export default function AdminBilling() {
       onSuccess: () => toast.success("ステータスを更新しました"),
       onError: () => toast.error("更新に失敗しました"),
     });
+  };
+
+  const handleStartEditDates = (inv: any) => {
+    setEditingDates(inv.id);
+    setEditIssuedAt(inv.issued_at ? inv.issued_at.slice(0, 10) : "");
+    setEditDueDate(inv.due_date || "");
+  };
+
+  const handleSaveDates = (invoiceId: string) => {
+    updateDates.mutate(
+      { invoiceId, issued_at: editIssuedAt ? new Date(editIssuedAt).toISOString() : null, due_date: editDueDate || null },
+      {
+        onSuccess: () => { toast.success("日付を更新しました"); setEditingDates(null); },
+        onError: () => toast.error("更新に失敗しました"),
+      }
+    );
   };
 
   return (
@@ -57,7 +79,7 @@ export default function AdminBilling() {
         <div className="flex items-center gap-4">
           <input type="month" value={billingMonth} onChange={e => setBillingMonth(e.target.value)}
             className="px-3 py-2 border border-gray-300 rounded-lg text-sm" />
-          <Button onClick={handleGenerate} disabled={generateInvoices.isPending} className="bg-purple-600 hover:bg-purple-700">
+          <Button onClick={handleGenerate} disabled={generateInvoices.isPending} className="bg-gray-800 hover:bg-gray-900 text-white">
             {generateInvoices.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Receipt className="w-4 h-4 mr-2" />}
             請求書を一括生成
           </Button>
@@ -69,7 +91,7 @@ export default function AdminBilling() {
         {[{ id: "all", label: "すべて" }, ...INVOICE_STATUSES].map(s => (
           <Button key={s.id} variant={filterStatus === s.id ? "default" : "outline"} size="sm"
             onClick={() => setFilterStatus(s.id)}
-            className={filterStatus === s.id ? "bg-purple-600" : ""}>
+            className={filterStatus === s.id ? "bg-gray-800 text-white" : ""}>
             {s.label}
           </Button>
         ))}
@@ -86,7 +108,9 @@ export default function AdminBilling() {
                 <th className="text-left px-6 py-3">請求番号</th>
                 <th className="text-left px-6 py-3">企業名</th>
                 <th className="text-left px-6 py-3">請求月</th>
-                <th className="text-right px-6 py-3">総合計</th>
+                <th className="text-left px-6 py-3">発行日</th>
+                <th className="text-left px-6 py-3">振込期日</th>
+                <th className="text-right px-6 py-3">請求額</th>
                 <th className="text-center px-6 py-3">ステータス</th>
                 <th className="text-center px-6 py-3">操作</th>
               </tr>
@@ -94,20 +118,52 @@ export default function AdminBilling() {
             <tbody className="divide-y divide-gray-50">
               {invoices.map((inv: any) => {
                 const st = INVOICE_STATUSES.find(s => s.id === inv.status);
+                const isEditing = editingDates === inv.id;
                 return (
                   <tr key={inv.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 font-mono text-xs">{inv.invoice_number || "-"}</td>
                     <td className="px-6 py-4 font-medium">{inv.companies?.name || "-"}</td>
                     <td className="px-6 py-4">{inv.billing_month}</td>
+                    <td className="px-6 py-4">
+                      {isEditing ? (
+                        <input type="date" value={editIssuedAt} onChange={e => setEditIssuedAt(e.target.value)}
+                          className="text-xs border border-gray-300 rounded px-2 py-1 w-32" />
+                      ) : (
+                        <span className="text-xs">{inv.issued_at ? new Date(inv.issued_at).toLocaleDateString("ja-JP") : "-"}</span>
+                      )}
+                    </td>
+                    <td className="px-6 py-4">
+                      {isEditing ? (
+                        <input type="text" value={editDueDate} onChange={e => setEditDueDate(e.target.value)}
+                          placeholder="例: 2026年5月末日"
+                          className="text-xs border border-gray-300 rounded px-2 py-1 w-36" />
+                      ) : (
+                        <span className="text-xs">{inv.due_date || "-"}</span>
+                      )}
+                    </td>
                     <td className="px-6 py-4 text-right font-bold">¥{(inv.grand_total || 0).toLocaleString()}</td>
                     <td className="px-6 py-4 text-center">
                       <Badge className={st?.color || ""}>{st?.label || inv.status}</Badge>
                     </td>
-                    <td className="px-6 py-4 text-center">
-                      <select value={inv.status} onChange={e => handleStatusChange(inv.id, e.target.value)}
-                        className="text-xs border border-gray-200 rounded px-2 py-1">
-                        {INVOICE_STATUSES.map(s => <option key={s.id} value={s.id}>{s.label}</option>)}
-                      </select>
+                    <td className="px-6 py-4 text-center space-x-2">
+                      {isEditing ? (
+                        <div className="flex gap-1 justify-center">
+                          <Button size="sm" variant="default" className="text-xs bg-gray-800 text-white h-7"
+                            onClick={() => handleSaveDates(inv.id)} disabled={updateDates.isPending}>保存</Button>
+                          <Button size="sm" variant="outline" className="text-xs h-7"
+                            onClick={() => setEditingDates(null)}>取消</Button>
+                        </div>
+                      ) : (
+                        <div className="flex gap-1 justify-center items-center">
+                          <select value={inv.status} onChange={e => handleStatusChange(inv.id, e.target.value)}
+                            className="text-xs border border-gray-200 rounded px-2 py-1">
+                            {INVOICE_STATUSES.map(s => <option key={s.id} value={s.id}>{s.label}</option>)}
+                          </select>
+                          <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => handleStartEditDates(inv)}>
+                            <CalendarDays className="w-3.5 h-3.5 text-gray-500" />
+                          </Button>
+                        </div>
+                      )}
                     </td>
                   </tr>
                 );

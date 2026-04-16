@@ -6,8 +6,8 @@ import { Receipt, FileText } from "lucide-react";
 
 const STATUSES: Record<string, { label: string; color: string }> = {
   pending: { label: "未請求", color: "bg-gray-100 text-gray-700" },
-  issued: { label: "請求済（未払い）", color: "bg-amber-100 text-amber-700" },
-  paid: { label: "支払い完了", color: "bg-green-100 text-green-700" },
+  issued: { label: "請求済（未払い）", color: "bg-gray-200 text-gray-800" },
+  paid: { label: "支払い完了", color: "bg-gray-800 text-white" },
 };
 
 export default function ClientBilling() {
@@ -43,8 +43,8 @@ export default function ClientBilling() {
                 <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 hover:shadow-md transition-shadow">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center">
-                        <Receipt className="w-6 h-6 text-blue-500" />
+                      <div className="w-12 h-12 rounded-xl bg-gray-100 flex items-center justify-center">
+                        <Receipt className="w-6 h-6 text-gray-600" />
                       </div>
                       <div>
                         <p className="font-bold text-gray-900">{inv.billing_month} 月分</p>
