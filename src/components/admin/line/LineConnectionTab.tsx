@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { useAppSetting, useAdminUpdateAppSetting } from "@/hooks/useAdminData";
 import { useLineConnectionTest } from "@/hooks/useLineMessaging";
 import { toast } from "sonner";
-import { Save, Eye, EyeOff, Shield, CheckCircle2, XCircle, Loader2 } from "lucide-react";
+import { Save, Eye, EyeOff, Shield, CheckCircle2, XCircle, Loader2, Wifi } from "lucide-react";
 
 export default function LineConnectionTab() {
   const { data: lineData, isLoading } = useAppSetting("line_messaging_config");
