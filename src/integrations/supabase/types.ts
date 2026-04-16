@@ -498,6 +498,50 @@ export type Database = {
         }
         Relationships: []
       }
+      line_message_logs: {
+        Row: {
+          created_at: string
+          error_detail: string | null
+          id: string
+          influencer_id: string | null
+          line_user_id: string
+          message_content: string
+          message_type: string
+          sent_by: string | null
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          error_detail?: string | null
+          id?: string
+          influencer_id?: string | null
+          line_user_id: string
+          message_content: string
+          message_type?: string
+          sent_by?: string | null
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          error_detail?: string | null
+          id?: string
+          influencer_id?: string | null
+          line_user_id?: string
+          message_content?: string
+          message_type?: string
+          sent_by?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "line_message_logs_influencer_id_fkey"
+            columns: ["influencer_id"]
+            isOneToOne: false
+            referencedRelation: "influencer_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       messages: {
         Row: {
           application_id: string | null

@@ -1,0 +1,1 @@
+DROP POLICY "Admin can insert line_message_logs via service role" ON public.line_message_logs;

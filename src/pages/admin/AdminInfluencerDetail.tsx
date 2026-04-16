@@ -3,7 +3,8 @@ import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { ArrowLeft, Save, ExternalLink, Instagram, Youtube } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import { ArrowLeft, Save, ExternalLink, Instagram, Youtube, Send, MessageCircle } from "lucide-react";
 import { useExternalInfluencers, useUpdateInfluencerStatus } from "@/hooks/useExternalInfluencers";
 import { useExternalApplications } from "@/hooks/useExternalApplications";
 import { GENRES, INFLUENCER_STATUSES, APPLICATION_STATUSES } from "@/lib/constants";
@@ -28,6 +29,31 @@ export default function AdminInfluencerDetail() {
 
   const [editForm, setEditForm] = useState<any>(null);
   const [saving, setSaving] = useState(false);
+  const [lineMessage, setLineMessage] = useState("");
+  const [sendingLine, setSendingLine] = useState(false);
+
+  const handleSendLine = async () => {
+    if (!inf?.line_user_id || !lineMessage.trim()) return;
+    setSendingLine(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("send-line-message", {
+        body: {
+          line_user_id: inf.line_user_id,
+          message: lineMessage.trim(),
+          influencer_id: inf.id,
+          message_type: "manual",
+          sent_by: "admin",
+        },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      toast.success("LINEメッセージを送信しました");
+      setLineMessage("");
+    } catch (e: any) {
+      toast.error(`送信失敗: ${e.message || "エラーが発生しました"}`);
+    }
+    setSendingLine(false);
+  };
 
   // Initialize edit form when inf loads
   if (inf && !editForm) {
@@ -346,6 +372,43 @@ export default function AdminInfluencerDetail() {
               <Save className="w-4 h-4 mr-2" />{saving ? "保存中..." : "保存"}
             </Button>
           </div>
+
+          {/* LINE Message Section */}
+          {inf.line_user_id && (
+            <div className="bg-green-50 rounded-xl p-4 border border-green-200 mt-4">
+              <h4 className="font-bold text-gray-800 mb-2 flex items-center gap-2">
+                <MessageCircle className="w-4 h-4 text-green-600" />
+                LINEメッセージ送信
+              </h4>
+              <p className="text-xs text-gray-500 mb-3">このインフルエンサーにLINEで直接メッセージを送信します。</p>
+              <Textarea
+                value={lineMessage}
+                onChange={e => setLineMessage(e.target.value)}
+                placeholder="メッセージを入力..."
+                rows={3}
+                className="mb-2 bg-white"
+              />
+              <div className="flex justify-end">
+                <Button
+                  size="sm"
+                  className="bg-green-600 hover:bg-green-700"
+                  onClick={handleSendLine}
+                  disabled={sendingLine || !lineMessage.trim()}
+                >
+                  <Send className="w-4 h-4 mr-1" />
+                  {sendingLine ? "送信中..." : "LINE送信"}
+                </Button>
+              </div>
+            </div>
+          )}
+          {!inf.line_user_id && (
+            <div className="bg-gray-50 rounded-xl p-4 border border-gray-200 mt-4">
+              <p className="text-sm text-gray-400 flex items-center gap-2">
+                <MessageCircle className="w-4 h-4" />
+                LINE未連携のためメッセージ送信はできません
+              </p>
+            </div>
+          )}
 
           {/* Contact Info */}
           <div className="bg-gray-50 rounded-xl p-4 border border-gray-200 mt-4">
