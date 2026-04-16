@@ -362,11 +362,12 @@ Deno.serve(async (req) => {
           .from("invoices")
           .select("*")
           .eq("id", invoiceId)
-          .single();
+          .maybeSingle();
         if (iErr) return jsonError(iErr.message);
+        if (!invoice) return jsonError("Invoice not found");
 
         // Get company info
-        const { data: company } = await supabase.from("companies").select("id, name, logo_url, contact_name, contact_email").eq("id", invoice.company_id).single();
+        const { data: company } = await supabase.from("companies").select("id, name, logo_url, contact_name, contact_email").eq("id", invoice.company_id).maybeSingle();
 
         const { data: items, error: iiErr } = await supabase
           .from("invoice_items")
