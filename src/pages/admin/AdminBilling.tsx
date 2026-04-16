@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useAdminInvoices, useAdminGenerateInvoices, useAdminUpdateInvoiceStatus, useAdminUpdateInvoiceDates } from "@/hooks/useAdminData";
 import { toast } from "sonner";
-import { Receipt, FileText, Settings, Loader2, CalendarDays } from "lucide-react";
+import { Receipt, FileText, Settings, Loader2, CalendarDays, Eye } from "lucide-react";
 
 const INVOICE_STATUSES = [
   { id: "pending", label: "未請求", color: "bg-gray-100 text-gray-700" },
@@ -121,7 +121,9 @@ export default function AdminBilling() {
                 const isEditing = editingDates === inv.id;
                 return (
                   <tr key={inv.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 font-mono text-xs">{inv.invoice_number || "-"}</td>
+                    <td className="px-6 py-4 font-mono text-xs">
+                      <Link to={`/admin/billing/${inv.id}`} className="text-gray-900 hover:underline">{inv.invoice_number || "-"}</Link>
+                    </td>
                     <td className="px-6 py-4 font-medium">{inv.companies?.name || "-"}</td>
                     <td className="px-6 py-4">{inv.billing_month}</td>
                     <td className="px-6 py-4">
@@ -159,6 +161,11 @@ export default function AdminBilling() {
                             className="text-xs border border-gray-200 rounded px-2 py-1">
                             {INVOICE_STATUSES.map(s => <option key={s.id} value={s.id}>{s.label}</option>)}
                           </select>
+                          <Link to={`/admin/billing/${inv.id}`}>
+                            <Button size="sm" variant="ghost" className="h-7 w-7 p-0">
+                              <Eye className="w-3.5 h-3.5 text-gray-500" />
+                            </Button>
+                          </Link>
                           <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => handleStartEditDates(inv)}>
                             <CalendarDays className="w-3.5 h-3.5 text-gray-500" />
                           </Button>
