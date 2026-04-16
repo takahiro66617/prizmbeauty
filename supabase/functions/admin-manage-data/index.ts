@@ -404,6 +404,21 @@ Deno.serve(async (req) => {
         return jsonOk(data);
       }
 
+      case "get_line_message_logs": {
+        const { limit: logLimit, offset: logOffset, messageType, logStatus } = body;
+        let query = supabase
+          .from("line_message_logs")
+          .select("*, influencer_profiles(id, name, username, image_url)")
+          .order("created_at", { ascending: false })
+          .limit(logLimit || 50);
+        if (logOffset) query = query.range(logOffset, (logOffset + (logLimit || 50)) - 1);
+        if (messageType && messageType !== "all") query = query.eq("message_type", messageType);
+        if (logStatus && logStatus !== "all") query = query.eq("status", logStatus);
+        const { data, error } = await query;
+        if (error) return jsonError(error.message);
+        return jsonOk(data);
+      }
+
       default:
         return jsonError("Unknown action: " + action, 400);
     }
