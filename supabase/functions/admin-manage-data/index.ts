@@ -255,6 +255,127 @@ Deno.serve(async (req) => {
         return jsonOk(data);
       }
 
+      case "generate_invoices": {
+        const billingMonth = body.billing_month || new Date().toISOString().slice(0, 7);
+
+        // Get all completed campaigns with reward_amount > 0 that aren't already invoiced
+        const { data: completedCampaigns, error: cErr } = await supabase
+          .from("campaigns")
+          .select("id, company_id, title, reward_amount")
+          .eq("status", "completed")
+          .gt("reward_amount", 0);
+        if (cErr) return jsonError(cErr.message);
+        if (!completedCampaigns || completedCampaigns.length === 0) {
+          return jsonError("請求対象の完了案件がありません");
+        }
+
+        // Group by company
+        const byCompany: Record<string, typeof completedCampaigns> = {};
+        completedCampaigns.forEach((c: any) => {
+          if (!byCompany[c.company_id]) byCompany[c.company_id] = [];
+          byCompany[c.company_id].push(c);
+        });
+
+        const results: any[] = [];
+        let invoiceSeq = 1;
+
+        for (const [companyId, campaigns] of Object.entries(byCompany)) {
+          const totalReward = campaigns.reduce((s: number, c: any) => s + (c.reward_amount || 0), 0);
+          const systemFee = Math.floor(totalReward * 30 / 100);
+          const taxAmount = Math.floor((totalReward + systemFee) * 10 / 100);
+          const grandTotal = totalReward + systemFee + taxAmount;
+          const invoiceNumber = `INV-${billingMonth.replace("-", "")}-${String(invoiceSeq++).padStart(3, "0")}`;
+
+          // Create invoice
+          const { data: invoice, error: iErr } = await supabase.from("invoices").insert({
+            company_id: companyId,
+            billing_month: billingMonth,
+            total_reward_amount: totalReward,
+            system_fee_amount: systemFee,
+            tax_amount: taxAmount,
+            grand_total: grandTotal,
+            status: "issued",
+            invoice_number: invoiceNumber,
+          }).select().single();
+          if (iErr) return jsonError(iErr.message);
+
+          // Create invoice items
+          const items = campaigns.map((c: any) => ({
+            invoice_id: invoice.id,
+            campaign_id: c.id,
+            campaign_title: c.title,
+            reward_amount: c.reward_amount || 0,
+            fee_amount: Math.floor((c.reward_amount || 0) * 30 / 100),
+          }));
+          const { error: iiErr } = await supabase.from("invoice_items").insert(items);
+          if (iiErr) return jsonError(iiErr.message);
+
+          // Update campaign statuses to invoiced
+          const campaignIds = campaigns.map((c: any) => c.id);
+          const { error: uErr } = await supabase.from("campaigns").update({ status: "invoiced" }).in("id", campaignIds);
+          if (uErr) return jsonError(uErr.message);
+
+          // Send notification to company
+          const { data: comp } = await supabase.from("companies").select("user_id").eq("id", companyId).single();
+          if (comp?.user_id) {
+            await supabase.from("notifications").insert({
+              user_id: comp.user_id,
+              title: "請求書が発行されました",
+              message: `${billingMonth}月分の請求書（${invoiceNumber}）が発行されました。請求・支払い管理画面をご確認ください。`,
+              type: "billing",
+              link: "/client/billing",
+            });
+          }
+
+          results.push(invoice);
+        }
+
+        return jsonOk({ invoices: results, count: results.length });
+      }
+
+      case "get_invoices": {
+        const { companyId: filterCompanyId, status: filterStatus } = body;
+        let query = supabase
+          .from("invoices")
+          .select("*, companies:company_id(id, name, logo_url)")
+          .order("created_at", { ascending: false });
+        if (filterCompanyId) query = query.eq("company_id", filterCompanyId);
+        if (filterStatus && filterStatus !== "all") query = query.eq("status", filterStatus);
+        const { data, error } = await query;
+        if (error) return jsonError(error.message);
+        return jsonOk(data);
+      }
+
+      case "get_invoice_detail": {
+        const { invoiceId } = body;
+        if (!invoiceId) return jsonError("invoiceId is required");
+        const { data: invoice, error: iErr } = await supabase
+          .from("invoices")
+          .select("*, companies:company_id(id, name, logo_url, contact_name, contact_email)")
+          .eq("id", invoiceId)
+          .single();
+        if (iErr) return jsonError(iErr.message);
+
+        const { data: items, error: iiErr } = await supabase
+          .from("invoice_items")
+          .select("*")
+          .eq("invoice_id", invoiceId)
+          .order("created_at", { ascending: true });
+        if (iiErr) return jsonError(iiErr.message);
+
+        return jsonOk({ ...invoice, items: items || [] });
+      }
+
+      case "update_invoice_status": {
+        const { invoiceId, status: newStatus } = body;
+        if (!invoiceId || !newStatus) return jsonError("invoiceId and status are required");
+        const allowed = ["pending", "issued", "paid"];
+        if (!allowed.includes(newStatus)) return jsonError("invalid status");
+        const { data, error } = await supabase.from("invoices").update({ status: newStatus }).eq("id", invoiceId).select().single();
+        if (error) return jsonError(error.message);
+        return jsonOk(data);
+      }
+
       default:
         return jsonError("Unknown action: " + action, 400);
     }

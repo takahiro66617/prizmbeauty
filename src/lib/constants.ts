@@ -38,6 +38,7 @@ export const CAMPAIGN_STATUSES = [
   { id: "recruiting", label: "募集中", color: "bg-emerald-100 text-emerald-700" },
   { id: "closed", label: "募集終了", color: "bg-orange-100 text-orange-700" },
   { id: "completed", label: "完了", color: "bg-blue-100 text-blue-700" },
+  { id: "invoiced", label: "請求済", color: "bg-violet-100 text-violet-700" },
 ];
 
 export const INFLUENCER_STATUSES = [
