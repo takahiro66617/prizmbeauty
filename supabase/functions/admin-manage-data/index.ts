@@ -337,13 +337,22 @@ Deno.serve(async (req) => {
         const { companyId: filterCompanyId, status: filterStatus } = body;
         let query = supabase
           .from("invoices")
-          .select("*, companies:company_id(id, name, logo_url)")
+          .select("*")
           .order("created_at", { ascending: false });
         if (filterCompanyId) query = query.eq("company_id", filterCompanyId);
         if (filterStatus && filterStatus !== "all") query = query.eq("status", filterStatus);
-        const { data, error } = await query;
+        const { data: invoicesData, error } = await query;
         if (error) return jsonError(error.message);
-        return jsonOk(data);
+
+        // Enrich with company names
+        const companyIds = [...new Set((invoicesData || []).map((i: any) => i.company_id))];
+        let companyMap: Record<string, any> = {};
+        if (companyIds.length > 0) {
+          const { data: companies } = await supabase.from("companies").select("id, name, logo_url").in("id", companyIds);
+          (companies || []).forEach((c: any) => { companyMap[c.id] = c; });
+        }
+        const enriched = (invoicesData || []).map((inv: any) => ({ ...inv, companies: companyMap[inv.company_id] || null }));
+        return jsonOk(enriched);
       }
 
       case "get_invoice_detail": {
@@ -351,10 +360,13 @@ Deno.serve(async (req) => {
         if (!invoiceId) return jsonError("invoiceId is required");
         const { data: invoice, error: iErr } = await supabase
           .from("invoices")
-          .select("*, companies:company_id(id, name, logo_url, contact_name, contact_email)")
+          .select("*")
           .eq("id", invoiceId)
           .single();
         if (iErr) return jsonError(iErr.message);
+
+        // Get company info
+        const { data: company } = await supabase.from("companies").select("id, name, logo_url, contact_name, contact_email").eq("id", invoice.company_id).single();
 
         const { data: items, error: iiErr } = await supabase
           .from("invoice_items")
@@ -363,7 +375,7 @@ Deno.serve(async (req) => {
           .order("created_at", { ascending: true });
         if (iiErr) return jsonError(iiErr.message);
 
-        return jsonOk({ ...invoice, items: items || [] });
+        return jsonOk({ ...invoice, companies: company, items: items || [] });
       }
 
       case "update_invoice_status": {
