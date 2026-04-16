@@ -30,6 +30,8 @@ import AdminApplications from "./pages/admin/AdminApplications";
 import AdminMessages from "./pages/admin/AdminMessages";
 import AdminCampaignDetail from "./pages/admin/AdminCampaignDetail";
 import AdminApplicationDetail from "./pages/admin/AdminApplicationDetail";
+import AdminBilling from "./pages/admin/AdminBilling";
+import AdminBillingSettings from "./pages/admin/AdminBillingSettings";
 import { AdminLayout } from "./components/admin/AdminLayout";
 import { ClientLayout } from "./components/client/ClientLayout";
 import ClientLogin from "./pages/client/ClientLogin";
@@ -43,6 +45,8 @@ import ClientMessages from "./pages/client/ClientMessages";
 import ClientSettings from "./pages/client/ClientSettings";
 import ClientPayments from "./pages/client/ClientPayments";
 import ClientNotifications from "./pages/client/ClientNotifications";
+import ClientBilling from "./pages/client/ClientBilling";
+import ClientBillingDetail from "./pages/client/ClientBillingDetail";
 import MyPageLayout from "./components/layout/MyPageLayout";
 import MyPageDashboard from "./pages/mypage/MyPageDashboard";
 import MyPageApplications from "./pages/mypage/MyPageApplications";
@@ -106,6 +110,8 @@ const App = () => (
             <Route path="settings" element={<ClientSettings />} />
             <Route path="payments" element={<ClientPayments />} />
             <Route path="notifications" element={<ClientNotifications />} />
+            <Route path="billing" element={<ClientBilling />} />
+            <Route path="billing/:id" element={<ClientBillingDetail />} />
           </Route>
           {/* Admin Dashboard */}
           <Route path="/admin/login" element={<AdminLoginPage />} />
@@ -120,6 +126,8 @@ const App = () => (
             <Route path="applications" element={<AdminApplications />} />
             <Route path="applications/:id" element={<AdminApplicationDetail />} />
             <Route path="messages" element={<AdminMessages />} />
+            <Route path="billing" element={<AdminBilling />} />
+            <Route path="billing/settings" element={<AdminBillingSettings />} />
             <Route path="debug-reports" element={<DebugReportsPage />} />
           </Route>
           <Route path="*" element={<NotFound />} />

@@ -32,6 +32,7 @@ export default function AdminCampaignDetail() {
         title: campaign.title, description: campaign.description || "", category: campaign.category || "",
         budget_min: campaign.budget_min || 0, budget_max: campaign.budget_max || 0,
         max_applicants: campaign.max_applicants || 0,
+        reward_amount: campaign.reward_amount || 0,
         deadline: campaign.deadline ? campaign.deadline.split("T")[0] : "",
         payment_date: campaign.payment_date ? campaign.payment_date.split("T")[0] : "",
         requirements: campaign.requirements || "", platform: campaign.platform || "",
@@ -191,6 +192,8 @@ export default function AdminCampaignDetail() {
         </div>
         <div><label className="block text-sm font-medium text-gray-700 mb-1">募集人数</label>
           <Input type="number" value={editForm.max_applicants} onChange={e => setEditForm({ ...editForm, max_applicants: Number(e.target.value) })} placeholder="0 = 制限なし" /></div>
+        <div><label className="block text-sm font-medium text-gray-700 mb-1">確定報酬額（円）</label>
+          <Input type="number" value={editForm.reward_amount} onChange={e => setEditForm({ ...editForm, reward_amount: Number(e.target.value) })} placeholder="請求書生成に使用されます" /></div>
         <div className="grid grid-cols-2 gap-4">
           <div><label className="block text-sm font-medium text-gray-700 mb-1">応募締切日</label>
             <Input type="date" value={editForm.deadline} onChange={e => setEditForm({ ...editForm, deadline: e.target.value })} /></div>
