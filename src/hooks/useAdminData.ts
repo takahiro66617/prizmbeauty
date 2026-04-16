@@ -170,3 +170,53 @@ export function useAdminSendNotification() {
     },
   });
 }
+
+// ---- Billing / Invoices ----
+
+export function useAdminGenerateInvoices() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (billingMonth?: string) => {
+      return adminInvoke("generate_invoices", { billing_month: billingMonth });
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["admin-invoices"] });
+      qc.invalidateQueries({ queryKey: ["admin-campaigns"] });
+    },
+  });
+}
+
+export function useAdminInvoices(filters?: { companyId?: string; status?: string }) {
+  return useQuery({
+    queryKey: ["admin-invoices", filters],
+    queryFn: async () => {
+      return adminInvoke("get_invoices", {
+        companyId: filters?.companyId,
+        status: filters?.status,
+      });
+    },
+  });
+}
+
+export function useAdminInvoiceDetail(invoiceId: string | undefined) {
+  return useQuery({
+    queryKey: ["admin-invoice-detail", invoiceId],
+    queryFn: async () => {
+      return adminInvoke("get_invoice_detail", { invoiceId });
+    },
+    enabled: !!invoiceId,
+  });
+}
+
+export function useAdminUpdateInvoiceStatus() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ invoiceId, status }: { invoiceId: string; status: string }) => {
+      return adminInvoke("update_invoice_status", { invoiceId, status });
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["admin-invoices"] });
+      qc.invalidateQueries({ queryKey: ["admin-invoice-detail"] });
+    },
+  });
+}
