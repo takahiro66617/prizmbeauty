@@ -161,6 +161,11 @@ export default function AdminBilling() {
                             className="text-xs border border-gray-200 rounded px-2 py-1">
                             {INVOICE_STATUSES.map(s => <option key={s.id} value={s.id}>{s.label}</option>)}
                           </select>
+                          <Link to={`/admin/billing/${inv.id}`}>
+                            <Button size="sm" variant="ghost" className="h-7 w-7 p-0">
+                              <Eye className="w-3.5 h-3.5 text-gray-500" />
+                            </Button>
+                          </Link>
                           <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => handleStartEditDates(inv)}>
                             <CalendarDays className="w-3.5 h-3.5 text-gray-500" />
                           </Button>
