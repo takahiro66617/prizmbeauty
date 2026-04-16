@@ -238,9 +238,9 @@ Deno.serve(async (req) => {
           .from("app_settings")
           .select("value")
           .eq("key", key)
-          .single();
+          .maybeSingle();
         if (error) return jsonError(error.message);
-        return jsonOk(data?.value);
+        return jsonOk(data?.value ?? null);
       }
 
       case "update_app_setting": {
