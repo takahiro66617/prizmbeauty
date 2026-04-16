@@ -6,6 +6,35 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+// --- LINE Push Helper ---
+async function trySendLinePush(supabaseAdmin: any, lineUserId: string | null, influencerId: string | null, message: string, messageType: string) {
+  if (!lineUserId) return;
+  try {
+    const { data: config } = await supabaseAdmin
+      .from("app_settings").select("value").eq("key", "line_messaging_config").single();
+    const token = config?.value?.channel_access_token;
+    if (!token) { console.log("LINE token not configured, skipping push"); return; }
+
+    const res = await fetch("https://api.line.me/v2/bot/message/push", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+      body: JSON.stringify({ to: lineUserId, messages: [{ type: "text", text: message }] }),
+    });
+    const ok = res.ok;
+    const errText = ok ? null : await res.text();
+    if (!ok) console.error("LINE push failed:", res.status, errText);
+    else await res.text();
+
+    await supabaseAdmin.from("line_message_logs").insert({
+      influencer_id: influencerId, line_user_id: lineUserId,
+      message_type: messageType, message_content: message,
+      status: ok ? "sent" : "failed", error_detail: errText, sent_by: "system",
+    });
+  } catch (e) {
+    console.error("LINE push error:", e);
+  }
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
