@@ -109,7 +109,23 @@ serve(async (req) => {
       }
     }
 
-    // 4. Auto-close campaign when influencer is approved + send 7-day deadline notice
+    // 3.5 Send LINE push notification for status change
+    if (influencer?.line_user_id && newStatus) {
+      const campaignTitle = updatedApp.campaigns?.title || "案件";
+      const statusLabels: Record<string, string> = {
+        approved: "🎉 採用されました",
+        rejected: "応募が見送りとなりました",
+        post_submitted: "投稿が提出されました",
+        post_confirmed: "✅ 投稿が承認されました",
+        payment_pending: "💰 報酬の支払い手続き中です",
+        completed: "🎊 案件が完了しました",
+      };
+      const statusLabel = statusLabels[newStatus];
+      if (statusLabel) {
+        const lineMsg = `【PRizm】${statusLabel}\n\n案件名：${campaignTitle}\n\n詳しくはマイページをご確認ください。\nhttps://app.pr-izm.com/mypage/applications`;
+        await trySendLinePush(supabaseAdmin, influencer.line_user_id, influencer.id, lineMsg, "status_change");
+      }
+    }
     if (newStatus === "approved") {
       try {
         await supabaseAdmin.from("campaigns")
