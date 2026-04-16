@@ -281,9 +281,12 @@ Deno.serve(async (req) => {
 
         for (const [companyId, campaigns] of Object.entries(byCompany)) {
           const totalReward = campaigns.reduce((s: number, c: any) => s + (c.reward_amount || 0), 0);
+          // Platform fee = 30% of reward (this is what we charge)
           const systemFee = Math.floor(totalReward * 30 / 100);
-          const taxAmount = Math.floor((totalReward + systemFee) * 10 / 100);
-          const grandTotal = totalReward + systemFee + taxAmount;
+          // Tax = 10% of system fee only
+          const taxAmount = Math.floor(systemFee * 10 / 100);
+          // Grand total = fee + tax (NOT including reward)
+          const grandTotal = systemFee + taxAmount;
           const invoiceNumber = `INV-${billingMonth.replace("-", "")}-${String(invoiceSeq++).padStart(3, "0")}`;
 
           // Create invoice
@@ -385,6 +388,18 @@ Deno.serve(async (req) => {
         const allowed = ["pending", "issued", "paid"];
         if (!allowed.includes(newStatus)) return jsonError("invalid status");
         const { data, error } = await supabase.from("invoices").update({ status: newStatus }).eq("id", invoiceId).select().single();
+        if (error) return jsonError(error.message);
+        return jsonOk(data);
+      }
+
+      case "update_invoice_dates": {
+        const { invoiceId, issued_at, due_date } = body;
+        if (!invoiceId) return jsonError("invoiceId is required");
+        const updates: Record<string, unknown> = {};
+        if (issued_at !== undefined) updates.issued_at = issued_at || null;
+        if (due_date !== undefined) updates.due_date = due_date || null;
+        if (Object.keys(updates).length === 0) return jsonError("No fields to update");
+        const { data, error } = await supabase.from("invoices").update(updates).eq("id", invoiceId).select().single();
         if (error) return jsonError(error.message);
         return jsonOk(data);
       }
