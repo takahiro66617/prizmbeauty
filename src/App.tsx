@@ -31,6 +31,7 @@ import AdminMessages from "./pages/admin/AdminMessages";
 import AdminCampaignDetail from "./pages/admin/AdminCampaignDetail";
 import AdminApplicationDetail from "./pages/admin/AdminApplicationDetail";
 import AdminBilling from "./pages/admin/AdminBilling";
+import AdminBillingDetail from "./pages/admin/AdminBillingDetail";
 import AdminBillingSettings from "./pages/admin/AdminBillingSettings";
 import { AdminLayout } from "./components/admin/AdminLayout";
 import { ClientLayout } from "./components/client/ClientLayout";
@@ -127,6 +128,7 @@ const App = () => (
             <Route path="applications/:id" element={<AdminApplicationDetail />} />
             <Route path="messages" element={<AdminMessages />} />
             <Route path="billing" element={<AdminBilling />} />
+            <Route path="billing/:id" element={<AdminBillingDetail />} />
             <Route path="billing/settings" element={<AdminBillingSettings />} />
             <Route path="debug-reports" element={<DebugReportsPage />} />
           </Route>
